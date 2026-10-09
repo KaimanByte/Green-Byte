@@ -2,16 +2,16 @@ services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_DB: ${DB_NAME:?DB_NAME não configurado}
-      POSTGRES_USER: ${DB_USER:?DB_USER não configurado}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD não configurado}
+      POSTGRES_DB: green_byte
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:?DB_USER não configurado} -d ${DB_NAME:?DB_NAME não configurado}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d green_byte"]
       interval: 5s
       timeout: 5s
       retries: 5
