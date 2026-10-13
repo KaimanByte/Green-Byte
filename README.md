@@ -1,6 +1,10 @@
 # ABP - GreenER: Monitoramento de Energia e Emissões de Carbono (Green Byte)
 
-![Logo Kaiman Byte](\docs\LogoKaymanByte.png)
+<p align="center">
+  <img src="./docs/LogoKaymanByte.png"
+       alt="TOP"
+       style="max-width: 260px; width: 60%; height: auto;">
+</p>
 
 [Sobre o Projeto](#descrição-do-projeto) | [Entrega de Sprints](#entregas-de-sprints) | [Recursos do Produto](#recursos-do-produto) | [Stack](#stack) | [Como rodar](#como-subir-a-aplicação-com-docker-compose) | [Nossa Equipe](#equipe)
 
@@ -48,16 +52,16 @@ Todas as entregas seguem os prazos acordados no calendário da disciplina. Para 
 
 ## Recursos do Produto
 
-- **Backlog do Produto:** [Acesse aqui](\docs\backlog.md)
+- **Backlog do Produto:** [Acesse aqui](./docs/backlog.md)
   Épicos, itens por sprint com prioridade e estimativa, critérios de aceite e matriz de rastreabilidade (requisito → item).
 
-- **Arquitetura:** [Acesse aqui](\docs\arquitetura.md)
+- **Arquitetura:** [Acesse aqui](./docs/arquitetura.md)
   Organização das pastas, fluxo de dados, tecnologias escolhidas e funcionamento dos containers.
 
-- **APIs Externas:** [Acesse aqui](\docs\api-externas.md)
+- **APIs Externas:** [Acesse aqui](./docs/api-externas.md)
   Contratos das APIs Greener Metrics Aggregator e Greener Carbon Intensity, com exemplos de resposta e erros mapeados.
 
-- **Fórmulas de Cálculo:** [Acesse aqui](\docs\calculos.md)
+- **Fórmulas de Cálculo:** [Acesse aqui](./docs/calculos.md)
   Modelo de cálculo de energia e CO₂e, constantes, premissas e decisão de escopo (energia e CO₂e no MVP; água fora do modelo).
 
 ## Stack
