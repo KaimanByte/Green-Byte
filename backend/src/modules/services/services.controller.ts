@@ -1,6 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
+/*import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { ServicosService } from './servicos.service';
+import { ServicosService } from './services.service';
 import { ServicoResponseDto } from './dto/servico-response.dto';
 
 @ApiTags('Serviços')
@@ -19,3 +19,4 @@ export class ServicosController {
     return this.servicosService.findAllServices();
   }
 }
+  */

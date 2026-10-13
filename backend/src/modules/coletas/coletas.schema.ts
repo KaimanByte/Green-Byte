@@ -1,9 +1,9 @@
 import { pgTable, uuid, timestamp, numeric, integer } from 'drizzle-orm/pg-core';
-import { servicos } from '../servicos/servicos.schema';
+import { services } from '../services/services.schema';
 
 export const coletasHistorico = pgTable('coletas_historico', {
   id: uuid('id').primaryKey().defaultRandom(),
-  servicoId: uuid('servico_id').references(() => servicos.id).notNull(),
+  servicoId: uuid('servico_id').references(() => services.id).notNull(),
   dataHora: timestamp('data_hora').defaultNow().notNull(),
   cpuPercentual: numeric('cpu_percentual').notNull(),
   memoriaGb: numeric('memoria_gb').notNull(),

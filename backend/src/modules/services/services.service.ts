@@ -1,6 +1,6 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { DATABASE_CONNECTION } from '../../database/database.provider';
-import { servicos } from './servicos.schema';
+/*import { Injectable, Inject } from '@nestjs/common';
+import { DATABASE_CONNECTION } from '../../database/database.service';
+import { servicos } from './services.schema';
 import { regioes } from '../regioes/regioes.schema';
 import { eq } from 'drizzle-orm';
 
@@ -36,3 +36,4 @@ export class ServicosService {
     }));
   }
 }
+*/
