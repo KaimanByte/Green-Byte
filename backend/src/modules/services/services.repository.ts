@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DatabaseService } from '../../database/database.service';
-import { services } from './services.schema';
-
-export type Service = typeof services.$inferSelect;
-export type NewService = typeof services.$inferInsert;
+import { services, Service, NewService } from './services.schema';
 
 @Injectable()
 export class ServicesRepository {

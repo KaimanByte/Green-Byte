@@ -7,3 +7,6 @@ export const services = pgTable('services', {
   codigoRegiao: varchar('codigo_regiao', { length: 50 }).references(() => regioes.codigoRegiao).notNull(),
   status: varchar('status', { length: 50 }).notNull().default('ativo'),
 });
+
+export type Service = typeof services.$inferSelect;
+export type NewService = typeof services.$inferInsert;
