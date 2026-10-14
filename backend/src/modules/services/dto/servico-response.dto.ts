@@ -10,18 +10,26 @@ export class LocalizacaoDto {
   @ApiProperty({ example: 'Sudeste', description: 'Região geográfica' })
   regiao: string;
 
-  @ApiProperty({ example: 'Sao Paulo', description: 'Cidade (se disponível)', required: false })
-  cidade?: string;
+  @ApiProperty({
+    example: 'Sao Paulo',
+    description: 'Cidade, quando informada pela API externa; caso contrário, null',
+    nullable: true,
+  })
+  cidade: string | null;
 }
 
 export class ServicoResponseDto {
-  @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000', description: 'ID interno do banco' })
+  @ApiProperty({ example: 'billing-api', description: 'Identificador do serviço' })
   id: string;
 
-  @ApiProperty({ example: 'Billing API', description: 'Nome do microsserviço' })
+  @ApiProperty({ example: 'Billing API', description: 'Nome de exibição do serviço' })
   nome: string;
 
-  @ApiProperty({ example: 'ativo', description: 'Estado atual do serviço' })
+  @ApiProperty({
+    example: 'registrado',
+    description:
+      'Estado de registro na API de origem. A API externa não fornece estado de saúde operacional neste endpoint.',
+  })
   status: string;
 
   @ApiProperty({ type: LocalizacaoDto })
