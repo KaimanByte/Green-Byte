@@ -1,0 +1,25 @@
+:root {
+  /* vidro */
+  --glass-fill: rgba(255, 255, 255, 0.08);
+  --glass-fill-hover: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-blur: 12px;
+  --glass-shadow: 0 18px 40px rgba(13, 35, 29, 0.1);
+
+  /* raios */
+  --radius-pill: 32px;
+  --radius-item: 20px;
+  --radius-sidebar: 36px;
+
+  /* texto */
+  --text-primary: #fff;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --text-muted: rgba(255, 255, 255, 0.7);
+  --divider: rgba(255, 255, 255, 0.12);
+
+  /* fontes */
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+
+  /* distância dos elementos até a borda da tela */
+  --space-edge: 32px;
+}
