@@ -12,12 +12,15 @@ interface ExternalServiceLocation {
   country: string;
   region: string;
   city?: string | null;
+  latitude?: number | null;   
+  longitude?: number | null;  
 }
 
 interface ExternalService {
   id: string;
   name: string;
   location: ExternalServiceLocation;
+  metrics_path?: string | null; 
 }
 
 @Injectable()
@@ -59,7 +62,10 @@ export class ServicesService {
           pais: item.location.country,
           regiao: item.location.region,
           cidade: item.location.city ?? null,
+          latitude: item.location.latitude ?? null,  
+          longitude: item.location.longitude ?? null,
         },
+        caminhoMetricas: item.metrics_path ?? null,
       };
     });
   }
@@ -124,7 +130,7 @@ export class ServicesService {
 
     const serviceLocation = location as Record<string, unknown>;
 
-    return (
+        return (
       typeof service.id === 'string' &&
       typeof service.name === 'string' &&
       typeof serviceLocation.region_code === 'string' &&
@@ -132,7 +138,20 @@ export class ServicesService {
       typeof serviceLocation.region === 'string' &&
       (typeof serviceLocation.city === 'string' ||
         serviceLocation.city === null ||
-        serviceLocation.city === undefined)
+        serviceLocation.city === undefined) &&
+      this.isOptionalNumber(serviceLocation.latitude) &&
+      this.isOptionalNumber(serviceLocation.longitude) &&
+      (typeof service.metrics_path === 'string' ||
+        service.metrics_path === null ||
+        service.metrics_path === undefined)
+    );
+  }
+
+  private isOptionalNumber(value: unknown): boolean {
+    return (
+      value === null ||
+      value === undefined ||
+      (typeof value === 'number' && Number.isFinite(value))
     );
   }
 }
