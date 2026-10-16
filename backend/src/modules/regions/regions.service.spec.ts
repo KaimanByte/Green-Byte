@@ -15,7 +15,7 @@ describe('RegionsService', () => {
   let repository: {
     findAll: jest.Mock;
     findByCode: jest.Mock;
-    upsert: jest.Mock;
+    upsertMany: jest.Mock;
   };
 
   const sudeste: Region = {
@@ -58,7 +58,8 @@ describe('RegionsService', () => {
     repository = {
       findAll: jest.fn(),
       findByCode: jest.fn(),
-      upsert: jest.fn(async (data: NewRegion) => data),
+      // Mock atualizado para upsertMany
+      upsertMany: jest.fn(async (data: NewRegion[]) => data),
     };
     service = new RegionsService(repository as unknown as RegionsRepository);
   });
@@ -121,7 +122,7 @@ describe('RegionsService', () => {
   });
 
   describe('syncRegions', () => {
-    it('consulta a API externa e grava cada região com upsert', async () => {
+    it('consulta a API externa e grava todas as regiões com upsertMany', async () => {
       fetchMock.mockResolvedValue({
         ok: true,
         status: 200,
@@ -137,10 +138,11 @@ describe('RegionsService', () => {
         'https://carbon.unilaunch.org/regions',
         expect.objectContaining({ method: 'GET' }),
       );
-      expect(repository.upsert).toHaveBeenCalledTimes(2);
-      expect(repository.upsert).toHaveBeenNthCalledWith(1, sudeste);
-      expect(repository.upsert).toHaveBeenNthCalledWith(
-        2,
+      
+      // Valida se o upsertMany foi chamado 1 vez com o array completo
+      expect(repository.upsertMany).toHaveBeenCalledTimes(1);
+      expect(repository.upsertMany).toHaveBeenCalledWith([
+        sudeste,
         expect.objectContaining({
           regionCode: 'us-east',
           regionName: 'Virginia',
@@ -148,7 +150,8 @@ describe('RegionsService', () => {
           carbonIntensity: 380,
           renewableSharePercent: 21,
         }),
-      );
+      ]);
+
       expect(result.total).toBe(2);
       expect(result.regioes[0]).toEqual({
         codigoRegiao: 'br-sudeste',
@@ -168,7 +171,7 @@ describe('RegionsService', () => {
       await expect(service.syncRegions()).rejects.toBeInstanceOf(
         BadGatewayException,
       );
-      expect(repository.upsert).not.toHaveBeenCalled();
+      expect(repository.upsertMany).not.toHaveBeenCalled();
     });
 
     it('converte falhas de conexão em Service Unavailable', async () => {
@@ -213,7 +216,7 @@ describe('RegionsService', () => {
       await expect(service.syncRegions()).rejects.toBeInstanceOf(
         BadGatewayException,
       );
-      expect(repository.upsert).not.toHaveBeenCalled();
+      expect(repository.upsertMany).not.toHaveBeenCalled();
     });
 
     it.each([
@@ -246,7 +249,7 @@ describe('RegionsService', () => {
         await expect(service.syncRegions()).rejects.toBeInstanceOf(
           BadGatewayException,
         );
-        expect(repository.upsert).not.toHaveBeenCalled();
+        expect(repository.upsertMany).not.toHaveBeenCalled();
       },
     );
 
@@ -261,7 +264,7 @@ describe('RegionsService', () => {
         total: 0,
         regioes: [],
       });
-      expect(repository.upsert).not.toHaveBeenCalled();
+      expect(repository.upsertMany).not.toHaveBeenCalled();
     });
   });
 });

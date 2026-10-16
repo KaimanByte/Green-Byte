@@ -36,6 +36,13 @@ export class RegionsService {
 
   async findAllRegions(): Promise<RegiaoResponseDto[]> {
     const regions = await this.regionsRepository.findAll();
+    
+    // Correção: Retorna os dados recém-sincronizados caso o banco estivesse vazio
+    if (regions.length === 0) {
+      const syncedRegions = await this.syncRegions();
+      return syncedRegions.regioes;
+    }
+    
     return regions.map((region) => this.toResponse(region));
   }
 
@@ -50,7 +57,7 @@ export class RegionsService {
   }
 
   /**
-   * Busca as regiões na API Greener Carbon Intensity e grava (upsert) no banco.
+   * Busca as regiões na API Greener Carbon Intensity e grava (upsertMany) no banco.
    * Todas as regiões são validadas antes da primeira gravação, para não deixar
    * o banco com dados parciais quando a API externa devolver algo inválido.
    */
@@ -80,12 +87,12 @@ export class RegionsService {
 
     if (externalRegions.length === 0) {
       this.logger.warn('A API externa de carbono retornou zero regiões.');
+      return { total: 0, regioes: [] };
     }
 
-    const saved: Region[] = [];
-    for (const external of externalRegions) {
-      saved.push(await this.regionsRepository.upsert(this.toNewRegion(external)));
-    }
+    // Otimização: Mapeia tudo e salva em lote (Batch Insert/Update) usando upsertMany
+    const newRegions: NewRegion[] = externalRegions.map((ext) => this.toNewRegion(ext));
+    const saved = await this.regionsRepository.upsertMany(newRegions);
 
     return {
       total: saved.length,

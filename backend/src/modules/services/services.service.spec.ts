@@ -1,32 +1,75 @@
-import {
-  BadGatewayException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { ServicesService } from './services.service';
+import { ServicesRepository } from './services.repository';
 
 describe('ServicesService', () => {
-  const originalFetch = global.fetch;
   let service: ServicesService;
-  let fetchMock: jest.Mock;
+  let repository: jest.Mocked<ServicesRepository>;
 
-  beforeEach(() => {
-    process.env.METRICS_API_BASE_URL = 'https://metrics.unilaunch.org/';
-    fetchMock = jest.fn();
-    global.fetch = fetchMock as unknown as typeof fetch;
-    service = new ServicesService();
+  const mockService = {
+    id: 'billing-api',
+    name: 'Billing API',
+    regionCode: 'br-sudeste',
+    status: 'active',
+  };
+
+  beforeEach(async () => {
+    // Configuração do módulo de teste com Mock do Repositório
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        ServicesService,
+        {
+          provide: ServicesRepository,
+          useValue: {
+            findAll: jest.fn(),
+            findById: jest.fn(),
+            upsertMany: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<ServicesService>(ServicesService);
+    repository = module.get(ServicesRepository);
   });
 
-  afterEach(() => {
-    global.fetch = originalFetch;
-    delete process.env.METRICS_API_BASE_URL;
-    jest.clearAllMocks();
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
-  it('consulta a API externa e normaliza serviço e localização', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => [
+  describe('findAll', () => {
+    it('should return an array of services', async () => {
+      repository.findAll.mockResolvedValue([mockService]);
+      const result = await service.findAll();
+      
+      expect(result).toEqual([mockService]);
+      expect(repository.findAll).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('findById', () => {
+    it('should return a service if it exists', async () => {
+      repository.findById.mockResolvedValue(mockService);
+      const result = await service.findById('billing-api');
+      
+      expect(result).toEqual(mockService);
+      expect(repository.findById).toHaveBeenCalledWith('billing-api');
+    });
+
+    it('should throw NotFoundException if service does not exist', async () => {
+      repository.findById.mockResolvedValue(null);
+      
+      await expect(service.findById('invalid-id')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repository.findById).toHaveBeenCalledWith('invalid-id');
+    });
+  });
+
+  describe('syncExternalServices', () => {
+    it('should map the external payload correctly and call upsertMany', async () => {
+      const externalPayload = [
         {
           id: 'billing-api',
           name: 'Billing API',
@@ -39,75 +82,22 @@ describe('ServicesService', () => {
             longitude: -46.6333,
           },
           metrics_path: '/metrics/billing-api',
-        },
+        }
+      ];
+
+      repository.upsertMany.mockResolvedValue([mockService]);
+
+      const result = await service.syncExternalServices(externalPayload as any);
+
+      expect(result).toEqual([mockService]);
+      expect(repository.upsertMany).toHaveBeenCalledWith([
         {
-          id: 'worker-api',
-          name: 'Worker API',
-          location: {
-            region_code: 'us-east',
-            country: 'United States',
-            region: 'Virginia',
-            city: null,
-          },
-        },
-      ],
+          id: 'billing-api',
+          name: 'Billing API',
+          regionCode: 'br-sudeste',
+          status: 'active',
+        }
+      ]);
     });
-
-    await expect(service.findAllServices()).resolves.toEqual([
-      {
-        id: 'billing-api',
-        nome: 'Billing API',
-        status: 'registrado',
-        localizacao: {
-          codigoRegiao: 'br-sudeste',
-          pais: 'Brazil',
-          regiao: 'Sudeste',
-          cidade: 'Sao Paulo',
-        },
-      },
-      {
-        id: 'worker-api',
-        nome: 'Worker API',
-        status: 'registrado',
-        localizacao: {
-          codigoRegiao: 'us-east',
-          pais: 'United States',
-          regiao: 'Virginia',
-          cidade: null,
-        },
-      },
-    ]);
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://metrics.unilaunch.org/services',
-      expect.objectContaining({ method: 'GET' }),
-    );
-  });
-
-  it('converte erros HTTP da API externa em Bad Gateway', async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 500 });
-
-    await expect(service.findAllServices()).rejects.toBeInstanceOf(
-      BadGatewayException,
-    );
-  });
-
-  it('converte falhas de conexão em Service Unavailable', async () => {
-    fetchMock.mockRejectedValue(new Error('network error'));
-
-    await expect(service.findAllServices()).rejects.toBeInstanceOf(
-      ServiceUnavailableException,
-    );
-  });
-
-  it('rejeita respostas que não sejam uma lista', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ services: [] }),
-    });
-
-    await expect(service.findAllServices()).rejects.toBeInstanceOf(
-      BadGatewayException,
-    );
   });
 });

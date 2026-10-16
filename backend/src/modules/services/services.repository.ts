@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { DatabaseService } from '../../database/database.service';
 import { services, Service, NewService } from './services.schema';
 
@@ -16,35 +16,24 @@ export class ServicesRepository {
       .select()
       .from(services)
       .where(eq(services.id, id));
-    
+
     return result[0] || null;
   }
 
-  async create(data: NewService): Promise<Service> {
-    const result = await this.dbService.db
+  async upsertMany(data: NewService[]): Promise<Service[]> {
+    if (data.length === 0) return [];
+
+    return this.dbService.db
       .insert(services)
       .values(data)
+      .onConflictDoUpdate({
+        target: services.id,
+        set: {
+          name: sql`EXCLUDED.name`,
+          regionCode: sql`EXCLUDED.region_code`,
+          status: sql`EXCLUDED.status`,
+        },
+      })
       .returning();
-      
-    return result[0];
-  }
-
-  async updateStatus(id: string, status: string): Promise<Service | null> {
-    const result = await this.dbService.db
-      .update(services)
-      .set({ status })
-      .where(eq(services.id, id))
-      .returning();
-      
-    return result[0] || null;
-  }
-
-  async delete(id: string): Promise<Service | null> {
-    const result = await this.dbService.db
-      .delete(services)
-      .where(eq(services.id, id))
-      .returning();
-      
-    return result[0] || null;
   }
 }

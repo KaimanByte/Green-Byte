@@ -3,39 +3,41 @@ import {
   GatewayTimeoutException,
   Injectable,
   Logger,
+  NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { ServicoResponseDto } from './dto/servico-response.dto';
+import { ServicesRepository } from './services.repository';
+import { ServiceResponseDto } from './dto/service.dto';
+import { Service, NewService } from './services.schema';
 
 interface ExternalServiceLocation {
   region_code: string;
   country: string;
   region: string;
   city?: string | null;
-  latitude?: number | null;   
-  longitude?: number | null;  
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 interface ExternalService {
   id: string;
   name: string;
   location: ExternalServiceLocation;
-  metrics_path?: string | null; 
+  metrics_path?: string | null;
 }
 
 @Injectable()
 export class ServicesService {
   private readonly logger = new Logger(ServicesService.name);
   private readonly servicesUrl: string;
-  private readonly requestTimeoutMs = 5_000;
+  private readonly requestTimeoutMs = 5000;
 
-  constructor() {
-    const baseUrl =
-      process.env.METRICS_API_BASE_URL || 'https://metrics.unilaunch.org';
+  constructor(private readonly servicesRepository: ServicesRepository) {
+    const baseUrl = process.env.METRICS_API_BASE_URL || 'https://metrics.unilaunch.org';
     this.servicesUrl = `${baseUrl.replace(/\/+$/, '')}/services`;
   }
 
-  async findAllServices(): Promise<ServicoResponseDto[]> {
+  async findAllServices(): Promise<ServiceResponseDto[]> {
     const payload = await this.fetchServices();
 
     if (!Array.isArray(payload)) {
@@ -44,30 +46,54 @@ export class ServicesService {
       );
     }
 
-    return payload.map((item: unknown) => {
+    const dtos: ServiceResponseDto[] = [];
+    const dbRecords: NewService[] = [];
+
+    for (const item of payload) {
       if (!this.isExternalService(item)) {
         throw new BadGatewayException(
           'A API externa de métricas retornou um serviço com campos inválidos.',
         );
       }
 
-      return {
+      dtos.push({
         id: item.id,
-        nome: item.name,
-        // A API externa lista os serviços registrados, mas não informa o estado
-        // de saúde operacional. Por isso, não os classificamos como "ativos".
-        status: 'registrado',
-        localizacao: {
-          codigoRegiao: item.location.region_code,
-          pais: item.location.country,
-          regiao: item.location.region,
-          cidade: item.location.city ?? null,
-          latitude: item.location.latitude ?? null,  
+        name: item.name,
+        status: 'registered',
+        regionCode: item.location.region_code,
+        location: {
+          country: item.location.country,
+          region: item.location.region,
+          city: item.location.city ?? null,
+          latitude: item.location.latitude ?? null,
           longitude: item.location.longitude ?? null,
         },
-        caminhoMetricas: item.metrics_path ?? null,
-      };
-    });
+        metricsPath: item.metrics_path ?? null,
+      });
+
+      dbRecords.push({
+        id: item.id,
+        name: item.name,
+        regionCode: item.location.region_code,
+        status: 'registered',
+      });
+    }
+
+    if (dbRecords.length > 0) {
+      this.servicesRepository.upsertMany(dbRecords).catch(err => 
+        this.logger.error('Falha ao sincronizar serviços com o banco de dados local', err.stack)
+      );
+    }
+
+    return dtos;
+  }
+
+  async findById(id: string): Promise<Service> {
+    const service = await this.servicesRepository.findById(id);
+    if (!service) {
+      throw new NotFoundException(`Service with ID ${id} not found`);
+    }
+    return service;
   }
 
   private async fetchServices(): Promise<unknown> {
@@ -80,78 +106,47 @@ export class ServicesService {
         signal: AbortSignal.timeout(this.requestTimeoutMs),
       });
     } catch (error: unknown) {
-      if (
-        error instanceof Error &&
-        (error.name === 'TimeoutError' || error.name === 'AbortError')
-      ) {
-        throw new GatewayTimeoutException(
-          'A API externa de métricas excedeu o tempo limite da requisição.',
-        );
+      if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
+        throw new GatewayTimeoutException('A API externa de métricas excedeu o tempo limite da requisição.');
       }
-
-      this.logger.error(
-        'Não foi possível conectar à API externa de métricas.',
-        error instanceof Error ? error.stack : undefined,
-      );
-      throw new ServiceUnavailableException(
-        'Não foi possível conectar à API externa de métricas.',
-      );
+      this.logger.error('Não foi possível conectar à API externa de métricas.', error instanceof Error ? error.stack : undefined);
+      throw new ServiceUnavailableException('Não foi possível conectar à API externa de métricas.');
     }
 
     if (!response.ok) {
-      this.logger.warn(
-        `A API externa de métricas respondeu com HTTP ${response.status}.`,
-      );
-      throw new BadGatewayException(
-        'A API externa de métricas não conseguiu listar os serviços.',
-      );
+      this.logger.warn(`A API externa de métricas respondeu com HTTP ${response.status}.`);
+      throw new BadGatewayException('A API externa de métricas não conseguiu listar os serviços.');
     }
 
     try {
       return await response.json();
     } catch {
-      throw new BadGatewayException(
-        'A API externa de métricas retornou uma resposta JSON inválida.',
-      );
+      throw new BadGatewayException('A API externa de métricas retornou uma resposta JSON inválida.');
     }
   }
 
   private isExternalService(value: unknown): value is ExternalService {
-    if (typeof value !== 'object' || value === null) {
-      return false;
-    }
+    if (typeof value !== 'object' || value === null) return false;
 
-    const service = value as Record<string, unknown>;
-    const location = service.location;
+    const s = value as Record<string, any>;
+    const loc = s.location;
 
-    if (typeof location !== 'object' || location === null) {
-      return false;
-    }
+    if (typeof loc !== 'object' || loc === null) return false;
 
-    const serviceLocation = location as Record<string, unknown>;
-
-        return (
-      typeof service.id === 'string' &&
-      typeof service.name === 'string' &&
-      typeof serviceLocation.region_code === 'string' &&
-      typeof serviceLocation.country === 'string' &&
-      typeof serviceLocation.region === 'string' &&
-      (typeof serviceLocation.city === 'string' ||
-        serviceLocation.city === null ||
-        serviceLocation.city === undefined) &&
-      this.isOptionalNumber(serviceLocation.latitude) &&
-      this.isOptionalNumber(serviceLocation.longitude) &&
-      (typeof service.metrics_path === 'string' ||
-        service.metrics_path === null ||
-        service.metrics_path === undefined)
+    return (
+      typeof s.id === 'string' &&
+      typeof s.name === 'string' &&
+      typeof loc.region_code === 'string' &&
+      typeof loc.country === 'string' &&
+      typeof loc.region === 'string' &&
+      (typeof loc.city === 'string' || loc.city == null) &&
+      this.isOptionalNumber(loc.latitude) &&
+      this.isOptionalNumber(loc.longitude) &&
+      (typeof s.metrics_path === 'string' || s.metrics_path == null)
     );
   }
 
   private isOptionalNumber(value: unknown): boolean {
-    return (
-      value === null ||
-      value === undefined ||
-      (typeof value === 'number' && Number.isFinite(value))
-    );
+    return value == null || (typeof value === 'number' && Number.isFinite(value));
   }
 }

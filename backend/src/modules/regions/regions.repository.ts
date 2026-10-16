@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { DatabaseService } from '../../database/database.service';
 import { regions, Region, NewRegion } from './regions.schema';
 
@@ -20,26 +20,27 @@ export class RegionsRepository {
     return result[0] || null;
   }
 
-  async upsert(data: NewRegion): Promise<Region> {
-    // esse método insere no banco se não existir, atualiza se já existir, sendo uma junção de insert e update, usando o regionCode como chave primária
-    const result = await this.dbService.db
+  async upsertMany(data: NewRegion[]): Promise<Region[]> {
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    return await this.dbService.db
       .insert(regions)
       .values(data)
       .onConflictDoUpdate({
         target: regions.regionCode,
         set: {
-          country: data.country,
-          regionName: data.regionName,
-          city: data.city,
-          latitude: data.latitude,
-          longitude: data.longitude,
-          carbonIntensity: data.carbonIntensity,
-          renewableSharePercent: data.renewableSharePercent,
+          country: sql`EXCLUDED.country`,
+          regionName: sql`EXCLUDED.region_name`, 
+          city: sql`EXCLUDED.city`,
+          latitude: sql`EXCLUDED.latitude`,
+          longitude: sql`EXCLUDED.longitude`,
+          carbonIntensity: sql`EXCLUDED.carbon_intensity`,
+          renewableSharePercent: sql`EXCLUDED.renewable_share_percent`,
         }
       })
       .returning();
-      
-    return result[0];
   }
 
   async delete(regionCode: string): Promise<Region | null> {

@@ -80,8 +80,8 @@ export class CollectionsRepository {
       })
       .from(collections)
       .innerJoin(services, eq(collections.serviceId, services.id))
-      // Une a coluna codigoRegiao (do services) com regionCode (do regions)
-      .innerJoin(regions, eq(services.codigoRegiao, regions.regionCode))
+      // Une a coluna regionCode (do services) com regionCode (do regions)
+      .innerJoin(regions, eq(services.regionCode, regions.regionCode))
       .where(
         and(gte(collections.timestamp, start), lte(collections.timestamp, end)),
       )

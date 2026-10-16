@@ -3,9 +3,11 @@ import { regions } from '../regions/regions.schema';
 
 export const services = pgTable('services', {
   id: varchar('id', { length: 100 }).primaryKey(),
-  nome: varchar('nome', { length: 255 }).notNull(),
-  codigoRegiao: varchar('codigo_regiao', { length: 50 }).references(() => regions.regionCode).notNull(),
-  status: varchar('status', { length: 50 }).notNull().default('ativo'),
+  name: varchar('name', { length: 255 }).notNull(),
+  regionCode: varchar('region_code', { length: 50 })
+    .references(() => regions.regionCode)
+    .notNull(),
+  status: varchar('status', { length: 50 }).notNull().default('active'),
 });
 
 export type Service = typeof services.$inferSelect;
