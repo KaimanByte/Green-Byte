@@ -1,0 +1,108 @@
+/* ---------- botão de vidro líquido ---------- */
+.liquid {
+  /* força dos brilhos: ajuste aqui se ficar forte ou fraco demais */
+  --liquid-edge: rgba(255, 255, 255, 0.7);
+  --liquid-edge-soft: rgba(255, 255, 255, 0.4);
+  --liquid-shine: rgba(255, 255, 255, 0.45);
+  --liquid-glow: rgba(120, 255, 210, 0.35); /* brilho verde-água interno */
+  --liquid-reflection: 14px; /* distância do reflexo do ícone */
+    --liquid-frost: 0.1;      /* escurecimento do vidro (o --glass-frost do estilo 2) */
+  --liquid-blur: 20px;
+--liquid-saturation: 3;       /* desfoque do fundo */
+
+  position: relative;
+   border: none;
+  background: hsl(0 0% 0% / var(--liquid-frost));
+  -webkit-backdrop-filter: blur(var(--liquid-blur)) saturate(var(--liquid-saturation));
+  backdrop-filter: blur(var(--liquid-blur)) saturate(var(--liquid-saturation));
+   box-shadow:
+    /* brilhos nos cantos opostos (estilo 1) */
+    inset 2px -2px 1px -1px var(--liquid-edge),
+    inset -2px 2px 1px -1px var(--liquid-edge),
+    inset 6px -6px 1px -6px var(--liquid-edge-soft),
+    inset -6px 6px 1px -6px var(--liquid-edge-soft),
+    /* aro de luz por dentro (estilo 2) */
+    inset 0 0 2px 1px rgba(255, 255, 255, 0.35),
+    inset 0 0 10px 4px rgba(255, 255, 255, 0.15),
+    /* profundidade suave (estilo 2) */
+    inset 0 4px 16px rgba(17, 17, 26, 0.05),
+    inset 0 8px 24px rgba(17, 17, 26, 0.05),
+    inset 0 6px 56px rgba(17, 17, 26, 0.05),
+    /* sombra externa */
+    0 4px 8px rgba(0, 0, 0, 0.35);
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.25s;
+}
+
+/* brilho interno, deslocado para baixo (no original era uma sombra preta) */
+.liquid::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 35%;
+  height: calc(100% - 16px);
+  border-radius: inherit;
+  border: 1px solid var(--liquid-glow);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+/* reflexo diagonal nos cantos */
+.liquid::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    45deg,
+    var(--liquid-shine) 0%,
+    transparent 25%,
+    transparent 75%,
+    var(--liquid-shine) 100%
+  );
+  filter: blur(7px);
+  pointer-events: none;
+}
+
+/* anel claro interno (o .circle-overlay do original) */
+.liquid__ring {
+  position: absolute;
+  inset: 4px;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+/* reflexo do ícone embaixo dele */
+.liquid > svg {
+  filter: drop-shadow(0 var(--liquid-reflection) 3px rgba(255, 255, 255, 0.12));
+}
+
+.liquid:hover {
+  transform: translateY(-3px);
+}
+
+.liquid:active {
+  transform: scale(0.94);
+}
+
+/* dentro da barra lateral o fundo é liso: desfoque não faz diferença */
+nav .liquid {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid {
+    transition: none;
+  }
+
+  .liquid:hover,
+  .liquid:active {
+    transform: none;
+  }
+}

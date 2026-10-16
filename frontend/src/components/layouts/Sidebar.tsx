@@ -40,12 +40,13 @@ export function Sidebar({ isOpen, onToggle, onClose, items, activeId, onSelect }
 
       <button
         type="button"
-        className={`glass ${isOpen ? 'glass--flat' : ''} ${styles.toggle}`}
+        className={`liquid ${styles.toggle}`}
         onClick={onToggle}
         aria-label={isOpen ? 'Fechar menu' : 'Abrir menu'}
         aria-expanded={isOpen}
         aria-controls="menu-lateral"
       >
+        <span className="liquid__ring" aria-hidden="true" />
         <MenuIcon open={isOpen} />
       </button>
 
@@ -65,7 +66,7 @@ export function Sidebar({ isOpen, onToggle, onClose, items, activeId, onSelect }
               <li key={item.id}>
                 <button
                   type="button"
-                  className={`${styles.item} ${isActive ? styles.itemActive : ''}`}
+                 className={`${styles.item} ${isActive ? `liquid ${styles.itemActive}` : ''}`}
                   aria-current={isActive ? 'page' : undefined}
                   onClick={() => onSelect(item.id)}
                 >

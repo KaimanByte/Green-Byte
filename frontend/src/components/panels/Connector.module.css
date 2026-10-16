@@ -1,0 +1,14 @@
+.connector {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.connector line {
+  stroke: rgba(255, 255, 255, 0.7);
+  stroke-width: 1.5;
+  transition: opacity 0.2s;
+}

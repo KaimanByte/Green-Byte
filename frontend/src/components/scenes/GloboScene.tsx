@@ -1,6 +1,8 @@
 import { OrbitControls, useTexture } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
+import type {Region} from '../../data/regions'
+import { RegionMarker } from './RegionMarker'
 import * as THREE from 'three'
 
 
@@ -44,7 +46,14 @@ function Starfield() {
   )
 }
 
-function Earth() {
+
+type EarthProps = {
+  regions: Region[]
+  selectedCode: string | null
+  onSelectRegion: (code: string) => void
+}
+
+function Earth({ regions, selectedCode, onSelectRegion }: EarthProps) {
   const earthRef = useRef<THREE.Mesh>(null)
   const cloudsRef = useRef<THREE.Mesh>(null)
   const [surfaceMap, normalMap, cloudsMap] = useTexture([
@@ -56,11 +65,12 @@ function Earth() {
   surfaceMap.colorSpace = THREE.SRGBColorSpace
   cloudsMap.colorSpace = THREE.SRGBColorSpace
 
-  useFrame((_, delta) => {
-    if (earthRef.current) earthRef.current.rotation.y += delta * 0.025
+
+  //parar qnd selecionar regiao
+   useFrame((_, delta) => {
+    if (earthRef.current && !selectedCode) earthRef.current.rotation.y += delta * 0.025
     if (cloudsRef.current) cloudsRef.current.rotation.y += delta * 0.032
   })
-
   return (
     <group>
       <mesh ref={earthRef}>
@@ -72,6 +82,15 @@ function Earth() {
           roughness={0.92}
           metalness={0}
         />
+        {regions.map((region) => (
+          <RegionMarker
+            key={region.code}
+            region={region}
+            radius={1.35}
+            isSelected={region.code === selectedCode}
+            onSelect={onSelectRegion}
+          />
+        ))}
       </mesh>
       <mesh ref={cloudsRef}>
         <sphereGeometry args={[1.362, 72, 72]} />
@@ -110,7 +129,7 @@ function CameraFit() {
   return null
 }
 
-export function GloboScene() {
+export function GloboScene({ regions, selectedCode, onSelectRegion }: EarthProps) {
   return (
     <main className="App" aria-label="Terra no espaço">
       <Canvas
@@ -124,7 +143,11 @@ export function GloboScene() {
         <ambientLight intensity={0.36} />
         <directionalLight position={[-4, 2, 5]} intensity={3.8} />
         <Starfield />
-        <Earth />
+         <Earth
+          regions={regions}
+          selectedCode={selectedCode}
+          onSelectRegion={onSelectRegion}
+        />
         <OrbitControls
           enablePan={false}
           minDistance={3.4}
