@@ -7,6 +7,7 @@ import {
 import { RegionsRepository } from './regions.repository';
 import { RegionsService } from './regions.service';
 import { NewRegion, Region } from './regions.schema';
+import { jest } from '@jest/globals';
 
 describe('RegionsService', () => {
   const originalFetch = global.fetch;
@@ -94,6 +95,13 @@ describe('RegionsService', () => {
 
     it('retorna lista vazia quando não há regiões gravadas', async () => {
       repository.findAll.mockResolvedValue([]);
+      
+      // Mock do fetch para simular que a API externa também retornou zero regiões
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ regions: [], total: 0 }),
+      });
 
       await expect(service.findAllRegions()).resolves.toEqual([]);
     });

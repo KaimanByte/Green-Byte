@@ -2,6 +2,7 @@ import { CollectionsService } from './collections.service';
 import { CollectionsRepository } from './collections.repository';
 import { ServicesService } from '../services/services.service';
 import { RegionsService } from '../regions/regions.service';
+import { jest } from '@jest/globals';
 
 describe('CollectionsService', () => {
     const originalFetch = global.fetch;

@@ -1,103 +1,189 @@
+import { jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  GatewayTimeoutException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ServicesService } from './services.service';
 import { ServicesRepository } from './services.repository';
 
 describe('ServicesService', () => {
   let service: ServicesService;
-  let repository: jest.Mocked<ServicesRepository>;
-
-  const mockService = {
-    id: 'billing-api',
-    name: 'Billing API',
-    regionCode: 'br-sudeste',
-    status: 'active',
+  let repository: {
+    findById: jest.Mock;
+    upsertMany: jest.Mock;
   };
+  let fetchMock: jest.Mock;
+  const originalFetch = global.fetch;
 
   beforeEach(async () => {
-    // Configuração do módulo de teste com Mock do Repositório
+    // Configura as variáveis de ambiente e o mock do fetch para o ambiente de testes
+    process.env.METRICS_API_BASE_URL = 'https://metrics.unilaunch.org';
+    fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    repository = {
+      findById: jest.fn(),
+      upsertMany: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ServicesService,
         {
           provide: ServicesRepository,
-          useValue: {
-            findAll: jest.fn(),
-            findById: jest.fn(),
-            upsertMany: jest.fn(),
-          },
+          useValue: repository,
         },
       ],
     }).compile();
 
     service = module.get<ServicesService>(ServicesService);
-    repository = module.get(ServicesRepository);
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    delete process.env.METRICS_API_BASE_URL;
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  describe('findAll', () => {
-    it('should return an array of services', async () => {
-      repository.findAll.mockResolvedValue([mockService]);
-      const result = await service.findAll();
-      
-      expect(result).toEqual([mockService]);
-      expect(repository.findAll).toHaveBeenCalledTimes(1);
+  describe('findAllServices', () => {
+    it('deve buscar na API, retornar os DTOs e realizar o upsert no banco em background', async () => {
+      const externalPayload = [
+        {
+          id: 'srv-1',
+          name: 'Serviço Alpha',
+          location: {
+            region_code: 'BR-SP',
+            country: 'Brasil',
+            region: 'São Paulo',
+            city: 'Jacareí',
+            latitude: -23.3053,
+            longitude: -45.9658,
+          },
+          metrics_path: '/metrics/alpha',
+        },
+      ];
+
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => externalPayload,
+      });
+
+      repository.upsertMany.mockResolvedValue(undefined);
+
+      const result = await service.findAllServices();
+
+      expect(result).toEqual([
+        {
+          id: 'srv-1',
+          name: 'Serviço Alpha',
+          status: 'registered',
+          regionCode: 'BR-SP',
+          location: {
+            country: 'Brasil',
+            region: 'São Paulo',
+            city: 'Jacareí',
+            latitude: -23.3053,
+            longitude: -45.9658,
+          },
+          metricsPath: '/metrics/alpha',
+        },
+      ]);
+
+      expect(repository.upsertMany).toHaveBeenCalledWith([
+        {
+          id: 'srv-1',
+          name: 'Serviço Alpha',
+          regionCode: 'BR-SP',
+          status: 'registered',
+        },
+      ]);
+      expect(repository.upsertMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('deve lançar BadGatewayException se a API retornar um formato que não seja array', async () => {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({ unexpected: 'format' }),
+      });
+
+      await expect(service.findAllServices()).rejects.toThrow(BadGatewayException);
+      expect(repository.upsertMany).not.toHaveBeenCalled();
+    });
+
+    it('deve lançar BadGatewayException se a API retornar um serviço com campos inválidos', async () => {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => [{ id: 'srv-1', name: 'Incompleto, faltando location' }],
+      });
+
+      await expect(service.findAllServices()).rejects.toThrow(BadGatewayException);
+    });
+
+    it('deve lançar GatewayTimeoutException se a requisição exceder o tempo limite', async () => {
+      const timeoutError = new Error('Timeout');
+      timeoutError.name = 'TimeoutError';
+      fetchMock.mockRejectedValue(timeoutError);
+
+      await expect(service.findAllServices()).rejects.toThrow(GatewayTimeoutException);
+    });
+
+    it('deve lançar ServiceUnavailableException se houver falha de rede', async () => {
+      fetchMock.mockRejectedValue(new Error('Network Error'));
+
+      await expect(service.findAllServices()).rejects.toThrow(ServiceUnavailableException);
+    });
+
+    it('deve lançar BadGatewayException se a resposta HTTP não for ok (ex: 500)', async () => {
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 500,
+      });
+
+      await expect(service.findAllServices()).rejects.toThrow(BadGatewayException);
+    });
+
+    it('deve lançar BadGatewayException se o parse do JSON falhar', async () => {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => {
+          throw new Error('Invalid JSON');
+        },
+      });
+
+      await expect(service.findAllServices()).rejects.toThrow(BadGatewayException);
     });
   });
 
   describe('findById', () => {
-    it('should return a service if it exists', async () => {
-      repository.findById.mockResolvedValue(mockService);
-      const result = await service.findById('billing-api');
-      
-      expect(result).toEqual(mockService);
-      expect(repository.findById).toHaveBeenCalledWith('billing-api');
+    it('deve retornar um serviço se ele existir', async () => {
+      const mockDbService = {
+        id: 'srv-1',
+        name: 'Serviço Alpha',
+        regionCode: 'BR-SP',
+        status: 'registered',
+      };
+
+      repository.findById.mockResolvedValue(mockDbService);
+
+      const result = await service.findById('srv-1');
+
+      expect(result).toEqual(mockDbService);
+      expect(repository.findById).toHaveBeenCalledWith('srv-1');
+      expect(repository.findById).toHaveBeenCalledTimes(1);
     });
 
-    it('should throw NotFoundException if service does not exist', async () => {
+    it('deve lançar NotFoundException se o serviço não existir', async () => {
       repository.findById.mockResolvedValue(null);
-      
-      await expect(service.findById('invalid-id')).rejects.toThrow(
-        NotFoundException,
-      );
-      expect(repository.findById).toHaveBeenCalledWith('invalid-id');
-    });
-  });
 
-  describe('syncExternalServices', () => {
-    it('should map the external payload correctly and call upsertMany', async () => {
-      const externalPayload = [
-        {
-          id: 'billing-api',
-          name: 'Billing API',
-          location: {
-            region_code: 'br-sudeste',
-            country: 'Brazil',
-            region: 'Sudeste',
-            city: 'Sao Paulo',
-            latitude: -23.5505,
-            longitude: -46.6333,
-          },
-          metrics_path: '/metrics/billing-api',
-        }
-      ];
-
-      repository.upsertMany.mockResolvedValue([mockService]);
-
-      const result = await service.syncExternalServices(externalPayload as any);
-
-      expect(result).toEqual([mockService]);
-      expect(repository.upsertMany).toHaveBeenCalledWith([
-        {
-          id: 'billing-api',
-          name: 'Billing API',
-          regionCode: 'br-sudeste',
-          status: 'active',
-        }
-      ]);
+      await expect(service.findById('srv-1')).rejects.toThrow(NotFoundException);
+      expect(repository.findById).toHaveBeenCalledWith('srv-1');
     });
   });
 });
