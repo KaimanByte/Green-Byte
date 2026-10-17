@@ -7,8 +7,11 @@ import './styles/glass.css'
 import './styles/liquid.css'
 import './index.css'
 import App from './App.tsx'
+import { GreenDataProvider } from './providers/GreenDataProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <GreenDataProvider>
+      <App />
+    </GreenDataProvider>
   </StrictMode>)

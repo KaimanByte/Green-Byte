@@ -11,29 +11,29 @@ type Props = {
 }
 
 export function RegionPanel({ region, onClose, panelRef }: Props) {
-  const { regions, services, loading } = useGreenData();
+  const { regions, services, loading, error } = useGreenData();
 
   // Função ultra-robusta que remove hífens, underscores, espaços e coloca em minúsculas (ex: 'ca-central' e 'cacentral' viram exatamente a mesma coisa)
-  const normalize = (str: string) => String(str || '').toLowerCase().replace(/[-_\s]/g, '').trim();
+  const normalize = (str: string | null | undefined) => String(str ?? '').toLowerCase().replace(/[-_\s]/g, '').trim();
 
-  const regionIdentifier = normalize((region as any).regionCode || region.code || region.city || '');
+  const regionIdentifier = normalize(region.code || region.city);
 
-  // Procura a região correspondente ignorando diferenças de hífens
-  const realRegion = regions?.find((r: any) => {
-    const code = normalize(r.regionCode || r.name || '');
-    const city = normalize(r.city || '');
-    return code === regionIdentifier || city === regionIdentifier || regionIdentifier.includes(code);
-  }) || region;
+  // Procura a região correspondente vinda do backend ignorando diferenças de hífens
+  const apiRegion = regions.find((r) => {
+    const code = normalize(r.regionCode);
+    const city = normalize(r.city);
+    return code === regionIdentifier || city === regionIdentifier || (code !== '' && regionIdentifier.includes(code));
+  });
   
   // Normaliza e filtra os serviços associados à região
-  const hostedServices = services?.filter((s: any) => {
-    const serviceRegion = normalize(s.regionCode || s.region || '');
-    return serviceRegion === regionIdentifier || regionIdentifier.includes(serviceRegion) || serviceRegion.includes(regionIdentifier);
-  }) || [];
+  const hostedServices = services.filter((s) => {
+    const serviceRegion = normalize(s.regionCode);
+    return serviceRegion === regionIdentifier || (serviceRegion !== '' && (regionIdentifier.includes(serviceRegion) || serviceRegion.includes(regionIdentifier)));
+  });
 
-  // Captura correta da intensidade e da percentagem renovável (lendo camelCase ou snake_case)
-  const currentIntensity = realRegion.carbonIntensity || realRegion.carbon_intensity || 0;
-  const currentRenewable = realRegion.renewableShare || realRegion.renewable_share || region.renewableShare || 0;
+  // Prefere os valores do backend; usa os dados locais do globo como fallback
+  const currentIntensity = apiRegion?.carbonIntensity ?? region.carbonIntensity;
+  const currentRenewable = apiRegion?.renewableSharePercent ?? region.renewableShare;
   
   const level = getCarbonLevel(currentIntensity);
 
@@ -63,10 +63,10 @@ export function RegionPanel({ region, onClose, panelRef }: Props) {
 
       <header className={styles.header}>
         <h2 id="region-panel-title" className={styles.title}>
-          {realRegion.city || region.city}
+          {apiRegion?.city || region.city}
         </h2>
         <p className={styles.subtitle}>
-          {realRegion.area || region.area} · {realRegion.country || region.country}
+          {apiRegion?.region || region.area} · {apiRegion?.country || region.country}
         </p>
       </header>
 
@@ -106,9 +106,13 @@ export function RegionPanel({ region, onClose, panelRef }: Props) {
           <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
             A sincronizar...
           </p>
+        ) : error && hostedServices.length === 0 ? (
+          <p role="alert" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
+            Não foi possível carregar os serviços: {error}
+          </p>
         ) : hostedServices.length > 0 ? (
           <ul className={styles.services}>
-            {hostedServices.map((service: any) => (
+            {hostedServices.map((service) => (
               <li key={service.id || service.name}>{service.name || service.id}</li>
             ))}
           </ul>
