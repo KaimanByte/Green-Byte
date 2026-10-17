@@ -161,14 +161,14 @@ export class RegionsService {
 
   private toResponse(region: Region): RegiaoResponseDto {
     return {
-      codigoRegiao: region.regionCode,
-      pais: region.country,
-      regiao: region.regionName,
-      cidade: region.city ?? null,
+      regionCode: region.regionCode,
+      country: region.country,
+      region: region.regionName,
+      city: region.city ?? null,
       latitude: region.latitude,
       longitude: region.longitude,
-      intensidadeCarbono: region.carbonIntensity,
-      percentualRenovavel: region.renewableSharePercent,
+      carbonIntensity: region.carbonIntensity,
+      renewableSharePercent: region.renewableSharePercent,
     };
   }
 

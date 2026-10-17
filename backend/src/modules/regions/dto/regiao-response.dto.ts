@@ -2,13 +2,13 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class RegiaoResponseDto {
   @ApiProperty({ example: 'br-sudeste', description: 'Código da região' })
-  codigoRegiao: string;
+  regionCode: string;
 
   @ApiProperty({ example: 'Brazil', description: 'País da região' })
-  pais: string;
+  country: string;
 
   @ApiProperty({ example: 'Sudeste', description: 'Nome da região' })
-  regiao: string;
+  region: string;
 
   @ApiProperty({
     example: 'Sao Paulo',
@@ -16,7 +16,7 @@ export class RegiaoResponseDto {
     type: String,
     nullable: true,
   })
-  cidade: string | null;
+  city: string | null;
 
   @ApiProperty({ example: -23.5505, description: 'Latitude aproximada da região' })
   latitude: number;
@@ -28,11 +28,11 @@ export class RegiaoResponseDto {
     example: 85,
     description: 'Intensidade de carbono da matriz elétrica, em gCO₂e/kWh',
   })
-  intensidadeCarbono: number;
+  carbonIntensity: number;
 
   @ApiProperty({
     example: 83,
     description: 'Participação estimada de fontes renováveis na matriz elétrica (%)',
   })
-  percentualRenovavel: number;
+  renewableSharePercent: number;
 }

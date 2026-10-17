@@ -41,12 +41,25 @@ export class CollectionsService {
     return collections;
   }
 
-  async getEmissionsByRegion(start: Date, end: Date): Promise<RegionEmissions[]> {
-    return this.collectionsRepository.getEmissionsByRegion(start, end);
+  async getEmissionsByRegion(start?: Date, end?: Date): Promise<RegionEmissions[]> {
+    // Se 'end' não for uma data válida, usa a data/hora atual
+    const validEnd = end instanceof Date && !isNaN(end.getTime()) ? end : new Date();
+
+    // Se 'start' não for uma data válida, retrocede 24 horas a partir do 'validEnd'
+    const validStart = start instanceof Date && !isNaN(start.getTime())
+      ? start
+      : new Date(validEnd.getTime() - 24 * 60 * 60 * 1000);
+
+    return this.collectionsRepository.getEmissionsByRegion(validStart, validEnd);
   }
 
-  async getEmissionsByService(start: Date, end: Date): Promise<ServiceEmissions[]> {
-    return this.collectionsRepository.getEmissionsByService(start, end);
+  async getEmissionsByService(start?: Date, end?: Date): Promise<ServiceEmissions[]> {
+    const validEnd = end instanceof Date && !isNaN(end.getTime()) ? end : new Date();
+    const validStart = start instanceof Date && !isNaN(start.getTime())
+      ? start
+      : new Date(validEnd.getTime() - 24 * 60 * 60 * 1000);
+
+    return this.collectionsRepository.getEmissionsByService(validStart, validEnd);
   }
 
   /**
@@ -54,7 +67,7 @@ export class CollectionsService {
    */
   async syncCollections(): Promise<SyncCollectionsResponseDto> {
     const services = await this.servicesService.findAllServices();
-    
+
     if (services.length === 0) {
       this.logger.warn('Nenhum serviço registrado para coletar métricas.');
       return { total: 0, collections: [] };
@@ -65,10 +78,10 @@ export class CollectionsService {
     for (const service of services) {
       try {
         const payload = await this.fetchServiceMetrics(service.id);
-        
+
         // Busca a intensidade de carbono baseada no regionCode do serviço
         const region = await this.regionsService.findRegionByCode(service.regionCode);
-        const carbonIntensity = region.intensidadeCarbono; // Baseado no seu DTO de região
+        const carbonIntensity = region.carbonIntensity; // Baseado no seu DTO de região
 
         // Algoritmo simulado de cálculo de energia em kWh baseado no uso (ajuste conforme a regra de negócio real)
         const powerWatts = (payload.metrics.cpu_percent * 2) + (payload.metrics.memory_gb * 1.5) + (payload.metrics.disk_gb * 0.5);
