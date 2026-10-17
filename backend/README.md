@@ -1,4 +1,4 @@
-<p align="center">
+1<p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
 
@@ -46,16 +46,45 @@ $ npm run start:prod
 
 ## Run tests
 
+Os testes unitários usam [Jest](https://jestjs.io/) com `ts-jest` e `@nestjs/testing`. A configuração está em `jest.config.ts`.
+
+Todos os comandos abaixo devem ser executados dentro da pasta `backend/`:
+
 ```bash
-# unit tests
-$ npm run test
+# instalar dependências (apenas na primeira vez)
+$ npm install
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# executar toda a suíte de testes unitários
+$ npm test
 ```
+
+Ao final da execução, o Jest exibe o resumo (`Test Suites: X passed`, `Tests: Y passed`). O comando retorna código `0` quando todos os testes passam.
+
+Outros comandos úteis:
+
+```bash
+# modo watch (reexecuta os testes ao salvar arquivos)
+$ npm run test:watch
+
+# relatório de cobertura (gerado em ./coverage)
+$ npm run test:cov
+
+# executar um único arquivo de teste
+$ npm test -- src/app.controller.spec.ts
+
+# executar testes cujo nome contenha um texto
+$ npm test -- -t "Hello World"
+
+# testes e2e (requerem o ambiente configurado)
+$ npm run test:e2e
+```
+
+> **Nota:** o script `test` usa `node --experimental-vm-modules` porque o projeto roda em ESM. O aviso `ExperimentalWarning: VM Modules is an experimental feature` no terminal é esperado e não indica erro. Mensagens de log do Nest com `ERROR`/`WARN` durante a execução também são esperadas: elas vêm de testes que simulam falhas de APIs externas.
+
+### Convenções
+
+- Arquivos de teste unitário ficam ao lado do código testado e terminam em `.spec.ts` (ex.: `src/app.controller.spec.ts`).
+- Dependências externas (repositórios, banco de dados, APIs) devem ser substituídas por mocks, usando `Test.createTestingModule` com providers `useValue`.
 
 ## Deployment
 
