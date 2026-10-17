@@ -12,3 +12,14 @@
   stroke-width: 1.5;
   transition: opacity 0.2s;
 }
+
+/* acima do fundo desfocado do menu (10), abaixo do painel do dashboard (15) */
+.overlay {
+  z-index: 12;
+}
+
+.overlay line {
+  opacity: 0;
+  /* espera a barra lateral terminar de abrir antes de aparecer */
+  transition: opacity 0.25s 0.3s;
+}

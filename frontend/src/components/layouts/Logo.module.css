@@ -1,0 +1,19 @@
+/* canto superior direito, alinhado ao centro do botão do menu (64px) */
+.logo {
+  position: fixed;
+  top: calc(var(--space-edge) + 32px);
+  right: var(--space-edge);
+  /* abaixo do fundo desfocado do menu (10): fica desfocada junto com o globo */
+  z-index: 5;
+  height: 48px;
+  width: auto;
+  transform: translateY(-50%);
+  pointer-events: none;
+  user-select: none;
+}
+
+@media (max-width: 760px) {
+  .logo {
+    height: 36px;
+  }
+}

@@ -46,8 +46,7 @@
      fica exatamente a 16px da borda de dentro da barra */
   --panel-inset: 16px;
   --toggle-end: calc(var(--panel-inset) + 64px);
-    /* película escura em vez de branca: some no fundo preto, mas continua legível */
-  background: rgba(8, 14, 12, 0.55);
+  /* fundo, brilho e desfoque vêm do .glass (styles/glass.css) */
   
 
   position: fixed;

@@ -1,10 +1,10 @@
 /* ---------- botão de vidro líquido ---------- */
 .liquid {
   /* força dos brilhos: ajuste aqui se ficar forte ou fraco demais */
-  --liquid-edge: rgba(255, 255, 255, 0.7);
-  --liquid-edge-soft: rgba(255, 255, 255, 0.4);
-  --liquid-shine: rgba(255, 255, 255, 0.45);
-  --liquid-glow: rgba(120, 255, 210, 0.35); /* brilho verde-água interno */
+  --liquid-edge: rgba(255, 255, 255, 0.32);
+  --liquid-edge-soft: rgba(255, 255, 255, 0.12);
+  --liquid-shine: rgba(255, 255, 255, 0.1);
+  --liquid-glow: rgba(120, 255, 210, 0.1); /* brilho verde-água interno */
   --liquid-reflection: 14px; /* distância do reflexo do ícone */
     --liquid-frost: 0.1;      /* escurecimento do vidro (o --glass-frost do estilo 2) */
   --liquid-blur: 20px;
@@ -22,8 +22,8 @@
     inset 6px -6px 1px -6px var(--liquid-edge-soft),
     inset -6px 6px 1px -6px var(--liquid-edge-soft),
     /* aro de luz por dentro (estilo 2) */
-    inset 0 0 2px 1px rgba(255, 255, 255, 0.35),
-    inset 0 0 10px 4px rgba(255, 255, 255, 0.15),
+    inset 0 0 2px 1px rgba(255, 255, 255, 0.12),
+    inset 0 0 10px 4px rgba(255, 255, 255, 0.04),
     /* profundidade suave (estilo 2) */
     inset 0 4px 16px rgba(17, 17, 26, 0.05),
     inset 0 8px 24px rgba(17, 17, 26, 0.05),
@@ -72,14 +72,14 @@
   position: absolute;
   inset: 4px;
   border-radius: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   filter: blur(1px);
   pointer-events: none;
 }
 
 /* reflexo do ícone embaixo dele */
 .liquid > svg {
-  filter: drop-shadow(0 var(--liquid-reflection) 3px rgba(255, 255, 255, 0.12));
+  filter: drop-shadow(0 var(--liquid-reflection) 3px rgba(255, 255, 255, 0.04));
 }
 
 .liquid:hover {

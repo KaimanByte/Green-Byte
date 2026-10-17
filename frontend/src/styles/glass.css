@@ -1,9 +1,16 @@
+/* ---------- vidro ----------
+   transparente e desfocado, sem brilhos: só um contorno fino.
+   tudo em background + box-shadow (sem ::before/::after),
+   assim nada "rola" junto com o conteúdo dos painéis com scroll */
 .glass {
+  border: none;
   background: var(--glass-fill);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  backdrop-filter: blur(var(--glass-blur));
+  box-shadow:
+    /* contorno fino do vidro */
+    inset 0 0 0 1px var(--glass-highlight),
+    var(--glass-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
 }
 
 .glass--flat {
@@ -14,13 +21,13 @@
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass {
-    background: rgba(20, 32, 28, 0.85);
+    --glass-fill: rgba(20, 26, 28, 0.88);
   }
 }
 
 @media (prefers-reduced-transparency: reduce) {
   .glass {
-    background: rgba(20, 32, 28, 0.95);
+    --glass-fill: rgba(20, 26, 28, 0.95);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }

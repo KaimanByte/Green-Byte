@@ -68,6 +68,7 @@ export function Sidebar({ isOpen, onToggle, onClose, items, activeId, onSelect }
                   type="button"
                  className={`${styles.item} ${isActive ? `liquid ${styles.itemActive}` : ''}`}
                   aria-current={isActive ? 'page' : undefined}
+                  data-menu-item={item.id}
                   onClick={() => onSelect(item.id)}
                 >
                   <span className={styles.dot} aria-hidden="true" />

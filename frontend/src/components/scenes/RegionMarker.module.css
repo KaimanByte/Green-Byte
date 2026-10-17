@@ -1,5 +1,8 @@
 .marker {
   --marker-scale: 1;
+  /* deslocamento pra afastar marcadores que se sobrepõem (vem do GloboScene) */
+  --offset-x: 0px;
+  --offset-y: 0px;
 
   width: 56px;
   height: 56px;
@@ -7,17 +10,17 @@
   border-radius: 18px;
   display: grid;
   place-items: center;
-  transform: scale(var(--marker-scale));
+  transform: translate(var(--offset-x), var(--offset-y)) scale(var(--marker-scale));
   /* só a opacidade anima: a escala muda a cada quadro e não pode "atrasar" */
   transition: opacity 0.2s;
 }
 
 .marker:hover {
-  transform: scale(calc(var(--marker-scale) * 1.1));
+  transform: translate(var(--offset-x), var(--offset-y)) scale(calc(var(--marker-scale) * 1.1));
 }
 
 .marker:active {
-  transform: scale(calc(var(--marker-scale) * 0.94));
+  transform: translate(var(--offset-x), var(--offset-y)) scale(calc(var(--marker-scale) * 0.94));
 }
 
 .marker:focus-visible {
@@ -27,7 +30,7 @@
 
 /* selecionado: brilhos mais fortes */
 .selected {
-  --liquid-edge: rgba(255, 255, 255, 1);
-  --liquid-shine: rgba(255, 255, 255, 0.7);
-  --liquid-glow: rgba(255, 255, 255, 0.35);
+  --liquid-edge: rgba(255, 255, 255, 0.6);
+  --liquid-shine: rgba(255, 255, 255, 0.2);
+  --liquid-glow: rgba(255, 255, 255, 0.15);
 }
