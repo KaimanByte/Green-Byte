@@ -29,19 +29,19 @@ function formatCo2(grams: number) {
 
 export function DashboardPanel({ onClose, panelRef }: Props) {
   // 1. Extração completa dos dados do banco
-  const { regions, services, emissions, serviceEmissions, loading, refetch } = useGreenData();
+  const { regions, services, emissions, serviceEmissions, loading, error, lastSync, refetch } = useGreenData();
 
   // 2. Somatório Real de Emissões
-  const dbTotalEmissions = emissions?.reduce(
-    (acc: number, curr: any) => acc + Number(curr.totalCo2Emissions || 0), 
+  const dbTotalEmissions = emissions.reduce(
+    (acc, curr) => acc + Number(curr.totalCo2Emissions || 0), 
     0
-  ) || 0;
+  );
 
   // 3. Somatório Real de Energia (kWh)
-  const dbTotalEnergy = serviceEmissions?.reduce(
-    (acc: number, curr: any) => acc + Number(curr.totalEnergyKwh || 0),
+  const dbTotalEnergy = serviceEmissions.reduce(
+    (acc, curr) => acc + Number(curr.totalEnergyKwh || 0),
     0
-  ) || 0;
+  );
 
   // 4. Intensidade Média Real
   const dbAverageIntensity = dbTotalEnergy > 0 ? (dbTotalEmissions / dbTotalEnergy) : 0;
@@ -52,16 +52,31 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
   const renewableShare = DASHBOARD_SUMMARY.renewableShare; 
 
   const maxServiceEmission = serviceEmissions.reduce(
-    (max: number, service: any) =>
-      Math.max(max, Number(service.totalCo2Emissions) || 0),
+    (max, service) => Math.max(max, Number(service.totalCo2Emissions) || 0),
     0,
   );
 
-  if (loading) {
+  if (loading && !lastSync) {
     return (
       <aside ref={panelRef} className={`glass ${base.panel} ${styles.panel}`}>
         <div style={{ padding: '20px', color: 'var(--text-primary)' }}>
           A sincronizar com o backend...
+        </div>
+      </aside>
+    )
+  }
+
+  // nunca conseguiu carregar: não há dados para exibir
+  if (error && !lastSync) {
+    return (
+      <aside ref={panelRef} className={`glass ${base.panel} ${styles.panel}`}>
+        <div role="alert" style={{ padding: '20px', color: 'var(--text-primary)' }}>
+          <p>Não foi possível carregar o dashboard.</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{error}</p>
+          <button type="button" className={styles.refresh} onClick={refetch}>
+            <RefreshCw size={14} strokeWidth={2} aria-hidden="true" />
+            Tentar novamente
+          </button>
         </div>
       </aside>
     )
@@ -82,11 +97,16 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
           Dashboard
         </h2>
         <p className={base.subtitle}>
-          Últimas 24 h · {services?.length || 0} serviços · {regions?.length || 0} regiões
+          Últimas 24 h · {services.length} serviços · {regions.length} regiões
         </p>
-                <button type="button" className={styles.refresh} onClick={refetch}>
+        {error && (
+          <p role="alert" className={base.subtitle}>
+            Falha ao atualizar: {error}
+          </p>
+        )}
+                <button type="button" className={styles.refresh} onClick={refetch} disabled={loading}>
           <RefreshCw size={14} strokeWidth={2} aria-hidden="true" />
-          Atualizar dados
+          {loading ? 'Atualizando...' : 'Atualizar dados'}
         </button>
       </header>
 
@@ -147,27 +167,27 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
       <section className={styles.section}>
         <h3 className={base.label}>Ranking de serviços</h3>
         <ol className={styles.ranking}>
-          {serviceEmissions && serviceEmissions.length > 0 ? (
-            serviceEmissions.map((serviceData: any, index: number) => {
-              const serviceDetails = services?.find((s: any) => s.id === serviceData.serviceId) || {};
-              const regionDetails = regions?.find((r: any) => r.regionCode === serviceDetails.regionCode) || {};
+          {serviceEmissions.length > 0 ? (
+            serviceEmissions.map((serviceData, index) => {
+              const serviceDetails = services.find((s) => s.id === serviceData.serviceId);
+              const regionDetails = regions.find((r) => r.regionCode === serviceDetails?.regionCode);
               
               const co2 = formatCo2(Number(serviceData.totalCo2Emissions) || 0);
-              const serviceLevel = getCarbonLevel(regionDetails.carbonIntensity || 50);
+              const serviceLevel = getCarbonLevel(regionDetails?.carbonIntensity ?? 50);
 
               return (
                 <li key={serviceData.serviceId || index} className={styles.rankItem}>
                   <span className={styles.rankPosition}>{index + 1}</span>
                   <div className={styles.rankBody}>
                     <div className={styles.rankRow}>
-                      <span className={styles.rankName}>{serviceDetails.name || serviceData.serviceId}</span>
+                      <span className={styles.rankName}>{serviceDetails?.name || serviceData.serviceId}</span>
                       <span className={styles.rankValue}>
                         {co2.value} <small>{co2.unit}</small>
                       </span>
                     </div>
                     <div className={styles.rankRow}>
                       <span className={styles.rankRegion} data-level={serviceLevel.id}>
-                        <CarbonLevelIcon icon={serviceLevel.icon} /> {serviceDetails.regionCode || 'Desconhecida'}
+                        <CarbonLevelIcon icon={serviceLevel.icon} /> {serviceDetails?.regionCode || 'Desconhecida'}
                       </span>
                       <span className={styles.rankRegion}>
                         {precise.format(Number(serviceData.totalEnergyKwh) || 0)} kWh
@@ -196,18 +216,18 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
       <section className={styles.section}>
         <h3 className={base.label}>Emissões por região</h3>
         <ul className={base.services}>
-          {emissions && emissions.length > 0 ? (
-             emissions.map((emissionData: any, index: number) => {
-              const regionDetails = regions?.find((r: any) => r.regionCode === emissionData.regionCode) || {};
+          {emissions.length > 0 ? (
+             emissions.map((emissionData, index) => {
+              const regionDetails = regions.find((r) => r.regionCode === emissionData.regionCode);
               
               const co2 = formatCo2(Number(emissionData.totalCo2Emissions) || 0)
-              const regionLevel = getCarbonLevel(regionDetails.carbonIntensity || 50)
+              const regionLevel = getCarbonLevel(regionDetails?.carbonIntensity ?? 50)
               
               const share = dbTotalEmissions > 0
                 ? (Number(emissionData.totalCo2Emissions) / dbTotalEmissions) * 100
                 : 0
 
-              const displayName = regionDetails.city || regionDetails.name || emissionData.regionCode;
+              const displayName = regionDetails?.city || emissionData.regionCode;
 
               return (
                 <li key={emissionData.regionCode || index} className={styles.regionItem}>
