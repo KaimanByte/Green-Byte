@@ -55,7 +55,7 @@ export function Connector({ anchorSelector, panelRef, overlay = false }: Props) 
       className={`${styles.connector} ${overlay ? styles.overlay : ''}`}
       aria-hidden="true"
     >
-      <line ref={lineRef} />
+      <line ref={lineRef} pathLength={1} />
     </svg>
   )
 }

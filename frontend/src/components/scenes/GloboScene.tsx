@@ -50,11 +50,6 @@ function Starfield() {
 
 
 const EARTH_RADIUS = 1.35
-// distância mínima entre marcadores na tela (botão de 56px + respiro)
-const MARKER_GAP = 64
-const projected = new THREE.Vector3()
-
-type ScreenPoint = { code: string; el: HTMLElement; x: number; y: number }
 
 // distância normal da câmera (mais longe em tela em pé, pro globo caber)
 const getDefaultDistance = (size: { width: number; height: number }) =>
@@ -81,7 +76,6 @@ function Earth({ regions, selectedCode, onSelectRegion, focusRequest }: EarthPro
   const targetRotationRef = useRef<number | null>(null)
   const camera = useThree((state) => state.camera)
   const size = useThree((state) => state.size)
-  const offsetsRef = useRef(new Map<string, { x: number; y: number }>())
   // pra onde a câmera está indo (zoom na região / volta ao normal); null = parada
   const cameraTargetRef = useRef<THREE.Vector3 | null>(null)
   const controls = useThree((state) => state.controls) as OrbitControlsImpl | null
@@ -105,15 +99,6 @@ function Earth({ regions, selectedCode, onSelectRegion, focusRequest }: EarthPro
       .multiplyScalar(getDefaultDistance(size))
   }, [selectedCode, camera, size])
 
-  // mesma posição usada pelo RegionMarker
-  const markerPositions = useMemo(
-    () =>
-      regions.map((region) => ({
-        code: region.code,
-        position: latLngToVector3(region.latitude, region.longitude, EARTH_RADIUS * 1.01),
-      })),
-    [regions],
-  )
 
   // calcula quanto girar no eixo y pra região ficar de frente pra câmera
   useEffect(() => {
@@ -146,74 +131,6 @@ function Earth({ regions, selectedCode, onSelectRegion, focusRequest }: EarthPro
   surfaceMap.colorSpace = THREE.SRGBColorSpace
   cloudsMap.colorSpace = THREE.SRGBColorSpace
 
-
-  // regiões próximas (ex: Ashburn e Toronto) caem uma em cima da outra na tela:
-  // agrupa as que se sobrepõem e espalha lado a lado em volta do centro do grupo
-  const spreadOverlappingMarkers = (earth: THREE.Object3D, delta: number) => {
-    const { width, height } = size
-    earth.updateWorldMatrix(true, false)
-
-    const visible: ScreenPoint[] = []
-    for (const { code, position } of markerPositions) {
-      const el = document.querySelector<HTMLElement>(`[data-region="${code}"]`)
-      if (!el) continue
-
-      if (el.dataset.visible === 'true') {
-        projected.copy(position).applyMatrix4(earth.matrixWorld).project(camera)
-        visible.push({
-          code,
-          el,
-          x: ((projected.x + 1) / 2) * width,
-          y: ((1 - projected.y) / 2) * height,
-        })
-      } else {
-        applyOffset(code, el, 0, 0, delta)
-      }
-    }
-
-    const groups: ScreenPoint[][] = []
-    for (const point of visible) {
-      const group = groups.find((g) =>
-        g.some((other) => Math.hypot(other.x - point.x, other.y - point.y) < MARKER_GAP),
-      )
-      if (group) group.push(point)
-      else groups.push([point])
-    }
-
-    for (const group of groups) {
-      if (group.length === 1) {
-        applyOffset(group[0].code, group[0].el, 0, 0, delta)
-        continue
-      }
-
-      const centerX = group.reduce((sum, p) => sum + p.x, 0) / group.length
-      const centerY = group.reduce((sum, p) => sum + p.y, 0) / group.length
-
-      // ordem da esquerda pra direita; o selecionado vai pro fim (lado do painel),
-      // assim a linha até o painel não passa por cima do vizinho
-      group
-        .sort((a, b) => {
-          if (a.code === selectedCode) return 1
-          if (b.code === selectedCode) return -1
-          return a.x - b.x
-        })
-        .forEach((point, index) => {
-          const slotX = centerX + (index - (group.length - 1) / 2) * MARKER_GAP
-          applyOffset(point.code, point.el, slotX - point.x, centerY - point.y, delta)
-        })
-    }
-  }
-
-  // anda suave até o deslocamento alvo (sem "pular" quando os grupos mudam)
-  const applyOffset = (code: string, el: HTMLElement, x: number, y: number, delta: number) => {
-    const current = offsetsRef.current.get(code) ?? { x: 0, y: 0 }
-    current.x = THREE.MathUtils.damp(current.x, x, 10, delta)
-    current.y = THREE.MathUtils.damp(current.y, y, 10, delta)
-    offsetsRef.current.set(code, current)
-    el.style.setProperty('--offset-x', `${current.x.toFixed(1)}px`)
-    el.style.setProperty('--offset-y', `${current.y.toFixed(1)}px`)
-  }
-
   //parar qnd selecionar regiao
    useFrame((_, delta) => {
     const earth = earthRef.current
@@ -240,7 +157,6 @@ function Earth({ regions, selectedCode, onSelectRegion, focusRequest }: EarthPro
       if (camera.position.distanceTo(cameraTarget) < 0.002) cameraTargetRef.current = null
     }
 
-    if (earth) spreadOverlappingMarkers(earth, delta)
     if (cloudsRef.current) cloudsRef.current.rotation.y += delta * 0.032
   })
   return (
@@ -269,11 +185,12 @@ function Earth({ regions, selectedCode, onSelectRegion, focusRequest }: EarthPro
         <meshStandardMaterial
           map={cloudsMap}
           transparent
-          opacity={0.16}
+          opacity={0.16}  
           roughness={1}
           depthWrite={false}
         />
       </mesh>
+
       <mesh scale={1.018}>
         <sphereGeometry args={[1.35, 64, 64]} />
         <meshBasicMaterial
@@ -342,6 +259,7 @@ export function GloboScene({ regions, selectedCode, onSelectRegion, focusRequest
           maxDistance={12}
           rotateSpeed={0.45}
         />
+        
       </Canvas>
     </main>
   )

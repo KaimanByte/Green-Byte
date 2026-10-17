@@ -13,13 +13,28 @@
   transition: opacity 0.2s;
 }
 
+/* dashboard: a linha se desenha do item do menu até o painel; o painel entra depois */
+.overlay line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-line 0.35s cubic-bezier(0.4, 0, 0.2, 1) 0.15s forwards;
+}
+
+@keyframes draw-line {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
 /* acima do fundo desfocado do menu (10), abaixo do painel do dashboard (15) */
 .overlay {
   z-index: 12;
 }
 
-.overlay line {
-  opacity: 0;
-  /* espera a barra lateral terminar de abrir antes de aparecer */
-  transition: opacity 0.25s 0.3s;
-}

@@ -8,6 +8,7 @@ import { CarbonLevelIcon } from './CarbonLevelIcon'
 import { EmissionsChart } from './EmissionsChart'
 import base from './RegionPanel.module.css'
 import styles from './DashboardPanel.module.css'
+import { RefreshCw } from 'lucide-react'
 import { useGreenData } from '../../hooks/useGreenData';
 
 type Props = {
@@ -81,19 +82,9 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
         <p className={base.subtitle}>
           Últimas 24 h · {services?.length || 0} serviços · {regions?.length || 0} regiões
         </p>
-        <button 
-          onClick={refetch} 
-          style={{ 
-            marginTop: '8px', 
-            padding: '4px 12px', 
-            background: 'var(--bg-secondary)', 
-            border: '1px solid var(--border-color)', 
-            color: 'var(--text-primary)', 
-            borderRadius: '4px',
-            cursor: 'pointer' 
-          }}
-        >
-          🔄 Atualizar Dados
+                <button type="button" className={styles.refresh} onClick={refetch}>
+          <RefreshCw size={14} strokeWidth={2} aria-hidden="true" />
+          Atualizar dados
         </button>
       </header>
 

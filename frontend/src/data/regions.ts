@@ -8,6 +8,7 @@ export type Region = {
   carbonIntensity: number;
   renewableShare: number;
   services: string[];
+  labelSide?: 'left' | 'right';
 };
 
 //trocar pra chamada ao backend qnd tiver endpoint da regiao
@@ -15,15 +16,15 @@ export type Region = {
 
 export const REGIONS: Region[] = [
     {
-     code: 'br-sudeste',
-     city: 'Sao Paulo',
-     area: 'Sudeste',
-     country: 'Brazil',
-     latitude: -23.5505,
-     longitude: -46.6333,
-     carbonIntensity: 85,
-     renewableShare: 83,
-     services : ['Billing API', 'Email Dispatcher'],
+        code: 'br-sudeste',
+        city: 'Sao Paulo',
+        area: 'Sudeste',
+        country: 'Brazil',
+        latitude: -23.5505,
+        longitude: -46.6333,
+        carbonIntensity: 85,
+        renewableShare: 83,
+        services : ['Billing API', 'Email Dispatcher'],
     },
     {
         code: 'us-east',
@@ -57,6 +58,7 @@ export const REGIONS: Region[] = [
         carbonIntensity: 40,
         renewableShare: 89,
         services: ['Inventory Sync', 'Reporting Batch'],
+        labelSide: 'right',
     },
     {
         code: 'jp-east',

@@ -15,6 +15,9 @@ aside.panel {
   container-type: inline-size;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    /* só entra depois que a linha se desenha (0,15s + 0,35s), com uma leve sobreposição */
+  animation-delay: 0.45s;
+  animation-fill-mode: both;
 }
 
 .section {
@@ -228,5 +231,49 @@ aside.panel {
       opacity: 1;
       transform: none;
     }
+  }
+}
+
+/* ---------- botão de atualizar ---------- */
+.refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 6px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-fill);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.refresh svg {
+  transition: transform 0.4s ease;
+}
+
+.refresh:hover {
+  background: var(--glass-fill-hover);
+  color: var(--text-primary);
+}
+
+/* as setas dão meia volta no hover: mostra que o botão "gira" os dados */
+.refresh:hover svg {
+  transform: rotate(180deg);
+}
+
+.refresh:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .refresh svg {
+    transition: none;
   }
 }

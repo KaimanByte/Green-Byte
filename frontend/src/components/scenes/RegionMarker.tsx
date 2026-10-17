@@ -62,6 +62,12 @@ export function RegionMarker({ region, radius, isSelected, onSelect }: Props) {
         >
           <span className="liquid__ring" aria-hidden="true" />
           <DataCenterIcon />
+                    <span
+            className={`${styles.label} ${region.labelSide === 'right' ? styles.labelRight : ''}`}
+            aria-hidden="true"
+          >
+            {region.city}
+          </span>
         </button>
       </Html>
     </group>

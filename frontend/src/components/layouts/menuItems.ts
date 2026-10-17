@@ -7,9 +7,5 @@ export type MenuItem = {
 export const DASHBOARD_ID = 'dashboard'
 
 export const menuItems: MenuItem[] = [
-    { id: 'LoremIpsum1', label: 'Lorem Ipsum 1' },
     { id: DASHBOARD_ID, label: 'Dashboard' },
-    { id: 'LoremIpsum3', label: 'Lorem Ipsum 3' },
-    { id: 'LoremIpsum4', label: 'Lorem Ipsum 4' },
-    { id: 'LoremIpsum5', label: 'Lorem Ipsum 5' },
 ]
