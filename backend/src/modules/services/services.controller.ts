@@ -1,13 +1,16 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
 import {
+  ApiBadGatewayResponse,
+  ApiGatewayTimeoutResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiServiceUnavailableResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { ServicesService } from './services.service';
-import { ServiceResponseDto } from './dto/service.dto';
+import { ServiceResponseDto, SyncServicesResponseDto } from './dto/service.dto';
 import { Service } from './services.schema';
 
 @ApiTags('Serviços')
@@ -51,5 +54,19 @@ export class ServicesController {
   async findOne(@Param('id') id: string): Promise<Service> {
     // Chama o método findById que vamos adicionar de volta no Service
     return this.servicesService.findById(id);
+  }
+
+  @Post('sync')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Sincroniza os serviços com a API externa de métricas',
+    description: 'Consulta GET /services na API externa e grava (insere ou atualiza) cada serviço no banco.',
+  })
+  @ApiOkResponse({ description: 'Serviços sincronizados com sucesso.', type: SyncServicesResponseDto })
+  @ApiBadGatewayResponse({ description: 'A API externa retornou erro ou dados em formato inválido.' })
+  @ApiServiceUnavailableResponse({ description: 'Não foi possível conectar à API externa.' })
+  @ApiGatewayTimeoutResponse({ description: 'A API externa excedeu o tempo limite da requisição.' })
+  async syncServices(): Promise<SyncServicesResponseDto> {
+    return this.servicesService.syncServices();
   }
 }

@@ -7,7 +7,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ServicesRepository } from './services.repository';
-import { ServiceResponseDto } from './dto/service.dto';
+import { ServiceResponseDto, SyncServicesResponseDto } from './dto/service.dto';
 import { Service, NewService } from './services.schema';
 
 interface ExternalServiceLocation {
@@ -38,6 +38,11 @@ export class ServicesService {
   }
 
   async findAllServices(): Promise<ServiceResponseDto[]> {
+    const result = await this.syncServices();
+    return result.services;
+  }
+
+  async syncServices(): Promise<SyncServicesResponseDto> {
     const payload = await this.fetchServices();
 
     if (!Array.isArray(payload)) {
@@ -79,13 +84,12 @@ export class ServicesService {
       });
     }
 
-    if (dbRecords.length > 0) {
-      this.servicesRepository.upsertMany(dbRecords).catch(err => 
-        this.logger.error('Falha ao sincronizar serviços com o banco de dados local', err.stack)
-      );
-    }
+    const saved =
+      dbRecords.length > 0
+        ? await this.servicesRepository.upsertMany(dbRecords)
+        : [];
 
-    return dtos;
+    return { total: saved.length, services: dtos };
   }
 
   async findById(id: string): Promise<Service> {

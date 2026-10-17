@@ -53,7 +53,7 @@ describe('ServicesService', () => {
   });
 
   describe('findAllServices', () => {
-    it('deve buscar na API, retornar os DTOs e realizar o upsert no banco em background', async () => {
+    it('deve buscar na API, retornar os DTOs e aguardar o upsert no banco', async () => {
       const externalPayload = [
         {
           id: 'srv-1',
@@ -75,7 +75,9 @@ describe('ServicesService', () => {
         json: async () => externalPayload,
       });
 
-      repository.upsertMany.mockResolvedValue(undefined);
+      repository.upsertMany.mockResolvedValue([
+        { id: 'srv-1', name: 'Serviço Alpha', regionCode: 'BR-SP', status: 'registered' },
+      ]);
 
       const result = await service.findAllServices();
 
@@ -158,6 +160,79 @@ describe('ServicesService', () => {
       });
 
       await expect(service.findAllServices()).rejects.toThrow(BadGatewayException);
+    });
+  });
+
+  describe('syncServices', () => {
+    it('deve retornar total e serviços após gravar os dados no banco', async () => {
+      const externalService = {
+        id: 'srv-1',
+        name: 'Serviço Alpha',
+        location: {
+          region_code: 'BR-SP',
+          country: 'Brasil',
+          region: 'São Paulo',
+          city: null,
+          latitude: -23.5,
+          longitude: -46.6,
+        },
+      };
+      fetchMock.mockResolvedValue({ ok: true, json: async () => [externalService] });
+      repository.upsertMany.mockResolvedValue([
+        { id: 'srv-1', name: 'Serviço Alpha', regionCode: 'BR-SP', status: 'registered' },
+      ]);
+
+      await expect(service.syncServices()).resolves.toEqual({
+        total: 1,
+        services: [{
+          id: 'srv-1',
+          name: 'Serviço Alpha',
+          status: 'registered',
+          regionCode: 'BR-SP',
+          location: {
+            country: 'Brasil',
+            region: 'São Paulo',
+            city: null,
+            latitude: -23.5,
+            longitude: -46.6,
+          },
+          metricsPath: null,
+        }],
+      });
+      expect(repository.upsertMany).toHaveBeenCalledWith([
+        { id: 'srv-1', name: 'Serviço Alpha', regionCode: 'BR-SP', status: 'registered' },
+      ]);
+    });
+
+    it('aceita lista vazia sem chamar o repositório', async () => {
+      fetchMock.mockResolvedValue({ ok: true, json: async () => [] });
+
+      await expect(service.syncServices()).resolves.toEqual({ total: 0, services: [] });
+      expect(repository.upsertMany).not.toHaveBeenCalled();
+    });
+
+    it('não grava nenhum serviço quando um item da resposta é inválido', async () => {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => [{ id: 'srv-1', name: 'Incompleto' }],
+      });
+
+      await expect(service.syncServices()).rejects.toThrow(BadGatewayException);
+      expect(repository.upsertMany).not.toHaveBeenCalled();
+    });
+
+    it('aguarda o upsert e propaga falhas ao salvar', async () => {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => [{
+          id: 'srv-1',
+          name: 'Serviço Alpha',
+          location: { region_code: 'BR-SP', country: 'Brasil', region: 'São Paulo' },
+        }],
+      });
+      repository.upsertMany.mockRejectedValue(new Error('database unavailable'));
+
+      await expect(service.syncServices()).rejects.toThrow('database unavailable');
     });
   });
 

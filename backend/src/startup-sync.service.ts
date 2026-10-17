@@ -36,7 +36,7 @@ export class StartupSyncService implements OnApplicationBootstrap {
       
       // 2. Serviços 
       // (Nota: se você criar um método que busca na API externa depois, troque findAllServices por ele, ex: syncServices)
-      await this.servicesService.findAllServices();
+      await this.servicesService.syncServices();
       
       // 3. Coletas
       await this.collectionsService.syncCollections();

@@ -80,16 +80,16 @@ describe('RegionsService', () => {
 
       await expect(service.findAllRegions()).resolves.toEqual([
         {
-          codigoRegiao: 'br-sudeste',
-          pais: 'Brazil',
-          regiao: 'Sudeste',
-          cidade: 'Sao Paulo',
+          regionCode: 'br-sudeste',
+          country: 'Brazil',
+          region: 'Sudeste',
+          city: 'Sao Paulo',
           latitude: -23.5505,
           longitude: -46.6333,
-          intensidadeCarbono: 85,
-          percentualRenovavel: 83,
+          carbonIntensity: 85,
+          renewableSharePercent: 83,
         },
-        expect.objectContaining({ codigoRegiao: 'us-east', cidade: null }),
+        expect.objectContaining({ regionCode: 'us-east', city: null }),
       ]);
     });
 
@@ -113,8 +113,8 @@ describe('RegionsService', () => {
 
       await expect(service.findRegionByCode('br-sudeste')).resolves.toEqual(
         expect.objectContaining({
-          codigoRegiao: 'br-sudeste',
-          intensidadeCarbono: 85,
+          regionCode: 'br-sudeste',
+          carbonIntensity: 85,
         }),
       );
       expect(repository.findByCode).toHaveBeenCalledWith('br-sudeste');
@@ -162,14 +162,14 @@ describe('RegionsService', () => {
 
       expect(result.total).toBe(2);
       expect(result.regioes[0]).toEqual({
-        codigoRegiao: 'br-sudeste',
-        pais: 'Brazil',
-        regiao: 'Sudeste',
-        cidade: 'Sao Paulo',
+        regionCode: 'br-sudeste',
+        country: 'Brazil',
+        region: 'Sudeste',
+        city: 'Sao Paulo',
         latitude: -23.5505,
         longitude: -46.6333,
-        intensidadeCarbono: 85,
-        percentualRenovavel: 83,
+        carbonIntensity: 85,
+        renewableSharePercent: 83,
       });
     });
 

@@ -39,3 +39,11 @@ export class ServiceResponseDto {
   @ApiPropertyOptional({ example: '/api/v1/metrics', description: 'Caminho para a rota de métricas', type: String, nullable: true })
   metricsPath: string | null;
 }
+
+export class SyncServicesResponseDto {
+  @ApiProperty({ example: 5, description: 'Quantidade de serviços gravados (inseridos ou atualizados)' })
+  total: number;
+
+  @ApiProperty({ type: [ServiceResponseDto], description: 'Serviços sincronizados' })
+  services: ServiceResponseDto[];
+}
