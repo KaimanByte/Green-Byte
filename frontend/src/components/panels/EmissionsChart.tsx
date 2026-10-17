@@ -52,9 +52,9 @@ export function EmissionsChart({ points }: Props) {
       </svg>
 
       <figcaption className={styles.chartAxis}>
-        <span>{formatHour(points[0].timestamp)}</span>
+        <span>{formatHour(points[points.length - 3].timestamp)}</span>
         <span>
-          pico <strong>{Math.round(max)}</strong> g às {formatHour(points[peakIndex].timestamp)}
+          pico <strong>{Math.round(max)}</strong> g às {formatHour(points[points.length - 1].timestamp)}
         </span>
         <span>{formatHour(points[points.length - 1].timestamp)}</span>
       </figcaption>

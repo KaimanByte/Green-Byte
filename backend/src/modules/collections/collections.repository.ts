@@ -89,18 +89,21 @@ export class CollectionsRepository {
   }
 
   async getEmissionsByService(start: Date, end: Date): Promise<ServiceEmissions[]> {
+    const totalCo2Emissions = sql<number>`coalesce(sum(${collections.co2Emissions}), 0)`;
+
     return this.dbService.db
       .select({
         serviceId: collections.serviceId,
         
         // ATENÇÃO: Verifique se as crases (`) estão envolvendo a função coalesce no seu editor!
         totalEnergyKwh: sql<number>`coalesce(sum(${collections.energyKwh}), 0)`.mapWith(Number),
-        totalCo2Emissions: sql<number>`coalesce(sum(${collections.co2Emissions}), 0)`.mapWith(Number),
+        totalCo2Emissions: totalCo2Emissions.mapWith(Number),
       })
       .from(collections)
       .where(
         and(gte(collections.timestamp, start), lte(collections.timestamp, end)),
       )
-      .groupBy(collections.serviceId);
+      .groupBy(collections.serviceId)
+      .orderBy(asc(totalCo2Emissions));
   }
 }

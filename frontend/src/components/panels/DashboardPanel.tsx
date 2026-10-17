@@ -51,9 +51,11 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
   const level = getCarbonLevel(dbAverageIntensity);
   const renewableShare = DASHBOARD_SUMMARY.renewableShare; 
 
-  const topServiceEmission = serviceEmissions && serviceEmissions.length > 0 
-    ? Number(serviceEmissions[0].totalCo2Emissions) 
-    : 1;
+  const maxServiceEmission = serviceEmissions.reduce(
+    (max: number, service: any) =>
+      Math.max(max, Number(service.totalCo2Emissions) || 0),
+    0,
+  );
 
   if (loading) {
     return (
@@ -174,7 +176,11 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
                     <span className={`${base.bar} ${styles.rankBar}`}>
                       <span
                         className={base.barFill}
-                        style={{ width: `${(Number(serviceData.totalCo2Emissions) / topServiceEmission) * 100}%` }}
+                        style={{
+                          width: `${maxServiceEmission > 0
+                            ? (Math.max(0, Number(serviceData.totalCo2Emissions) || 0) / maxServiceEmission) * 100
+                            : 0}%`,
+                        }}
                       />
                     </span>
                   </div>
