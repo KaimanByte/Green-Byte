@@ -10,7 +10,6 @@ import { REGIONS } from './data/regions'
 import { RegionPanel } from './components/panels/RegionPanel'
 import { Connector } from './components/panels/Connector'
 import { DashboardPanel } from './components/panels/DashboardPanel'
-import { ServiceListPanel } from './components/panels/ServiceListPanel'
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -69,7 +68,6 @@ function App() {
       <Logo />
       <SearchBar regions={REGIONS} onSelect={searchRegion} />
       <CollectionDate date={LAST_COLLECTION_AT} isHidden={selectedRegion !== null} />
-      <ServiceListPanel />
 
       {selectedRegion && (
         <RegionPanel
