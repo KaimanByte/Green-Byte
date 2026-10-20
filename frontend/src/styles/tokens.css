@@ -1,0 +1,30 @@
+:root {
+  /* vidro (liquid glass) */
+  --glass-fill: rgba(12, 16, 18, 0.38);       /* película escura e bem transparente */
+  --glass-fill-hover: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-blur: 24px;
+  --glass-saturation: 1.8;                    /* realça as cores do que está atrás */
+  --glass-highlight: rgba(255, 255, 255, 0.14); /* contorno fino */
+  --glass-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  
+
+  /* raios */
+  --radius-pill: 32px;
+  --radius-item: 20px;
+  --radius-sidebar: 36px;
+    --radius-panel: 28px;
+
+  /* texto */
+  --text-primary: #fff;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --text-muted: rgba(255, 255, 255, 0.7);
+  --divider: rgba(255, 255, 255, 0.12);
+
+  /* fontes */
+  --font-display: 'Space Grotesk Variable', system-ui, sans-serif;
+  --font-body: 'Inter Variable', system-ui, sans-serif;
+
+  /* distância dos elementos até a borda da tela */
+  --space-edge: 32px;
+}

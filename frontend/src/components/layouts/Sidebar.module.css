@@ -1,0 +1,204 @@
+/* ---------- fundo desfocado ---------- */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: rgba(5, 11, 9, 0.2);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  
+}
+
+.backdropVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---------- botão redondo ---------- */
+.toggle {
+  position: fixed;
+  top: var(--space-edge);
+  left: var(--space-edge);
+  z-index: 30;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  display: grid;
+  place-items: center;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: transform 0.25s;
+}
+
+
+.toggle:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 3px;
+}
+
+/* ---------- barra lateral ---------- */
+.panel {
+  /* metade do --space-edge: assim o botão (32px da borda)
+     fica exatamente a 16px da borda de dentro da barra */
+  --panel-inset: 16px;
+  --toggle-end: calc(var(--panel-inset) + 64px);
+  /* fundo, brilho e desfoque vêm do .glass (styles/glass.css) */
+  
+
+  position: fixed;
+  z-index: 20;
+  top: var(--panel-inset);
+  left: var(--panel-inset);
+  width: min(280px, calc(100vw - 2 * var(--panel-inset)));
+  height: calc(100dvh - 2 * var(--panel-inset));
+  padding: var(--panel-inset);
+  border-radius: var(--radius-sidebar);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-display);
+  color: var(--text-primary);
+
+  /* FECHADO: recortado no formato do botão */
+  clip-path: inset(
+    var(--panel-inset)
+    calc(100% - var(--toggle-end))
+    calc(100% - var(--toggle-end))
+    var(--panel-inset)
+    round var(--radius-pill)
+  );
+  visibility: hidden;
+  transition:
+    clip-path 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
+    visibility 0s linear 0.45s; /* só esconde depois que a animação termina */
+}
+
+/* ABERTO: recorte do tamanho da barra inteira */
+.open {
+  clip-path: inset(0 0 0 0 round var(--radius-sidebar));
+  visibility: visible;
+  transition:
+    clip-path 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
+    visibility 0s;
+}
+
+/* ---------- conteúdo: entra um pouco depois da barra ---------- */
+.title,
+.list,
+.footer {
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.open .title,
+.open .list,
+.open .footer {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.3s 0.15s, transform 0.3s 0.15s;
+}
+
+.title {
+  height: 64px;
+  margin: 0;
+  /* espaço do botão (64) + respiro (22), como no Figma */
+  padding-left: calc(64px + 22px);
+  display: flex;
+  align-items: center;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* ---------- itens ---------- */
+.list {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.item {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-item);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+.itemActive {
+
+  color: var(--text-primary);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+.itemActive .dot {
+  opacity: 1;
+}
+
+/* ---------- rodapé ---------- */
+.footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--divider);
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+
+.footerBrand {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.footerTagline {
+  font-weight: 600;
+}
+
+/* ---------- quem pediu menos movimento no sistema ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .panel,
+  .open,
+  .title,
+  .list,
+  .footer {
+    transition: none;
+  }
+}

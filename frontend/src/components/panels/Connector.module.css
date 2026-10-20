@@ -1,0 +1,40 @@
+.connector {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.connector line {
+  stroke: rgba(255, 255, 255, 0.7);
+  stroke-width: 1.5;
+  transition: opacity 0.2s;
+}
+
+/* dashboard: a linha se desenha do item do menu até o painel; o painel entra depois */
+.overlay line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-line 0.35s cubic-bezier(0.4, 0, 0.2, 1) 0.15s forwards;
+}
+
+@keyframes draw-line {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* acima do fundo desfocado do menu (10), abaixo do painel do dashboard (15) */
+.overlay {
+  z-index: 12;
+}
+

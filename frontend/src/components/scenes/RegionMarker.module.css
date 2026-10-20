@@ -1,0 +1,84 @@
+.marker {
+  --marker-scale: 1;
+  /* deslocamento pra afastar marcadores que se sobrepõem (vem do GloboScene) */
+  --offset-x: 0px;
+  --offset-y: 0px;
+
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  transform: translate(var(--offset-x), var(--offset-y)) scale(var(--marker-scale));
+  /* só a opacidade anima: a escala muda a cada quadro e não pode "atrasar" */
+  transition: opacity 0.2s;
+}
+
+.marker:hover {
+  transform: translate(var(--offset-x), var(--offset-y)) scale(calc(var(--marker-scale) * 1.1));
+}
+
+.marker:active {
+  transform: translate(var(--offset-x), var(--offset-y)) scale(calc(var(--marker-scale) * 0.94));
+}
+
+.marker:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 3px;
+}
+
+/* selecionado: brilhos mais fortes */
+.selected {
+  --liquid-edge: rgba(255, 255, 255, 0.6);
+  --liquid-shine: rgba(255, 255, 255, 0.2);
+  --liquid-glow: rgba(255, 255, 255, 0.15);
+}
+
+/* ---------- nome da cidade, ligado ao marcador por um fio ---------- */
+.label {
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 6px;
+  transform: translateY(-50%);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text-primary);
+  /* sombra escura: mantém o texto legível sobre qualquer parte da Terra */
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  transition: opacity 0.2s;
+}
+
+/* o fio: começa fraco no texto e fica forte perto do marcador */
+.label::after {
+  content: '';
+  width: 28px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.7));
+}
+
+/* rótulo à direita (ex.: Ashburn, pra não bater no Toronto) */
+.labelRight {
+  right: auto;
+  left: 100%;
+  flex-direction: row-reverse;
+  padding-right: 0;
+  padding-left: 6px;
+}
+
+.labelRight::after {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.15));
+}
+
+/* selecionado: o nome já está no painel, e a linha do painel sai pela direita */
+.selected .label {
+  opacity: 0;
+}

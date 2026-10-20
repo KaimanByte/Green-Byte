@@ -1,0 +1,67 @@
+# Sprint 1
+
+## 🎯 Objetivo da Sprint
+
+Entregar a **fundação do projeto Green Byte**, incluindo o **ambiente containerizado (Docker Compose)**, os **scaffolds de backend (NestJS) e frontend (React)**, e a **persistência inicial com PostgreSQL**. 
+Foram realizadas as **integrações com as APIs externas (Agregador e Carbon Intensity)**, além de criados os **protótipos de interface e fluxo de navegação**, configurada toda a **gestão ágil no GitHub** e elaborada a documentação arquitetural.
+
+---
+
+## Backlog Sprint 1 — Fundação: ambiente, APIs auxiliares, banco de dados e protótipo
+
+> Objetivo: garantir a estrutura base da aplicação rodando em containers, com banco de dados configurado, consumo das APIs externas validado, prototipação da interface estruturada e projeto devidamente gerenciado via metodologias ágeis.
+
+**Total Sprint 1: 102 pts**
+
+| ID | Atividade | Pontos | Área | Requisito |
+|----|-----------|:------:|------|-----------|
+| GA-01 | Criar o repositório único e a estrutura inicial | 2 | Gestão | RP08 |
+| GA-02 | Configurar o GitHub Project, labels e milestones | 2 | Gestão | RP08 |
+| GA-03 | Registrar o Product Backlog priorizado | 3 | Gestão | RP06, RP08 |
+| GA-04 | Elaborar e validar o docs/plano-de-entregas.md | 3 | Gestão | RP08 |
+| GA-05 | Definir a Definition of Done e os templates de issue/PR | 2 | Gestão | RP08 |
+| GA-06 | Definir o fluxo de trabalho Git (branches, commits, PR com revisão) | 1 | Gestão | RP08 |
+| GA-07 | Planejamento da Sprint 1 | 2 | Gestão | RP08 |
+| GA-08 | Sprint Review e Retrospectiva da Sprint 1 | 2 | Gestão | RP08 |
+| GA-09 | Fechamento e entrega da Sprint 1 (tag sprint-1) | 2 | Gestão | RP08 |
+| IN-01 | Criar o scaffold do backend (NestJS + TypeScript) | 3 | Backend | RP02, RP04 |
+| IN-02 | Criar o scaffold do frontend (React + TypeScript) | 3 | Frontend | RP01 |
+| IN-03 | Containerizar frontend, backend e PostgreSQL com Docker Compose | 5 | Infraestrutura | RP05, RNF08 |
+| DOC-01 | Documentar a arquitetura inicial (docs/arquitetura.md) | 2 | Documentação | RNF08 |
+| IT-01 | Spike: ler os Swagger das duas APIs e documentar os contratos | 2 | Backend | RF01, RF03 |
+| IT-02 | Spike: conferir a fórmula de cálculo e o escopo (energia/água) | 1 | Backend | RF07 |
+| IT-03 | Consumir /services do Agregador (descoberta de serviços) | 5 | Backend | RF01, RNF05 |
+| IT-04 | Coletar /metrics/{id_servico} para cada serviço | 5 | Backend | RF03, RF04 |
+| IT-05 | Consumir a API de Intensidade de Carbono por região | 5 | Backend | RF07, RNF05 |
+| DB-01 | Escolher o ORM e configurar a conexão com o PostgreSQL | 3 | Banco de Dados | RP03 |
+| DB-02 | Modelar as entidades e criar as migrações iniciais | 5 | Banco de Dados | RP03, RF10, RNF08 |
+| DB-03 | Criar os repositories de serviços e coletas | 3 | Banco de Dados | RP04, RF10 |
+| API-01 | Endpoint GET /services | 3 | Backend | RF09, RF12 |
+| API-04 | Documentar endpoints com OpenAPI/Swagger e docs/api.md | 2 | Backend | RNF08 |
+| FE-01 | Camada de acesso à API e provider de dados | 3 | Frontend | RP01 |
+| FE-02 | Vertical slice: listar serviços do backend na tela inicial | 2 | Frontend | RF09 |
+| FE-03 | Dashboard operacional por serviço | 5 | Frontend | RF09, RF12, RP06 |
+| FE-04 | Cards de indicadores consolidados | 3 | Frontend | RF08 |
+| FE-05 | Atualização automática e 'última atualização' | 3 | Frontend | RF11, RNF03 |
+| FE-09 | Ranking de impacto | 3 | Frontend | RF14 |
+| FE-11 | Mapa geográfico dos serviços | 5 | Frontend | RF13 |
+| UX-01 | Identificar usuários e tarefas prioritárias | 3 | Design/UX | RP09 |
+| UX-02 | Protótipo das principais telas e fluxo de navegação | 5 | Design/UX | RP09, RP06, RNF01 |
+| QA-01 | Configurar testes (Jest) e script de execução | 2 | QA | RNF07 |
+
+---
+
+## Sprint Burndown
+<img src="./Burndown_Sprint1.jpeg" alt="Burndown Chart" width="700"/>
+
+---
+
+## 🔄 Retrospectiva da Sprint 1
+
+Durante a Sprint 1, o time apresentou um desempenho excelente, demonstrando um alto nível de maturidade e envolvimento. De modo geral, conseguimos nos desenvolver muito bem como equipe, estabelecendo desde o início um fluxo de trabalho coeso e organizado. A adoção das práticas ágeis via GitHub Project funcionou de forma fluida, o que nos permitiu ter clareza total sobre o status das 34 tarefas que compunham essa fundação do projeto.
+
+A divisão de atividades entre as frentes de Gestão, Backend, Frontend, Banco de Dados e UX/Design foi muito bem orquestrada. Essa sinergia possibilitou que entregássemos toda a base da aplicação (frontend em React, backend em NestJS e banco em PostgreSQL) perfeitamente containerizada via Docker, eliminando o clássico problema de "na minha máquina funciona". 
+
+Outro grande sucesso da sprint foi a capacidade técnica da equipe em consumir rapidamente as APIs externas (Agregador e Carbon Intensity), realizar os spikes investigativos necessários para validar fórmulas e modelar o banco de dados com eficiência utilizando o Drizzle ORM. Além disso, o time de UX entregou protótipos consistentes, garantindo que o desenvolvimento do frontend já tivesse um norte visual claro.
+
+Como ponto de melhoria para os próximos ciclos, notamos que algumas tarefas técnicas exigiram mais esforço do que o planejado inicialmente, especialmente na integração de múltiplos endpoints. Dessa forma, para a Sprint 2, nosso plano é aprofundar um pouco mais o refinamento técnico antes do desenvolvimento e garantir uma comunicação ainda mais rápida em caso de bloqueios. No geral, estamos extremamente satisfeitos com a fundação construída, que nos deixa prontos para atacar o núcleo das regras de cálculo de energia e emissões.
