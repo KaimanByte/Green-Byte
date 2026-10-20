@@ -32,7 +32,7 @@ export class CollectionsService {
     private readonly servicesService: ServicesService,
     private readonly regionsService: RegionsService,
   ) {
-    const baseUrl = process.env.METRICS_API_BASE_URL || 'https://metrics.unilaunch.org';
+    const baseUrl = process.env.METRICS_API_BASE_URL || 'https://metrics.unilaunch.org'; //implementação temporária, será substituido na segunda sprint por rota no .env, e separará os dados do cliente do service
     this.metricsBaseUrl = baseUrl.replace(/\/+$/, '');
   }
 

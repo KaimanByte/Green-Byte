@@ -33,7 +33,7 @@ export class ServicesService {
   private readonly requestTimeoutMs = 5000;
 
   constructor(private readonly servicesRepository: ServicesRepository) {
-    const baseUrl = process.env.METRICS_API_BASE_URL || 'https://metrics.unilaunch.org';
+    const baseUrl = process.env.METRICS_API_BASE_URL || 'https://metrics.unilaunch.org'; //implementação temporária, será substituido na segunda sprint por rota no .env, e separará os dados do cliente do service
     this.servicesUrl = `${baseUrl.replace(/\/+$/, '')}/services`;
   }
 
