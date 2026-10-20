@@ -30,7 +30,7 @@ export class RegionsService {
 
   constructor(private readonly regionsRepository: RegionsRepository) {
     const baseUrl =
-      process.env.CARBON_API_BASE_URL || 'https://carbon.unilaunch.org';
+      process.env.CARBON_API_BASE_URL || 'https://carbon.unilaunch.org'; //implementação temporária, será substituido na segunda sprint por rota no .env, e separará os dados do cliente do service
     this.regionsUrl = `${baseUrl.replace(/\/+$/, '')}/regions`;
   }
 
