@@ -31,9 +31,9 @@
 
 **Objetivo:** Fundação: ambiente containerizado, integração com as APIs auxiliares, persistência inicial, protótipo e organização ágil.
 
-**Critérios da rubrica previstos (65 pts):** GA01, GA02, GA03, GA04, GA05, GA06, GA07, GA08, GA09, DW01, DW02, DW03, DW04, DW07, IHC01, IHC02  
+**Critérios da rubrica previstos (65 pts):** GA01, GA02, GA03, GA04, GA05, GA06, GA07, GA08, GA09, DW01, DW02, DW03, DW04, DW05, DW07, TP01, IHC01, IHC02, IHC03  
 
-**Itens:** 27 · **Pontos de história:** 76
+**Itens:** 34 · **Pontos de história:** 102
 
 | ID | Item | Tipo | Prio | Pts | Requisitos | Rubrica |
 |---|---|---|---|---|---|---|
@@ -54,6 +54,7 @@
 | IT-02 | Spike: conferir a fórmula de cálculo e o escopo (energia/água) | spike | P0 | 1 | RF07 | TP04 |
 | IT-03 | Consumir /services do Agregador (descoberta de serviços) | história | P0 | 5 | RF01, RNF05 | DW02, TP02, TP05 |
 | IT-04 | Coletar /metrics/{id_servico} para cada serviço | história | P0 | 5 | RF03, RF04 | DW02 |
+| IT-05 | Consumir a API de Intensidade de Carbono por região | história | P0 | 5 | RF07, RNF05 | DW02 |
 | DB-01 | Escolher o ORM e configurar a conexão com o PostgreSQL | tarefa | P0 | 3 | RP03 | DW04 |
 | DB-02 | Modelar as entidades e criar as migrações iniciais | história | P0 | 5 | RP03, RF10, RNF08 | DW04 |
 | DB-03 | Criar os repositories de serviços e coletas | história | P0 | 3 | RP04, RF10 | DW03, DW04, TP02 |
@@ -61,6 +62,11 @@
 | API-04 | Documentar endpoints com OpenAPI/Swagger e docs/api.md | tarefa | P1 | 2 | RNF08 | DW03, DW07 |
 | FE-01 | Camada de acesso à API e provider de dados | tarefa | P0 | 3 | RP01 | DW05 |
 | FE-02 | Vertical slice: listar serviços do backend na tela inicial | história | P1 | 2 | RF09 | DW05, IHC02 |
+| FE-03 | Dashboard operacional por serviço | história | P0 | 5 | RF09, RF12, RP06 | DW05, IHC03 |
+| FE-04 | Cards de indicadores consolidados | história | P0 | 3 | RF08 | IHC03 |
+| FE-05 | Atualização automática e 'última atualização' | história | P0 | 3 | RF11, RNF03 | IHC03 |
+| FE-09 | Ranking de impacto | história | P0 | 3 | RF14 | IHC03 |
+| FE-11 | Mapa geográfico dos serviços | história | P2 | 5 | RF13 | IHC03 |
 | UX-01 | Identificar usuários e tarefas prioritárias | tarefa | P0 | 3 | RP09 | IHC01 |
 | UX-02 | Protótipo das principais telas e fluxo de navegação | história | P0 | 5 | RP09, RP06, RNF01 | IHC02 |
 | QA-01 | Configurar testes (Jest) e script de execução | tarefa | P0 | 2 | RNF07 | TP04, DW07 |
@@ -69,9 +75,9 @@
 
 **Objetivo:** Núcleo do produto: cálculo de energia e CO₂e, monitoramento dinâmico, histórico e dashboard operacional.
 
-**Critérios da rubrica previstos (83 pts):** GA01, GA02, GA03, GA04, GA05, GA06, GA07, GA08, GA09, DW01, DW02, DW03, DW04, DW05, DW07, TP01, TP02, TP04, TP05, IHC03, IHC04  
+**Critérios da rubrica previstos (83 pts):** GA01, GA02, GA03, GA04, GA05, GA06, GA07, GA08, GA09, DW01, DW02, DW03, DW04, DW07, TP01, TP02, TP04, TP05, IHC03, IHC04  
 
-**Itens:** 26 · **Pontos de história:** 83
+**Itens:** 22 · **Pontos de história:** 70
 
 | ID | Item | Tipo | Prio | Pts | Requisitos | Rubrica |
 |---|---|---|---|---|---|---|
@@ -79,23 +85,19 @@
 | GA-11 | Sprint Review e Retrospectiva da Sprint 2 | tarefa | P0 | 2 | RP08 | GA06 |
 | GA-12 | Fechamento e entrega da Sprint 2 (tag sprint-2) | tarefa | P0 | 2 | RP08 | GA02, GA04, GA07, GA08, GA09 |
 | IN-04 | Configurar pipeline de CI (lint + testes a cada PR) | tarefa | P2 | 3 | RNF07 | GA05, TP04 |
-| IT-05 | Consumir a API de Intensidade de Carbono por região | história | P0 | 5 | RF07, RNF05 | DW02 |
 | IT-06 | Agendar a coleta periódica com intervalo configurável | história | P0 | 3 | RF03, RNF03 | DW02 |
 | DB-04 | Histórico de coletas com consulta por período | história | P0 | 5 | RF10 | DW04 |
 | CA-01 | Calcular a potência (W) a partir de CPU, RAM, disco e rede | história | P0 | 5 | RF07, RP04, RNF07 | TP01, TP04 |
 | CA-02 | Calcular energia (kWh) e emissão (gCO₂e) | história | P0 | 3 | RF07 | TP01, TP04 |
 | CA-03 | Tratar dados ausentes ou inválidos no cálculo | tarefa | P0 | 2 | RF06, RNF05, RNF07 | TP04, TP05 |
 | CA-04 | Calcular os indicadores agregados do ambiente | história | P0 | 3 | RF08 | DW03 |
-| CA-05 | Documentar fórmulas, unidades e exemplos (docs/calculos.md) | tarefa | P1 | 2 | RNF08 | TP01 |
 | MD-01 | Classificar o estado de cada serviço | história | P0 | 5 | RF05, RF06, RNF07 | TP01, TP04 |
 | MD-02 | Reconciliar a lista de serviços a cada ciclo | história | P0 | 5 | RF02 | DW02 |
 | MD-03 | Garantir tolerância a falhas das APIs auxiliares | tarefa | P0 | 3 | RNF05 | TP05 |
 | MD-04 | Testes unitários de estados e reconciliação | tarefa | P0 | 3 | RNF07 | TP02, TP04 |
 | API-02 | Validação de entrada e tratamento global de exceções | tarefa | P0 | 3 | RP02, RNF06 | TP05 |
 | API-03 | Endpoints de histórico e indicadores (/services/:id/history e /summary) | história | P0 | 5 | RF08, RF10 | DW03 |
-| FE-03 | Dashboard operacional por serviço | história | P0 | 5 | RF09, RF12, RP06 | DW05, IHC03 |
-| FE-04 | Cards de indicadores consolidados | história | P0 | 3 | RF08 | IHC03 |
-| FE-05 | Atualização automática e 'última atualização' | história | P0 | 3 | RF11, RNF03 | IHC03 |
+| API-05 | Endpoints de ranking e comparação | história | P0 | 5 | RF14, RF15 | DW03 |
 | FE-06 | Estados e alertas por texto e ícone (não só cor) | tarefa | P0 | 2 | RNF02 | IHC03 |
 | FE-07 | Estados de carregamento, vazio e erro | tarefa | P0 | 3 | RNF05, RNF01 | IHC04 |
 | UX-03 | Definir diretrizes de apresentação dos indicadores | tarefa | P1 | 2 | RNF02, RNF03 | IHC03 |
@@ -108,18 +110,15 @@
 
 **Critérios da rubrica previstos (69 pts):** GA01, GA02, GA03, GA04, GA05, GA06, GA07, GA08, GA09, DW01, DW02, DW05, DW06, DW07, TP03, TP04, IHC05, IHC06  
 
-**Itens:** 19 · **Pontos de história:** 64
+**Itens:** 16 · **Pontos de história:** 51
 
 | ID | Item | Tipo | Prio | Pts | Requisitos | Rubrica |
 |---|---|---|---|---|---|---|
 | GA-13 | Planejamento da Sprint 3 | tarefa | P0 | 2 | RP08 | GA02 |
 | GA-14 | Sprint Review e Retrospectiva da Sprint 3 | tarefa | P0 | 2 | RP08 | GA06 |
 | GA-15 | Fechamento e entrega da Sprint 3 (tag sprint-3) | tarefa | P0 | 2 | RP08 | GA02, GA04, GA07, GA08, GA09 |
-| API-05 | Endpoints de ranking e comparação | história | P0 | 5 | RF14, RF15 | DW03 |
 | FE-08 | Gráfico de histórico por serviço | história | P1 | 5 | RF10 | IHC03 |
-| FE-09 | Ranking de impacto | história | P0 | 3 | RF14 | IHC03 |
 | FE-10 | Comparação entre serviços | história | P0 | 5 | RF15 | IHC03 |
-| FE-11 | Mapa geográfico dos serviços | história | P2 | 5 | RF13 | IHC03 |
 | FE-12 | Responsividade e desempenho | tarefa | P0 | 3 | RNF01, RNF04 | IHC04 |
 | AU-01 | Login com senha em hash e emissão de JWT | história | P0 | 5 | RF16, RP07, RNF06 | DW06 |
 | AU-02 | Proteger rotas de configuração (guard JWT + DTO) | história | P0 | 3 | RF16, RP07, RNF06 | DW06 |
@@ -147,7 +146,6 @@ Repositório único para as três sprints, com a estrutura sugerida pelo profess
 
 Critérios de aceite:
 - [ ] Estrutura de pastas conforme a sugestão da rubrica (pastas criadas só quando houver conteúdo)
-- [ ] README com problema, solução, tecnologias, integrantes e links para a documentação
 - [ ] Todos os integrantes com acesso e com perfil identificável no GitHub
 
 #### GA-02 — Configurar o GitHub Project, labels e milestones
@@ -181,15 +179,10 @@ Critérios de aceite:
 - [ ] Critérios e pontuações da rubrica não alterados
 - [ ] Retorno do professor registrado (ajustes viram issues)
 
-#### GA-05 — Definir a Definition of Done e os templates de issue/PR
+#### GA-05 — Definir a Definition of Done
 **Sprint 1** · tarefa · P0 · 2 pts · Requisitos: RP08 · Rubrica: GA07
 
 DoD objetiva aplicada a todo item marcado como concluído.
-
-Critérios de aceite:
-- [ ] docs/definition-of-done.md versionado
-- [ ] .github/pull_request_template.md com checklist da DoD e 'Closes #'
-- [ ] .github/ISSUE_TEMPLATE para história e para bug/impedimento
 
 #### GA-06 — Definir o fluxo de trabalho Git (branches, commits, PR com revisão)
 **Sprint 1** · tarefa · P0 · 1 pts · Requisitos: RP08 · Rubrica: GA04, GA05, GA09
@@ -197,7 +190,6 @@ Critérios de aceite:
 Convenção que gera rastreabilidade entre issue, branch, commit e PR.
 
 Critérios de aceite:
-- [ ] Fluxo documentado (ex.: feature/<id>-descricao; PR obrigatório com 1 revisão)
 - [ ] Branch main protegida
 - [ ] Commits e PRs referenciam as issues
 
@@ -376,8 +368,6 @@ A apresentação e o PDF do desafio precisam ser confirmados na documentação v
 
 Critérios de aceite:
 - [ ] Fórmula e constantes confirmadas em docs.unilaunch.org
-- [ ] Divergência do exemplo (50,87 W por 60 s = 0,000848 kWh, mas o slide mostra 0,0008495 kWh) esclarecida ou registrada
-- [ ] Registrado se 'água' é ou não requisito (o slide cita; o PDF não lista RF)
 - [ ] Decisão registrada em docs/calculos.md
 
 #### IT-03 — Consumir /services do Agregador (descoberta de serviços)
@@ -402,7 +392,7 @@ Critérios de aceite:
 - [ ] Erro em um serviço não impede a coleta dos demais
 
 #### IT-05 — Consumir a API de Intensidade de Carbono por região
-**Sprint 2** · história · P0 · 5 pts · Requisitos: RF07, RNF05 · Rubrica: DW02
+**Sprint 1** · história · P0 · 5 pts · Requisitos: RF07, RNF05 · Rubrica: DW02
 
 Como sistema, quero o fator gCO₂e/kWh da região de cada serviço.
 
@@ -509,7 +499,7 @@ Critérios de aceite:
 - [ ] Regra para serviços sem cálculo documentada e testada
 
 #### CA-05 — Documentar fórmulas, unidades e exemplos (docs/calculos.md)
-**Sprint 2** · tarefa · P1 · 2 pts · Requisitos: RNF08 · Rubrica: TP01
+**Sprint 1** · tarefa · P1 · 2 pts · Requisitos: RNF08 · Rubrica: TP01
 
 Documentação das estimativas de energia e CO₂e.
 
@@ -595,17 +585,16 @@ Critérios de aceite:
 - [ ] Respostas informam período e unidades
 - [ ] 404 para serviço inexistente
 
-#### API-04 — Documentar endpoints com OpenAPI/Swagger e docs/api.md
+#### API-04 — Documentar endpoints com Swagger
 **Sprint 1** · tarefa · P1 · 2 pts · Requisitos: RNF08 · Rubrica: DW03, DW07
 
 Documentação atualizada a cada sprint.
 
 Critérios de aceite:
 - [ ] Swagger do backend acessível
-- [ ] docs/api.md com métodos, parâmetros, respostas e autenticação exigida
 
 #### API-05 — Endpoints de ranking e comparação
-**Sprint 3** · história · P0 · 5 pts · Requisitos: RF14, RF15 · Rubrica: DW03
+**Sprint 2** · história · P0 · 5 pts · Requisitos: RF14, RF15 · Rubrica: DW03
 
 Como gestor, quero ordenar e comparar serviços no mesmo período.
 
@@ -638,7 +627,7 @@ Critérios de aceite:
 - [ ] Erro da API exibe mensagem compreensível
 
 #### FE-03 — Dashboard operacional por serviço
-**Sprint 2** · história · P0 · 5 pts · Requisitos: RF09, RF12, RP06 · Rubrica: DW05, IHC03
+**Sprint 1** · história · P0 · 5 pts · Requisitos: RF09, RF12, RP06 · Rubrica: DW05, IHC03
 
 Como gestor, quero ver o estado, a localização e o impacto de cada serviço.
 
@@ -648,16 +637,16 @@ Critérios de aceite:
 - [ ] Consome a API do backend (sem dados fixos no código)
 
 #### FE-04 — Cards de indicadores consolidados
-**Sprint 2** · história · P0 · 3 pts · Requisitos: RF08 · Rubrica: IHC03
+**Sprint 1** · história · P0 · 3 pts · Requisitos: RF08 · Rubrica: IHC03
 
 Como gestor, quero uma visão geral do ambiente.
 
 Critérios de aceite:
-- [ ] Consumo total, emissão total, ativos, indisponíveis e sem métricas
+- [ ] Consumo total, emissão total e ativos
 - [ ] Período e unidade visíveis
 
 #### FE-05 — Atualização automática e 'última atualização'
-**Sprint 2** · história · P0 · 3 pts · Requisitos: RF11, RNF03 · Rubrica: IHC03
+**Sprint 1** · história · P0 · 3 pts · Requisitos: RF11, RNF03 · Rubrica: IHC03
 
 Como gestor, quero dados atualizados sem recarregar a página.
 
@@ -695,7 +684,7 @@ Critérios de aceite:
 - [ ] Eixos com unidade; sem dados → mensagem
 
 #### FE-09 — Ranking de impacto
-**Sprint 3** · história · P0 · 3 pts · Requisitos: RF14 · Rubrica: IHC03
+**Sprint 1** · história · P0 · 3 pts · Requisitos: RF14 · Rubrica: IHC03
 
 Como gestor, quero saber quais serviços mais impactam.
 
@@ -713,7 +702,7 @@ Critérios de aceite:
 - [ ] Métricas e indicadores do mesmo período lado a lado
 
 #### FE-11 — Mapa geográfico dos serviços
-**Sprint 3** · história · P2 · 5 pts · Requisitos: RF13 · Rubrica: IHC03
+**Sprint 1** · história · P2 · 5 pts · Requisitos: RF13 · Rubrica: IHC03
 
 Item opcional no desafio (RF13 diz 'poderá').
 
