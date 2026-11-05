@@ -27,25 +27,27 @@ export class CollectionsService {
   private readonly metricsBaseUrl: string;
   private readonly requestTimeoutMs = 5_000;
 
+  // Constantes de cálculo baseadas no modelo padrão
+  private readonly CPU_MAX_POWER_W = 100;
+  private readonly RAM_POWER_PER_GB_W = 0.375;
+  private readonly DISK_POWER_PER_GB_W = 0.01;
+  private readonly NETWORK_POWER_PER_GB_W = 0.02;
+
   constructor(
     private readonly collectionsRepository: CollectionsRepository,
     private readonly servicesService: ServicesService,
     private readonly regionsService: RegionsService,
   ) {
-    const baseUrl = process.env.METRICS_API_BASE_URL || 'https://metrics.unilaunch.org'; //implementação temporária, será substituido na segunda sprint por rota no .env, e separará os dados do cliente do service
+    const baseUrl = process.env.METRICS_API_BASE_URL || 'https://metrics.unilaunch.org';
     this.metricsBaseUrl = baseUrl.replace(/\/+$/, '');
   }
 
   async findByServiceId(serviceId: string, limit = 100): Promise<CollectionResponseDto[]> {
-    const collections = await this.collectionsRepository.findByServiceId(serviceId, limit);
-    return collections;
+    return this.collectionsRepository.findByServiceId(serviceId, limit);
   }
 
   async getEmissionsByRegion(start?: Date, end?: Date): Promise<RegionEmissions[]> {
-    // Se 'end' não for uma data válida, usa a data/hora atual
     const validEnd = end instanceof Date && !isNaN(end.getTime()) ? end : new Date();
-
-    // Se 'start' não for uma data válida, retrocede 24 horas a partir do 'validEnd'
     const validStart = start instanceof Date && !isNaN(start.getTime())
       ? start
       : new Date(validEnd.getTime() - 24 * 60 * 60 * 1000);
@@ -78,17 +80,21 @@ export class CollectionsService {
     for (const service of services) {
       try {
         const payload = await this.fetchServiceMetrics(service.id);
-
-        // Busca a intensidade de carbono baseada no regionCode do serviço
         const region = await this.regionsService.findRegionByCode(service.regionCode);
-        const carbonIntensity = region.carbonIntensity; // Baseado no seu DTO de região
+        const carbonIntensity = region.carbonIntensity;
 
-        // Algoritmo simulado de cálculo de energia em kWh baseado no uso (ajuste conforme a regra de negócio real)
-        const powerWatts = (payload.metrics.cpu_percent * 2) + (payload.metrics.memory_gb * 1.5) + (payload.metrics.disk_gb * 0.5);
+        // 1. Cálculo de Potência (Watts) com o modelo padronizado
+        const powerWatts = 
+          ((payload.metrics.cpu_percent / 100) * this.CPU_MAX_POWER_W) +
+          (payload.metrics.memory_gb * this.RAM_POWER_PER_GB_W) +
+          (payload.metrics.disk_gb * this.DISK_POWER_PER_GB_W) +
+          (payload.metrics.network_gb * this.NETWORK_POWER_PER_GB_W);
+
+        // 2. Cálculo de Energia (kWh)
         const hours = payload.collection_interval_seconds / 3600;
         const energyKwh = (powerWatts * hours) / 1000;
 
-        // CO2e = energia_kWh × carbon_intensity_gco2e_per_kwh
+        // 3. CO2e (gCO2e) = energia_kWh × carbon_intensity_gco2e_per_kwh
         const co2Emissions = energyKwh * carbonIntensity;
 
         newCollections.push({
@@ -96,13 +102,14 @@ export class CollectionsService {
           cpuPercent: payload.metrics.cpu_percent,
           memoryGb: payload.metrics.memory_gb,
           diskGb: payload.metrics.disk_gb,
+          networkGb: payload.metrics.network_gb, // NOTA: Certifique-se que 'networkGb' exista em 'NewCollection' (collections.schema.ts)
           energyKwh: energyKwh,
           co2Emissions: co2Emissions,
-        });
+        } as NewCollection);
 
       } catch (error) {
         this.logger.warn(`Falha ao coletar métricas para o serviço ${service.id}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-        continue; // Continua para o próximo serviço mesmo se um falhar
+        continue;
       }
     }
 

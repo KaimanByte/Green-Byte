@@ -75,43 +75,29 @@ Serviços indisponíveis ou sem métricas não entram na soma (não há dado); a
 | `DISK_WATTS_PER_GB` | 0,01 | W/GB |
 | `NETWORK_WATTS_PER_GB` | 0,02 | W/GB |
 
-## 4. Exemplo (vetor de teste para CA-02)
+## 4. Exemplo Numérico
 
-Serviço executado por 60 s em região com `85 gCO₂e/kWh`.
+Considere os seguintes dados coletados para um serviço em uma janela de 60 segundos:
+- **CPU**: 50% de uso
+- **RAM**: 2 GB
+- **Disco**: 10 GB
+- **Rede**: 1 GB
+- **Duração**: 60 segundos
+- **Intensidade de Carbono**: 85 gCO₂e/kWh
 
-**Entradas**
+**1. Potência Total (W):**
+A fórmula de potência utiliza a fração de uso da CPU multiplicada pela potência máxima, somada ao consumo proporcional dos demais recursos:
+`P = (50% * 100 W) + (2 GB * 0,375 W/GB) + (10 GB * 0,01 W/GB) + (1 GB * 0,02 W/GB)`
+`P = 50 W + 0,75 W + 0,1 W + 0,02 W = 50,87 W`
 
-```text
-CPU: 50%            CPU_MAX_WATTS: 100 W
-RAM: 2 GB           RAM_WATTS_PER_GB: 0,375 W/GB
-DISCO: 10 GB        DISK_WATTS_PER_GB: 0,01 W/GB
-REDE: 1 GB          NETWORK_WATTS_PER_GB: 0,02 W/GB
-TEMPO: 60 segundos = 0,0167 horas
-INTENSIDADE DE CARBONO: 85 gCO₂e/kWh
-```
+**2. Consumo de Energia (kWh):**
+A energia é calculada com a duração exata da coleta:
+`E = (Potência em W * (Duração em s / 3600)) / 1000`
+`E = (50,87 W * (60 / 3600) h) / 1000`
+`E = 0,0008478333 kWh`
 
-**Potência**
-
-```text
-CPU   = 50 / 100 × 100 = 50 W
-RAM   = 2 × 0,375      = 0,75 W
-DISCO = 10 × 0,01      = 0,10 W
-REDE  = 1 × 0,02       = 0,02 W
-
-Potência Estimada = 50 + 0,75 + 0,10 + 0,02 = 50,87 W
-```
-
-**Energia**
-
-```text
-Energia = 50,87 × 0,0167 / 1000 = 0,0008495 kWh
-```
-
-**Emissão**
-
-```text
-CO₂e = 0,0008495 × 85 = 0,0722 gCO₂e  ≈  0,072 gCO₂e
-```
+**3. Emissões de Carbono (gCO₂e):**
+`C = 0,0008478333 kWh * 85 gCO₂e/kWh = 0,0720658 gCO₂e`
 
 ## 5. Escopo: energia e água
 
