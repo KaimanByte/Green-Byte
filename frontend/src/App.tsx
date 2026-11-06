@@ -5,13 +5,15 @@ import { Logo } from './components/layouts/Logo'
 import { SearchBar } from './components/layouts/SearchBar'
 import { CollectionDate } from './components/layouts/CollectionDate'
 import { LAST_COLLECTION_AT } from './data/dashboard'
-import { DASHBOARD_ID, menuItems } from './components/layouts/menuItems'
+import { DASHBOARD_ID, LOGIN_ID, menuItems } from './components/layouts/menuItems'
+import { LoginPanel } from './components/panels/LoginPanel'
 import { REGIONS } from './data/regions'
 import { RegionPanel } from './components/panels/RegionPanel'
 import { Connector } from './components/panels/Connector'
 import { DashboardPanel } from './components/panels/DashboardPanel'
 import { IntroOverlay } from './components/layouts/IntroOverlay'
 import { INTRO_HOLD_MS, type IntroPhase } from './lib/intro'
+
 
 // quem pediu menos movimento no sistema não vê a intro
 const prefersReducedMotion = () =>
@@ -25,10 +27,14 @@ function App() {
   const panelRef = useRef<HTMLElement>(null)
   const dashboardRef = useRef<HTMLElement>(null)
   const [introPhase, setIntroPhase] = useState<IntroPhase>(() => (prefersReducedMotion() ? 'done' : 'hold'))
+  const [isLoginOpen, setIsLoginOpen] = useState(false)
+  const loginRef = useRef<HTMLElement>(null)
+
 
   // o tempo da logo só começa a contar quando a cena já está desenhada
   const [isSceneReady, setIsSceneReady] = useState(false)
   const markSceneReady = useCallback(() => setIsSceneReady(true), [])
+
 
   // logo na tela por alguns segundos, depois começa o zoom até a Terra
   useEffect(() => {
@@ -44,8 +50,11 @@ function App() {
 
   const finishIntro = useCallback(() => setIntroPhase('done'), [])
 
+  
+
   // dashboard aparece ao lado do menu, ligado ao item por uma linha
-  const isDashboardOpen = isMenuOpen && activeItem === DASHBOARD_ID
+  const showLogin = isMenuOpen && isLoginOpen
+  const isDashboardOpen = isMenuOpen && activeItem === DASHBOARD_ID && !isLoginOpen
 
   const selectedRegion = REGIONS.find((region) => region.code === selectedRegionCode) ?? null
 
@@ -72,14 +81,26 @@ function App() {
     setFocusRequest({ code, id: Date.now() })
   }, [])
 
-  const toggleMenu = useCallback(() => setIsMenuOpen((open) => !open), [])
-  const closeMenu = useCallback(() => setIsMenuOpen(false), [])
+  // fechar o menu sempre fecha o login junto
+const toggleMenu = useCallback(() => {
+  setIsMenuOpen((open) => !open)
+  setIsLoginOpen(false)
+}, [])
+const closeMenu = useCallback(() => {
+  setIsMenuOpen(false)
+  setIsLoginOpen(false)
+}, [])
 
-  const selectItem = useCallback((Id: string) => {
-    setActiveItem(Id)
-    // o dashboard abre ao lado do menu, então o menu continua aberto
-    setIsMenuOpen(Id === DASHBOARD_ID)
-  }, [])
+const selectItem = useCallback((id: string) => {
+  // login abre ao lado do menu, no lugar do dashboard
+  if (id === LOGIN_ID) {
+    setIsLoginOpen(true)
+    return
+  }
+  setIsLoginOpen(false)
+  setActiveItem(id)
+  setIsMenuOpen(id === DASHBOARD_ID)
+}, [])
 
   const scene = (
     <GloboScene
@@ -128,6 +149,13 @@ function App() {
         <Connector
           anchorSelector={isDashboardOpen ? `[data-menu-item="${DASHBOARD_ID}"]` : null}
           panelRef={dashboardRef}
+          overlay
+        />
+
+        {showLogin && <LoginPanel onClose={closeMenu} panelRef={loginRef} />}
+        <Connector
+          anchorSelector={showLogin ? `[data-menu-item="${LOGIN_ID}"]` : null}
+          panelRef={loginRef}
           overlay
         />
         <Sidebar

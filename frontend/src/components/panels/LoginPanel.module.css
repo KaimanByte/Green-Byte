@@ -1,0 +1,59 @@
+aside.panel {
+  --panel-left: calc(16px + 280px + 40px);
+  z-index: 15;
+  top: auto;
+  bottom: 96px;                          
+  left: var(--panel-left);
+  right: auto;
+  width: min(440px, calc(100vw - 32px));  
+  padding: 48px 40px 40px;              
+  transform: none;
+  animation-name: login-in;
+  animation-delay: 0.45s;
+  animation-fill-mode: both;
+}
+
+@keyframes login-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+.form { display: flex; flex-direction: column; gap: 20px; }  
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.input {
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-item);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.input:focus-visible,
+.submit:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+.error { margin: 0; font-size: 13px; color: #ff8a80; }
+
+.submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-fill);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.submit:hover { background: var(--glass-fill-hover); }

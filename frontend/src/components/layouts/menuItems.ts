@@ -9,3 +9,5 @@ export const DASHBOARD_ID = 'dashboard'
 export const menuItems: MenuItem[] = [
     { id: DASHBOARD_ID, label: 'Dashboard' },
 ]
+
+export const LOGIN_ID = 'login'

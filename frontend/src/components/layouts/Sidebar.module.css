@@ -86,6 +86,7 @@
 }
 
 /* ---------- conteúdo: entra um pouco depois da barra ---------- */
+.login,
 .title,
 .list,
 .footer {
@@ -93,7 +94,7 @@
   transform: translateX(-8px);
   transition: opacity 0.2s, transform 0.2s;
 }
-
+.open .login,
 .open .title,
 .open .list,
 .open .footer {
@@ -172,9 +173,41 @@
   opacity: 1;
 }
 
+/* ---------- login (acima da linha do rodapé) ---------- */
+.login {
+  margin-top: auto;
+  margin-bottom: 12px;
+  align-self: center;
+  padding: 6px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s, background 0.2s, color 0.2s;}
+
+.login:hover,
+.loginActive {
+  background: var(--glass-fill-hover);
+  color: var(--text-primary);
+}
+
+.login:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+
+.open .login {
+  transition: opacity 0.3s 0.15s, transform 0.3s 0.15s, background 0.2s, color 0.2s;
+}
+
 /* ---------- rodapé ---------- */
 .footer {
-  margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid var(--divider);
   display: flex;
@@ -198,7 +231,8 @@
   .open,
   .title,
   .list,
-  .footer {
+  .footer,
+  .login {
     transition: none;
   }
 }

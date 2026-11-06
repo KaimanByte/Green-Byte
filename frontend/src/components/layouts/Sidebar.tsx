@@ -1,6 +1,6 @@
 import { useEffect} from 'react'
 import {MenuIcon} from './MenuIcon'
-import type { MenuItem } from './menuItems'
+import { LOGIN_ID, type MenuItem } from './menuItems'
 import styles from './Sidebar.module.css'
 
 type Props = {
@@ -78,6 +78,15 @@ export function Sidebar({ isOpen, onToggle, onClose, items, activeId, onSelect }
             )
           })}
         </ul>
+
+        <button
+          type="button"
+          className={`${styles.login} ${activeId === LOGIN_ID ? styles.loginActive : ''}`}
+          data-menu-item={LOGIN_ID}
+          onClick={() => onSelect(LOGIN_ID)}
+          >
+            LOGIN
+          </button>
 
         <footer className={styles.footer}>
           <span className={styles.footerBrand}>GREENBYTE</span>
