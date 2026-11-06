@@ -11,7 +11,7 @@ export class UsersRepository {
     return this.dbService.db.select().from(users);
   }
 
-  async findById(id: number): Promise<User | null> {
+  async findById(id: number): Promise<User| null> {
     const result = await this.dbService.db
       .select()
       .from(users)
@@ -20,7 +20,7 @@ export class UsersRepository {
     return result[0] || null;
   }
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<User| null> {
     const result = await this.dbService.db
       .select()
       .from(users)
@@ -38,10 +38,10 @@ export class UsersRepository {
     return result[0];
   }
 
-  async updateSenha(id: number, senhaHash: string): Promise<User | null> {
+  async update(id: number, data: Partial<NewUser>): Promise<User | null> {
     const result = await this.dbService.db
       .update(users)
-      .set({ senhaHash }) // Eu já dei npm i no bcrypt e no @types/bcrypt, então não precisa instalar nada, só implementar a função de hash de senha no service
+      .set(data)
       .where(eq(users.id, id))
       .returning();
       
