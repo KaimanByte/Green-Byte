@@ -82,3 +82,13 @@
 .selected .label {
   opacity: 0;
 }
+/* marcadores aparecem suaves quando a intro termina */
+.anchor {
+  animation: anchor-in 0.9s ease;
+}
+
+@keyframes anchor-in {
+  from {
+    opacity: 0;
+  }
+}

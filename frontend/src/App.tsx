@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { GloboScene, type FocusRequest } from './components/scenes/GloboScene'
 import { Sidebar } from './components/layouts/Sidebar'
 import { Logo } from './components/layouts/Logo'
@@ -10,6 +10,12 @@ import { REGIONS } from './data/regions'
 import { RegionPanel } from './components/panels/RegionPanel'
 import { Connector } from './components/panels/Connector'
 import { DashboardPanel } from './components/panels/DashboardPanel'
+import { IntroOverlay } from './components/layouts/IntroOverlay'
+import { INTRO_HOLD_MS, type IntroPhase } from './lib/intro'
+
+// quem pediu menos movimento no sistema não vê a intro
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -18,6 +24,25 @@ function App() {
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null)
   const panelRef = useRef<HTMLElement>(null)
   const dashboardRef = useRef<HTMLElement>(null)
+  const [introPhase, setIntroPhase] = useState<IntroPhase>(() => (prefersReducedMotion() ? 'done' : 'hold'))
+
+  // o tempo da logo só começa a contar quando a cena já está desenhada
+  const [isSceneReady, setIsSceneReady] = useState(false)
+  const markSceneReady = useCallback(() => setIsSceneReady(true), [])
+
+  // logo na tela por alguns segundos, depois começa o zoom até a Terra
+  useEffect(() => {
+    if (introPhase !== 'hold' || !isSceneReady) return
+    const timer = window.setTimeout(() => setIntroPhase('zoom'), INTRO_HOLD_MS)
+    return () => window.clearTimeout(timer)
+  }, [introPhase, isSceneReady])
+
+  // pular: na logo começa o zoom; no meio do zoom vai direto pro globo
+  const skipIntro = useCallback(() => {
+    setIntroPhase((phase) => (phase === 'hold' ? 'zoom' : 'done'))
+  }, [])
+
+  const finishIntro = useCallback(() => setIntroPhase('done'), [])
 
   // dashboard aparece ao lado do menu, ligado ao item por uma linha
   const isDashboardOpen = isMenuOpen && activeItem === DASHBOARD_ID
@@ -56,46 +81,64 @@ function App() {
     setIsMenuOpen(Id === DASHBOARD_ID)
   }, [])
 
+  const scene = (
+    <GloboScene
+      regions={REGIONS}
+      selectedCode={selectedRegionCode}
+      onSelectRegion={selectRegion}
+      focusRequest={focusRequest}
+      introPhase={introPhase}
+      onIntroReady={markSceneReady}
+      onIntroDone={finishIntro}
+    />
+  )
+
+  // durante a intro só aparece o espaço e a logo; o resto da interface entra no fim
+  if (introPhase !== 'done') {
+    return (
+      <>
+        {scene}
+        <IntroOverlay phase={introPhase} onSkip={skipIntro} />
+      </>
+    )
+  }
+
   return (
     <>
-            <GloboScene
-        regions={REGIONS}
-        selectedCode={selectedRegionCode}
-        onSelectRegion={selectRegion}
-        focusRequest={focusRequest}
-      />
+      {scene}
+      <div className="ui-reveal">
+        <Logo />
+        <SearchBar regions={REGIONS} onSelect={searchRegion} />
+        <CollectionDate date={LAST_COLLECTION_AT} isHidden={selectedRegion !== null} />
 
-      <Logo />
-      <SearchBar regions={REGIONS} onSelect={searchRegion} />
-      <CollectionDate date={LAST_COLLECTION_AT} isHidden={selectedRegion !== null} />
-
-      {selectedRegion && (
-        <RegionPanel
-          key={selectedRegion.code}
-          region={selectedRegion}
-          onClose={closeRegion}
+        {selectedRegion && (
+          <RegionPanel
+            key={selectedRegion.code}
+            region={selectedRegion}
+            onClose={closeRegion}
+            panelRef={panelRef}
+          />
+        )}
+        <Connector
+          anchorSelector={selectedRegionCode ? `[data-region="${selectedRegionCode}"]` : null}
           panelRef={panelRef}
         />
-      )}
-      <Connector
-        anchorSelector={selectedRegionCode ? `[data-region="${selectedRegionCode}"]` : null}
-        panelRef={panelRef}
-      />
 
-      {isDashboardOpen && <DashboardPanel onClose={closeMenu} panelRef={dashboardRef} />}
-      <Connector
-        anchorSelector={isDashboardOpen ? `[data-menu-item="${DASHBOARD_ID}"]` : null}
-        panelRef={dashboardRef}
-        overlay
-      />
-      <Sidebar
-        isOpen={isMenuOpen}
-        onToggle={toggleMenu}
-        onClose={closeMenu}
-        items={menuItems}
-        activeId={activeItem}
-        onSelect={selectItem}
-      />
+        {isDashboardOpen && <DashboardPanel onClose={closeMenu} panelRef={dashboardRef} />}
+        <Connector
+          anchorSelector={isDashboardOpen ? `[data-menu-item="${DASHBOARD_ID}"]` : null}
+          panelRef={dashboardRef}
+          overlay
+        />
+        <Sidebar
+          isOpen={isMenuOpen}
+          onToggle={toggleMenu}
+          onClose={closeMenu}
+          items={menuItems}
+          activeId={activeItem}
+          onSelect={selectItem}
+        />
+      </div>
     </>
   )
 }

@@ -49,7 +49,7 @@ export function RegionMarker({ region, radius, isSelected, onSelect }: Props) {
 
   return (
     <group ref={anchorRef} position={position}>
-      <Html center zIndexRange={[100, 0]}>
+      <Html center zIndexRange={[100, 0]} className={styles.anchor}>
         <button
           ref={buttonRef}
           type="button"
