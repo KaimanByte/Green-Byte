@@ -13,17 +13,6 @@ import {
 export class CollectionsController {
   constructor(private readonly collectionsService: CollectionsService) {}
 
-  @Post('sync')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Sincroniza métricas e calcula emissões',
-    description: 'Varre todos os serviços ativos, busca suas métricas na API externa, cruza com a intensidade de carbono da região e grava a coleta calculada.',
-  })
-  @ApiOkResponse({ type: SyncCollectionsResponseDto })
-  async syncCollections(): Promise<SyncCollectionsResponseDto> {
-    return this.collectionsService.syncCollections();
-  }
-
   @Get('service/:serviceId')
   @ApiOperation({ summary: 'Busca histórico de coletas de um serviço' })
   @ApiParam({ name: 'serviceId', example: 'billing-api' })
@@ -58,5 +47,16 @@ export class CollectionsController {
     @Query('end') end: string,
   ): Promise<ServiceEmissionsDto[]> {
     return this.collectionsService.getEmissionsByService(new Date(start), new Date(end));
+  }
+
+  @Post('sync')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Sincroniza métricas e calcula emissões',
+    description: 'Varre todos os serviços ativos, busca suas métricas na API externa, cruza com a intensidade de carbono da região e grava a coleta calculada.',
+  })
+  @ApiOkResponse({ type: SyncCollectionsResponseDto })
+  async syncCollections(): Promise<SyncCollectionsResponseDto> {
+    return this.collectionsService.syncCollections();
   }
 }

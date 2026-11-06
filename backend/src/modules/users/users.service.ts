@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersRepository } from './users.repository';
@@ -6,10 +6,31 @@ import { User, NewUser } from './users.schema';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
-export class UsersService {
+export class UsersService implements OnModuleInit {
   private readonly saltRounds = 10;
 
   constructor(private readonly userRepository: UsersRepository) {}
+
+  async onModuleInit() {
+    await this.seedInitialUser();
+  }
+
+  private async seedInitialUser() {
+    const existingUsers = await this.userRepository.findAll();
+    if (existingUsers.length === 0) {
+      const defaultEmail = process.env.ADM_EMAIL || 'admin@admin.com';
+      const defaultPassword = process.env.ADM_PASSWORD || 'Admin123!';
+
+      const hashedPassword = await bcrypt.hash(defaultPassword, this.saltRounds);
+      
+      await this.userRepository.create({
+        email: defaultEmail,
+        hashPassword: hashedPassword,
+      });
+
+      console.log(`[UsersService] Usuário inicial criado: ${defaultEmail}`);
+    }
+  }
 
   async create(createUserDto: CreateUserDto): Promise<Omit<User, 'hashPassword'>> {
     const existingUser = await this.userRepository.findByEmail(createUserDto.email);
