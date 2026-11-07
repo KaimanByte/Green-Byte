@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, lte, sql, SQL } from 'drizzle-orm';
+import { CollectionHistoryQuery } from './collection-history.query';
 import { DatabaseService } from '../../database/database.service';
 import { regions } from '../regions/regions.schema';
 import { services } from '../services/services.schema';
@@ -45,6 +46,36 @@ export class CollectionsRepository {
       .where(eq(collections.serviceId, serviceId))
       .orderBy(desc(collections.timestamp))
       .limit(limit);
+  }
+
+  /**
+   * Histórico de um serviço, com intervalo [from, to] inclusivo e opcional.
+   * Resultado sempre em ordem cronológica crescente.
+   */
+  async findHistory(query: CollectionHistoryQuery): Promise<Collection[]> {
+    const conditions: SQL[] = [eq(collections.serviceId, query.serviceId)];
+
+    if (query.from) {
+      conditions.push(gte(collections.timestamp, query.from));
+    }
+    if (query.to) {
+      conditions.push(lte(collections.timestamp, query.to));
+    }
+
+    const base = this.dbService.db
+      .select()
+      .from(collections)
+      .where(and(...conditions));
+
+    if (query.limit === undefined) {
+      return base.orderBy(asc(collections.timestamp), asc(collections.id));
+    }
+
+    const latest = await base
+      .orderBy(desc(collections.timestamp), desc(collections.id))
+      .limit(query.limit);
+
+    return latest.reverse();
   }
 
   async findByDateRange(

@@ -1,11 +1,15 @@
+import { jest } from '@jest/globals';
+import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CollectionsService } from './collections.service';
 import { CollectionsRepository } from './collections.repository';
+import { Collection } from './collections.schema';
 import { ServicesService } from '../services/services.service';
 import { RegionsService } from '../regions/regions.service';
 
 // Faz o mock global da API nativa 'fetch' utilizada pelo node
-global.fetch = jest.fn();
+const fetchMock = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+global.fetch = fetchMock as unknown as typeof fetch;
 
 describe('CollectionsService', () => {
   let service: CollectionsService;
@@ -17,6 +21,7 @@ describe('CollectionsService', () => {
     // Cria os mocks para as dependências injetadas
     const mockCollectionsRepository = {
       findByServiceId: jest.fn(),
+      findHistory: jest.fn(),
       getEmissionsByRegion: jest.fn(),
       getEmissionsByService: jest.fn(),
       insertMany: jest.fn(),
@@ -52,12 +57,12 @@ describe('CollectionsService', () => {
   describe('syncCollections', () => {
     it('deve calcular a energia e emissões exatas usando o modelo de constantes', async () => {
       // 1. Simula os serviços cadastrados no banco
-      servicesService.findAllServices.mockResolvedValue([
+      (servicesService.findAllServices as jest.Mock<() => Promise<unknown>>).mockResolvedValue([
         { id: 'svc-123', regionCode: 'sa-east-1', name: 'App Backend', status: 'ACTIVE' },
       ]);
 
       // 2. Simula a intensidade de carbono da região retornado pelo serviço
-      regionsService.findRegionByCode.mockResolvedValue({
+      (regionsService.findRegionByCode as jest.Mock<() => Promise<unknown>>).mockResolvedValue({
         id: 'reg-1',
         code: 'sa-east-1',
         name: 'South America',
@@ -76,19 +81,19 @@ describe('CollectionsService', () => {
         },
       };
 
-      (global.fetch as jest.Mock).mockResolvedValue({
+      fetchMock.mockResolvedValue({
         ok: true,
         json: async () => mockMetricsPayload,
       });
 
       // 4. Simula o retorno do salvamento
-      collectionsRepository.insertMany.mockImplementation(async (data) => data as any);
+      collectionsRepository.insertMany.mockImplementation(async (data) => data as Collection[]);
 
       // Executa o método
       const result = await service.syncCollections();
 
       // Verifica se o fetch foi chamado para o serviço correto
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/metrics/svc-123'),
         expect.any(Object)
       );
@@ -107,13 +112,74 @@ describe('CollectionsService', () => {
     });
 
     it('deve retornar zero coleções e não dar throw caso nenhum serviço exista', async () => {
-      servicesService.findAllServices.mockResolvedValue([]);
+      (servicesService.findAllServices as jest.Mock<() => Promise<unknown>>).mockResolvedValue([]);
 
       const result = await service.syncCollections();
 
       expect(result.total).toBe(0);
       expect(collectionsRepository.insertMany).not.toHaveBeenCalled();
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(fetchMock).not.toHaveBeenCalled();
     });
   });
-});
+
+  describe('findHistory', () => {
+    const serviceId = 'svc-1';
+
+    it('deve delegar ao repositório o filtro por serviço e intervalo', async () => {
+      const from = new Date('2026-10-01T00:00:00.000Z');
+      const to = new Date('2026-10-31T23:59:59.999Z');
+      const rows = [{ id: 1, serviceId, timestamp: from }] as never;
+      collectionsRepository.findHistory.mockResolvedValue(rows);
+
+      const result = await service.findHistory({ serviceId, from, to });
+
+      expect(collectionsRepository.findHistory).toHaveBeenCalledWith({ serviceId, from, to });
+      expect(result).toBe(rows);
+    });
+
+    it('deve aceitar intervalo omitido (histórico completo)', async () => {
+      collectionsRepository.findHistory.mockResolvedValue([]);
+
+      await service.findHistory({ serviceId });
+
+      expect(collectionsRepository.findHistory).toHaveBeenCalledWith({ serviceId });
+    });
+
+    it('deve aceitar from igual a to (limites inclusivos)', async () => {
+      const instant = new Date('2026-10-10T12:00:00.000Z');
+      collectionsRepository.findHistory.mockResolvedValue([]);
+
+      await expect(service.findHistory({ serviceId, from: instant, to: instant })).resolves.toEqual([]);
+    });
+
+    it('deve retornar lista vazia para período sem coletas', async () => {
+      collectionsRepository.findHistory.mockResolvedValue([]);
+
+      const result = await service.findHistory({
+        serviceId,
+        from: new Date('2020-01-01T00:00:00.000Z'),
+        to: new Date('2020-01-02T00:00:00.000Z'),
+      });
+
+      expect(result).toEqual([]);
+    });
+
+    it('deve rejeitar from posterior a to', async () => {
+      await expect(
+        service.findHistory({
+          serviceId,
+          from: new Date('2026-10-02T00:00:00.000Z'),
+          to: new Date('2026-10-01T00:00:00.000Z'),
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(collectionsRepository.findHistory).not.toHaveBeenCalled();
+    });
+
+    it('deve rejeitar datas inválidas e limit inválido', async () => {
+      await expect(service.findHistory({ serviceId, from: new Date('x') })).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.findHistory({ serviceId, to: new Date('x') })).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.findHistory({ serviceId, limit: 0 })).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.findHistory({ serviceId, limit: Number.NaN })).rejects.toBeInstanceOf(BadRequestException);
+      expect(collectionsRepository.findHistory).not.toHaveBeenCalled();
+    });
+  });});
