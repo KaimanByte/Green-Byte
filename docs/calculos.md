@@ -66,6 +66,17 @@ CO₂e total    = Σ CO₂e dos serviços monitorados
 
 Serviços indisponíveis ou sem métricas não entram na soma (não há dado); apenas são contados nos indicadores de estado.
 
+**Regra para serviços sem cálculo (CA-04)** — implementada em `EnvironmentIndicatorsCalculator`:
+
+| Situação no período consolidado | Classificação | Entra nas somas? |
+|---|---|---|
+| Status `removed` | ignorado | não (não é contado) |
+| Status `unavailable` | indisponível | não |
+| Sem coletas, recém-registrado, ou totais inválidos (NaN, Infinity, negativos) | sem métricas | não |
+| Ao menos uma coleta com totais válidos (inclusive zerados) | ativo | sim |
+
+Sem nenhum serviço ativo, energia e CO₂e totais valem `0` (nunca `NaN` ou `null`). A resposta informa o período considerado (`from`/`to`); o padrão são as últimas 24 h até o instante da chamada.
+
 ## 3. Constantes do exemplo
 
 | Constante | Valor | Unidade |

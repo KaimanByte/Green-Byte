@@ -5,6 +5,7 @@ import { DatabaseService } from '../../database/database.service';
 import { regions } from '../regions/regions.schema';
 import { services } from '../services/services.schema';
 import { collections, Collection, NewCollection } from './collections.schema';
+import { ServicePeriodTotals } from './environment-indicators.types';
 
 export type RegionEmissions = {
   regionCode: string;
@@ -97,6 +98,23 @@ export class CollectionsRepository {
       .from(collections)
       .where(and(...conditions))
       .orderBy(asc(collections.timestamp));
+  }
+
+  /**
+   * Quantidade de coletas e somas de energia/CO2e por serviço no período [start, end] (inclusivo).
+   * Serviços sem coletas no período não aparecem no resultado.
+   */
+  async getServicePeriodTotals(start: Date, end: Date): Promise<ServicePeriodTotals[]> {
+    return this.dbService.db
+      .select({
+        serviceId: collections.serviceId,
+        collectionsCount: sql<number>`count(*)`.mapWith(Number),
+        totalEnergyKwh: sql<number>`coalesce(sum(${collections.energyKwh}), 0)`.mapWith(Number),
+        totalCo2Emissions: sql<number>`coalesce(sum(${collections.co2Emissions}), 0)`.mapWith(Number),
+      })
+      .from(collections)
+      .where(and(gte(collections.timestamp, start), lte(collections.timestamp, end)))
+      .groupBy(collections.serviceId);
   }
 
   async getEmissionsByRegion(start: Date, end: Date): Promise<RegionEmissions[]> {
