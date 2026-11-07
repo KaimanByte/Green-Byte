@@ -8,19 +8,29 @@ import { EnvironmentIndicatorsService } from './environment-indicators.service';
 import { ServiceHistoryController } from './service-history.controller';
 import { ServiceHistoryService } from './service-history.service';
 import { SummaryController } from './summary.controller';
+import { RankingCompareCalculator } from './ranking-compare.calculator';
+import { RankingCompareController } from './ranking-compare.controller';
+import { RankingCompareService } from './ranking-compare.service';
 import { ServicesModule } from '../services/services.module';
 import { RegionsModule } from '../regions/regions.module';
 
 @Module({
   imports: [DatabaseModule, ServicesModule, RegionsModule],
-  controllers: [CollectionsController, ServiceHistoryController, SummaryController],
+  controllers: [
+    CollectionsController,
+    ServiceHistoryController,
+    SummaryController,
+    RankingCompareController,
+  ],
   providers: [
     CollectionsService,
     CollectionsRepository,
     EnvironmentIndicatorsCalculator,
     EnvironmentIndicatorsService,
     ServiceHistoryService,
+    RankingCompareCalculator,
+    RankingCompareService,
   ],
-  exports: [CollectionsService, EnvironmentIndicatorsService],
+  exports: [CollectionsService, EnvironmentIndicatorsService, RankingCompareService],
 })
 export class CollectionsModule {}
