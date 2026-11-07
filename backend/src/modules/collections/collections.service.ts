@@ -1,5 +1,6 @@
 import {
   BadGatewayException,
+  BadRequestException,
   GatewayTimeoutException,
   Injectable,
   Logger,
@@ -7,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { CollectionsRepository, RegionEmissions, ServiceEmissions } from './collections.repository';
 import { NewCollection } from './collections.schema';
+import { CollectionHistoryQuery } from './collection-history.query';
 import { CollectionResponseDto, SyncCollectionsResponseDto } from './dto/collection.dto';
 import { ServicesService } from '../services/services.service';
 import { RegionsService } from '../regions/regions.service';
@@ -44,6 +46,25 @@ export class CollectionsService {
 
   async findByServiceId(serviceId: string, limit = 100): Promise<CollectionResponseDto[]> {
     return this.collectionsRepository.findByServiceId(serviceId, limit);
+  }
+
+  /**
+   * Histórico cronológico de um serviço com intervalo opcional [from, to] inclusivo.
+   */
+  async findHistory(query: CollectionHistoryQuery): Promise<CollectionResponseDto[]> {
+    const { from, to, limit } = query;
+
+    if ((from && isNaN(from.getTime())) || (to && isNaN(to.getTime()))) {
+      throw new BadRequestException('Datas "from" e "to" devem ser válidas (ISO 8601).');
+    }
+    if (from && to && from.getTime() > to.getTime()) {
+      throw new BadRequestException('"from" não pode ser posterior a "to".');
+    }
+    if (limit !== undefined && (!Number.isInteger(limit) || limit <= 0)) {
+      throw new BadRequestException('"limit" deve ser um inteiro positivo.');
+    }
+
+    return this.collectionsRepository.findHistory(query);
   }
 
   async getEmissionsByRegion(start?: Date, end?: Date): Promise<RegionEmissions[]> {

@@ -16,13 +16,22 @@ export class CollectionsController {
   @Get('service/:serviceId')
   @ApiOperation({ summary: 'Busca histórico de coletas de um serviço' })
   @ApiParam({ name: 'serviceId', example: 'billing-api' })
+  @ApiQuery({ name: 'from', required: false, example: '2026-10-01T00:00:00.000Z' })
+  @ApiQuery({ name: 'to', required: false, example: '2026-10-31T23:59:59.000Z' })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 100 })
   @ApiOkResponse({ type: [CollectionResponseDto] })
   async getByService(
     @Param('serviceId') serviceId: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
     @Query('limit') limit?: string,
   ): Promise<CollectionResponseDto[]> {
-    return this.collectionsService.findByServiceId(serviceId, limit ? parseInt(limit, 10) : 100);
+    return this.collectionsService.findHistory({
+      serviceId,
+      from: from ? new Date(from) : undefined,
+      to: to ? new Date(to) : undefined,
+      limit: limit ? Number(limit) : 100,
+    });
   }
 
   @Get('emissions/region')

@@ -9,14 +9,16 @@ import { RegionsService } from './regions.service';
 import { NewRegion, Region } from './regions.schema';
 import { jest } from '@jest/globals';
 
+type AsyncFn = (...args: unknown[]) => Promise<unknown>;
+
 describe('RegionsService', () => {
   const originalFetch = global.fetch;
   let service: RegionsService;
-  let fetchMock: jest.Mock;
+  let fetchMock: jest.Mock<AsyncFn>;
   let repository: {
-    findAll: jest.Mock;
-    findByCode: jest.Mock;
-    upsertMany: jest.Mock;
+    findAll: jest.Mock<AsyncFn>;
+    findByCode: jest.Mock<AsyncFn>;
+    upsertMany: jest.Mock<AsyncFn>;
   };
 
   const sudeste: Region = {
@@ -54,13 +56,13 @@ describe('RegionsService', () => {
 
   beforeEach(() => {
     process.env.CARBON_API_BASE_URL = 'https://carbon.unilaunch.org/';
-    fetchMock = jest.fn();
+    fetchMock = jest.fn<AsyncFn>();
     global.fetch = fetchMock as unknown as typeof fetch;
     repository = {
-      findAll: jest.fn(),
-      findByCode: jest.fn(),
+      findAll: jest.fn<AsyncFn>(),
+      findByCode: jest.fn<AsyncFn>(),
       // Mock atualizado para upsertMany
-      upsertMany: jest.fn(async (data: NewRegion[]) => data),
+      upsertMany: jest.fn<AsyncFn>(async (data: unknown) => data as NewRegion[]),
     };
     service = new RegionsService(repository as unknown as RegionsRepository);
   });
@@ -97,11 +99,11 @@ describe('RegionsService', () => {
       repository.findAll.mockResolvedValue([]);
       
       // Mock do fetch para simular que a API externa também retornou zero regiões
-      global.fetch = jest.fn().mockResolvedValue({
+      global.fetch = jest.fn<AsyncFn>().mockResolvedValue({
         ok: true,
         status: 200,
         json: async () => ({ regions: [], total: 0 }),
-      });
+      }) as unknown as typeof fetch;
 
       await expect(service.findAllRegions()).resolves.toEqual([]);
     });

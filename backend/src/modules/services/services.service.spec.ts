@@ -1,4 +1,6 @@
 import { jest } from '@jest/globals';
+
+type AsyncFn = (...args: unknown[]) => Promise<unknown>;
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   BadGatewayException,
@@ -12,21 +14,21 @@ import { ServicesRepository } from './services.repository';
 describe('ServicesService', () => {
   let service: ServicesService;
   let repository: {
-    findById: jest.Mock;
-    upsertMany: jest.Mock;
+    findById: jest.Mock<AsyncFn>;
+    upsertMany: jest.Mock<AsyncFn>;
   };
-  let fetchMock: jest.Mock;
+  let fetchMock: jest.Mock<AsyncFn>;
   const originalFetch = global.fetch;
 
   beforeEach(async () => {
     // Configura as variáveis de ambiente e o mock do fetch para o ambiente de testes
     process.env.METRICS_API_BASE_URL = 'https://metrics.unilaunch.org';
-    fetchMock = jest.fn();
+    fetchMock = jest.fn<AsyncFn>();
     global.fetch = fetchMock as unknown as typeof fetch;
 
     repository = {
-      findById: jest.fn(),
-      upsertMany: jest.fn(),
+      findById: jest.fn<AsyncFn>(),
+      upsertMany: jest.fn<AsyncFn>(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
