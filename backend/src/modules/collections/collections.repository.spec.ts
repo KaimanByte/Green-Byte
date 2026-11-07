@@ -87,3 +87,30 @@ describe('CollectionsRepository.findHistory', () => {
     expect(result).toEqual([]);
   });
 });
+
+describe('CollectionsRepository.getServicePeriodTotals', () => {
+  it('agrupa por serviço no período e devolve contagem e somas', async () => {
+    const rows = [{ serviceId: 'svc-1', collectionsCount: 2, totalEnergyKwh: 1.5, totalCo2Emissions: 10 }];
+    const groupBy = jest.fn<(...args: unknown[]) => Promise<typeof rows>>().mockResolvedValue(rows);
+    const where = jest.fn<(...args: unknown[]) => unknown>().mockReturnValue({ groupBy });
+    const db = { select: () => ({ from: () => ({ where }) }) };
+    const repository = new CollectionsRepository({ db } as unknown as DatabaseService);
+
+    const result = await repository.getServicePeriodTotals(
+      new Date('2026-10-01T00:00:00Z'),
+      new Date('2026-10-02T00:00:00Z'),
+    );
+
+    expect(where).toHaveBeenCalledTimes(1);
+    expect(groupBy).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(rows);
+  });
+
+  it('retorna lista vazia quando não há coletas no período', async () => {
+    const groupBy = jest.fn<(...args: unknown[]) => Promise<never[]>>().mockResolvedValue([]);
+    const db = { select: () => ({ from: () => ({ where: () => ({ groupBy }) }) }) };
+    const repository = new CollectionsRepository({ db } as unknown as DatabaseService);
+
+    await expect(repository.getServicePeriodTotals(new Date(), new Date())).resolves.toEqual([]);
+  });
+});
