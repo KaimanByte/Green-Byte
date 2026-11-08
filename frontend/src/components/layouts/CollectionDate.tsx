@@ -12,11 +12,24 @@ const short = (text: string) => {
 }
 
 export function CollectionDate({ date: propDate, isHidden = false }: Props) {
-  // Puxa o horário real da última sincronização do backend
-  const { lastSync } = useGreenData()
-  
-  // Prioriza a data do hook (tempo real do Cron), mas aceita prop se fornecida
-  const date = lastSync || propDate || new Date()
+  // Horário da coleta mais recente gravada no banco (GET /collections/service/:id?limit=1)
+  const { lastCollectionAt, loading } = useGreenData()
+
+  // a prop só vale se for passada explicitamente; nunca inventa "agora" como data de coleta
+  const date = lastCollectionAt ?? propDate ?? null
+
+  if (!date) {
+    return (
+      <section
+        className={`${styles.root} ${isHidden ? styles.hidden : ''}`}
+        aria-label="Data da última coleta"
+        aria-hidden={isHidden}
+      >
+        <p className={styles.label}>Última coleta</p>
+        <p className={styles.time}>{loading ? 'Carregando…' : 'Sem coletas registradas'}</p>
+      </section>
+    )
+  }
 
   const weekday = short(date.toLocaleDateString('pt-BR', { weekday: 'short' }))
   const month = short(date.toLocaleDateString('pt-BR', { month: 'short' }))

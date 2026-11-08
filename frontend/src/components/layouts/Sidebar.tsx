@@ -61,6 +61,7 @@ export function Sidebar({ isOpen, onToggle, onClose, items, activeId, onSelect }
         <ul className={styles.list}>
           {items.map((item) => {
             const isActive = item.id === activeId
+            const Icon = item.icon
 
             return (
               <li key={item.id}>
@@ -71,7 +72,11 @@ export function Sidebar({ isOpen, onToggle, onClose, items, activeId, onSelect }
                   data-menu-item={item.id}
                   onClick={() => onSelect(item.id)}
                 >
-                  <span className={styles.dot} aria-hidden="true" />
+                  {Icon ? (
+                    <Icon size={18} strokeWidth={2} aria-hidden="true" className={styles.icon} />
+                  ) : (
+                    <span className={styles.dot} aria-hidden="true" />
+                  )}
                   {item.label}
                 </button>
               </li>

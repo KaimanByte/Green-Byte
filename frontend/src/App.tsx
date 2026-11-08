@@ -4,13 +4,13 @@ import { Sidebar } from './components/layouts/Sidebar'
 import { Logo } from './components/layouts/Logo'
 import { SearchBar } from './components/layouts/SearchBar'
 import { CollectionDate } from './components/layouts/CollectionDate'
-import { LAST_COLLECTION_AT } from './data/dashboard'
-import { DASHBOARD_ID, LOGIN_ID, menuItems } from './components/layouts/menuItems'
+import { LOGIN_ID, PANEL_IDS, SERVICES_ID, menuItems } from './components/layouts/menuItems'
 import { LoginPanel } from './components/panels/LoginPanel'
-import { REGIONS } from './data/regions'
+import { useGlobeRegions } from './hooks/useGlobeRegions'
 import { RegionPanel } from './components/panels/RegionPanel'
 import { Connector } from './components/panels/Connector'
 import { DashboardPanel } from './components/panels/DashboardPanel'
+import { ServicesPanel } from './components/panels/ServicesPanel'
 import { IntroOverlay } from './components/layouts/IntroOverlay'
 import { INTRO_HOLD_MS, type IntroPhase } from './lib/intro'
 
@@ -30,6 +30,8 @@ function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false)
   const loginRef = useRef<HTMLElement>(null)
 
+  // regiões reais do backend (GET /regions + GET /services)
+  const regions = useGlobeRegions()
 
   // o tempo da logo só começa a contar quando a cena já está desenhada
   const [isSceneReady, setIsSceneReady] = useState(false)
@@ -50,13 +52,13 @@ function App() {
 
   const finishIntro = useCallback(() => setIntroPhase('done'), [])
 
-  
 
-  // dashboard aparece ao lado do menu, ligado ao item por uma linha
+
+  // dashboard/serviços aparecem ao lado do menu, ligados ao item por uma linha
   const showLogin = isMenuOpen && isLoginOpen
-  const isDashboardOpen = isMenuOpen && activeItem === DASHBOARD_ID && !isLoginOpen
+  const openPanelId = isMenuOpen && !isLoginOpen && PANEL_IDS.includes(activeItem) ? activeItem : null
 
-  const selectedRegion = REGIONS.find((region) => region.code === selectedRegionCode) ?? null
+  const selectedRegion = regions.find((region) => region.code === selectedRegionCode) ?? null
 
   // fecha se clicar no marcador q ta selecionado
   // clicar no marcador: abre o painel e dá zoom na região
@@ -92,19 +94,20 @@ const closeMenu = useCallback(() => {
 }, [])
 
 const selectItem = useCallback((id: string) => {
-  // login abre ao lado do menu, no lugar do dashboard
+  // login abre ao lado do menu, no lugar do painel aberto
   if (id === LOGIN_ID) {
     setIsLoginOpen(true)
     return
   }
   setIsLoginOpen(false)
   setActiveItem(id)
-  setIsMenuOpen(id === DASHBOARD_ID)
+  // os painéis abrem ao lado do menu, então o menu continua aberto
+  setIsMenuOpen(PANEL_IDS.includes(id))
 }, [])
 
   const scene = (
     <GloboScene
-      regions={REGIONS}
+      regions={regions}
       selectedCode={selectedRegionCode}
       onSelectRegion={selectRegion}
       focusRequest={focusRequest}
@@ -129,8 +132,8 @@ const selectItem = useCallback((id: string) => {
       {scene}
       <div className="ui-reveal">
         <Logo />
-        <SearchBar regions={REGIONS} onSelect={searchRegion} />
-        <CollectionDate date={LAST_COLLECTION_AT} isHidden={selectedRegion !== null} />
+        <SearchBar regions={regions} onSelect={searchRegion} />
+        <CollectionDate isHidden={selectedRegion !== null} />
 
         {selectedRegion && (
           <RegionPanel
@@ -145,9 +148,13 @@ const selectItem = useCallback((id: string) => {
           panelRef={panelRef}
         />
 
-        {isDashboardOpen && <DashboardPanel onClose={closeMenu} panelRef={dashboardRef} />}
+        {openPanelId === SERVICES_ID ? (
+          <ServicesPanel key={openPanelId} onClose={closeMenu} panelRef={dashboardRef} />
+        ) : openPanelId ? (
+          <DashboardPanel key={openPanelId} onClose={closeMenu} panelRef={dashboardRef} />
+        ) : null}
         <Connector
-          anchorSelector={isDashboardOpen ? `[data-menu-item="${DASHBOARD_ID}"]` : null}
+          anchorSelector={openPanelId ? `[data-menu-item="${openPanelId}"]` : null}
           panelRef={dashboardRef}
           overlay
         />
