@@ -19,6 +19,11 @@ const validService = {
   metrics_path: '/metrics/svc-1',
 };
 
+const validMetrics = {
+  collection_interval_seconds: 27,
+  metrics: { cpu_percent: 62.67, memory_gb: 3.17, disk_gb: 19.26, network_gb: 0.45 },
+};
+
 const validRegion = {
   code: 'us-east',
   country: 'US',
@@ -41,7 +46,7 @@ describe('MetricsApiClient', () => {
 
   it('usa METRICS_API_BASE_URL (sem barra final) para montar as rotas', async () => {
     process.env.METRICS_API_BASE_URL = 'https://metrics.test/';
-    const { http, getJson } = fakeHttp({ collection_interval_seconds: 30, metrics: {} });
+    const { http, getJson } = fakeHttp(validMetrics);
 
     await new MetricsApiClient(http).getServiceMetrics('svc-1');
 
@@ -65,6 +70,40 @@ describe('MetricsApiClient', () => {
     const { http } = fakeHttp([validService, { ...validService, id: 42 }]);
 
     await expect(new MetricsApiClient(http).listServices()).rejects.toBeInstanceOf(BadGatewayException);
+  });
+
+  it('devolve as métricas quando todos os campos são válidos', async () => {
+    const { http } = fakeHttp(validMetrics);
+
+    await expect(new MetricsApiClient(http).getServiceMetrics('svc-1')).resolves.toEqual(validMetrics);
+  });
+
+  it('aceita uso zero (serviço ocioso) e CPU exatamente em 100%', async () => {
+    const idle = { collection_interval_seconds: 30, metrics: { cpu_percent: 0, memory_gb: 0, disk_gb: 0, network_gb: 0 } };
+    const full = { ...validMetrics, metrics: { ...validMetrics.metrics, cpu_percent: 100 } };
+
+    await expect(new MetricsApiClient(fakeHttp(idle).http).getServiceMetrics('svc-1')).resolves.toEqual(idle);
+    await expect(new MetricsApiClient(fakeHttp(full).http).getServiceMetrics('svc-1')).resolves.toEqual(full);
+  });
+
+  it.each([
+    ['resposta que não é objeto', 'texto', /não é um objeto/],
+    ['sem "metrics"', { collection_interval_seconds: 30 }, /"metrics" ausente/],
+    ['intervalo zero', { ...validMetrics, collection_interval_seconds: 0 }, /collection_interval_seconds/],
+    ['intervalo em texto', { ...validMetrics, collection_interval_seconds: '30' }, /collection_interval_seconds/],
+    ['CPU acima de 100%', { ...validMetrics, metrics: { ...validMetrics.metrics, cpu_percent: 120 } }, /cpu_percent/],
+    ['CPU ausente', { ...validMetrics, metrics: { memory_gb: 1, disk_gb: 1, network_gb: 1 } }, /cpu_percent/],
+    ['memória negativa', { ...validMetrics, metrics: { ...validMetrics.metrics, memory_gb: -1 } }, /memory_gb/],
+    ['disco nulo', { ...validMetrics, metrics: { ...validMetrics.metrics, disk_gb: null } }, /disk_gb/],
+    ['rede infinita', { ...validMetrics, metrics: { ...validMetrics.metrics, network_gb: Infinity } }, /network_gb/],
+  ])('rejeita métricas inválidas: %s', async (_caso, payload, motivo) => {
+    const error = await new MetricsApiClient(fakeHttp(payload).http)
+      .getServiceMetrics('svc-1')
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(BadGatewayException);
+    expect((error as Error).message).toMatch(/^Métricas de svc-1 em formato inválido/);
+    expect((error as Error).message).toMatch(motivo);
   });
 
   it('rejeita resposta que não é uma lista', async () => {
