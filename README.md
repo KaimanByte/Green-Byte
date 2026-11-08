@@ -171,8 +171,31 @@ Conforme o mapeamento de portas definido no `docker-compose.yml`:
 | `PORT`         | Porta da API                                   | `3001`                                                  |
 | `FRONTEND_URL` | URL do frontend                                | `http://localhost:3000`                                 |
 | `NODE_ENV`     | Ambiente de execução                           | `development`                                           |
+| `COLLECTION_INTERVAL_SECONDS` | Intervalo entre ciclos automáticos de descoberta e coleta, em segundos | `30` |
 
 > Altere o `JWT_SECRET` antes de qualquer uso fora do ambiente local. O arquivo `.env` não é versionado.
+
+### Agendamento da coleta periódica
+
+O backend executa um ciclo completo de sincronização assim que a aplicação inicia. Depois da conclusão desse ciclo inicial, a descoberta de regiões/serviços e a coleta de métricas são executadas periodicamente conforme `COLLECTION_INTERVAL_SECONDS`.
+
+- Unidade: segundos.
+- Padrão: `30` segundos, caso a variável não seja informada.
+- Valor aceito: número inteiro entre `1` e `2147483`. Valores inválidos impedem a inicialização do serviço e geram uma mensagem explícita.
+- Concorrência: se o intervalo vencer enquanto outro ciclo ainda estiver em execução, o novo disparo é ignorado; ciclos não são executados em paralelo.
+- Observabilidade: cada ciclo registra início, término, duração e, em caso de falha, a etapa que apresentou o erro.
+
+Para alterar o intervalo, edite `COLLECTION_INTERVAL_SECONDS` no `.env`. Exemplo para executar a cada 2 minutos:
+
+```env
+COLLECTION_INTERVAL_SECONDS=120
+```
+
+Após alterar o `.env`, recrie o container do backend para aplicar a configuração:
+
+```bash
+docker compose up -d --build --force-recreate backend
+```
 
 ## Banco de Dados
 
