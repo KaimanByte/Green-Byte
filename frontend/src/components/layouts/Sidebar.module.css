@@ -236,3 +236,13 @@
     transition: none;
   }
 }
+/* ---------- ícone do item (no lugar do ponto) ---------- */
+.icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.itemActive .icon {
+  opacity: 1;
+  color: #7dffc4;
+}

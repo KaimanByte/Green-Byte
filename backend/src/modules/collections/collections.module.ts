@@ -3,6 +3,8 @@ import { DatabaseModule } from '../../database/database.module';
 import { CollectionsController } from './collections.controller';
 import { CollectionsService } from './collections.service';
 import { CollectionsRepository } from './collections.repository';
+import { CollectionTimeSeriesController } from './collection-timeseries.controller';
+import { CollectionTimeSeriesService } from './collection-timeseries.service';
 import { EnvironmentIndicatorsCalculator } from './environment-indicators.calculator';
 import { EnvironmentIndicatorsService } from './environment-indicators.service';
 import { ServiceHistoryController } from './service-history.controller';
@@ -21,6 +23,7 @@ import { RegionsModule } from '../regions/regions.module';
     ServiceHistoryController,
     SummaryController,
     RankingCompareController,
+    CollectionTimeSeriesController,
   ],
   providers: [
     CollectionsService,
@@ -30,6 +33,7 @@ import { RegionsModule } from '../regions/regions.module';
     ServiceHistoryService,
     RankingCompareCalculator,
     RankingCompareService,
+    CollectionTimeSeriesService,
   ],
   exports: [CollectionsService, EnvironmentIndicatorsService, RankingCompareService],
 })

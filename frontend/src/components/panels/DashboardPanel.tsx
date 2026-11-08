@@ -1,67 +1,101 @@
-import type { RefObject } from 'react'
+import { useMemo, useState, type RefObject } from 'react'
 import { getCarbonLevel } from '../../data/regions'
-import {
-  DASHBOARD_SUMMARY,
-  EMISSIONS_HISTORY,
-} from '../../data/dashboard'
 import { CarbonLevelIcon } from './CarbonLevelIcon'
-import { EmissionsChart } from './EmissionsChart'
+import { EvolutionChart } from './EvolutionChart'
+import { PeriodFilter } from './PeriodFilter'
+import { PanelSkeleton } from './PanelSkeleton'
 import base from './RegionPanel.module.css'
 import styles from './DashboardPanel.module.css'
 import { RefreshCw } from 'lucide-react'
-import { useGreenData } from '../../hooks/useGreenData';
+import { useGreenData } from '../../hooks/useGreenData'
+import { useRanking } from '../../hooks/useRanking'
+import type { RankingMetric } from '../../types/api'
+import { SERVICE_STATE_LABELS } from '../../lib/serviceState'
+import { formatCo2, formatRelative, formatTime, integer, precise } from '../../lib/format'
+import { getPeriodOption } from '../../lib/periods'
 
 type Props = {
   onClose: () => void
   panelRef: RefObject<HTMLElement | null>
 }
 
-// Formatadores de número
-const decimal = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 })
-const integer = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
-const precise = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
-
-function formatCo2(grams: number) {
-  if (grams >= 1000) return { value: decimal.format(grams / 1000), unit: 'kgCO₂e' }
-  if (grams > 0 && grams < 1) return { value: precise.format(grams), unit: 'gCO₂e' }
-  return { value: integer.format(grams), unit: 'gCO₂e' }
-}
-
 export function DashboardPanel({ onClose, panelRef }: Props) {
   // 1. Extração completa dos dados do banco
-  const { regions, services, emissions, serviceEmissions, loading, error, lastSync, refetch } = useGreenData();
+  const {
+    regions,
+    services,
+    emissions,
+    serviceEmissions,
+    loading,
+    error,
+    lastSync,
+    refetch,
+    periodId,
+    setPeriodId,
+    lastCollectionAt,
+    summary,
+  } = useGreenData()
+  const periodOption = getPeriodOption(periodId)
+  const [rankingMetric, setRankingMetric] = useState<RankingMetric>('co2e')
+  const ranking = useRanking(rankingMetric)
 
-  // 2. Somatório Real de Emissões
-  const dbTotalEmissions = emissions.reduce(
-    (acc, curr) => acc + Number(curr.totalCo2Emissions || 0), 
+  // 2/3. Totais oficiais do período (GET /summary: só serviços ativos entram na soma).
+  //      Sem /summary ainda, soma os agregados por região/serviço.
+  const dbTotalEmissions = summary
+    ? Number(summary.totals.co2Emissions) || 0
+    : emissions.reduce((acc, curr) => acc + Number(curr.totalCo2Emissions || 0), 0)
+
+  const dbTotalEnergy = summary
+    ? Number(summary.totals.energyKwh) || 0
+    : serviceEmissions.reduce((acc, curr) => acc + Number(curr.totalEnergyKwh || 0), 0)
+
+  // participação de cada região é calculada sobre a soma das próprias regiões
+  const regionsTotalEmissions = emissions.reduce(
+    (acc, curr) => acc + Number(curr.totalCo2Emissions || 0),
     0
-  );
+  )
 
-  // 3. Somatório Real de Energia (kWh)
-  const dbTotalEnergy = serviceEmissions.reduce(
-    (acc, curr) => acc + Number(curr.totalEnergyKwh || 0),
-    0
-  );
+  // 4. Intensidade Média Real (ponderada pela energia de cada coleta)
+  const dbAverageIntensity = dbTotalEnergy > 0 ? (dbTotalEmissions / dbTotalEnergy) : 0
 
-  // 4. Intensidade Média Real
-  const dbAverageIntensity = dbTotalEnergy > 0 ? (dbTotalEmissions / dbTotalEnergy) : 0;
+  // 5. Renovável: média do renewableSharePercent das regiões, ponderada pela energia consumida em cada uma.
+  //    Sem energia no período não há o que ponderar → null (exibe "—", não um número inventado).
+  const renewableShare = useMemo(() => {
+    let weighted = 0
+    let energy = 0
+    for (const item of emissions) {
+      const region = regions.find((r) => r.regionCode === item.regionCode)
+      const kwh = Number(item.totalEnergyKwh) || 0
+      if (!region || kwh <= 0) continue
+      weighted += kwh * region.renewableSharePercent
+      energy += kwh
+    }
+    return energy > 0 ? weighted / energy : null
+  }, [emissions, regions])
 
-  // 5. Configuração dos mostradores do cabeçalho
-  const totalCo2 = formatCo2(dbTotalEmissions);
-  const level = getCarbonLevel(dbAverageIntensity);
-  const renewableShare = DASHBOARD_SUMMARY.renewableShare; 
+  // 6. Configuração dos mostradores do cabeçalho
+  const totalCo2 = formatCo2(dbTotalEmissions)
+  const level = getCarbonLevel(dbAverageIntensity)
+  const hasEnergy = dbTotalEnergy > 0
 
-  const maxServiceEmission = serviceEmissions.reduce(
-    (max, service) => Math.max(max, Number(service.totalCo2Emissions) || 0),
-    0,
-  );
+  // ranking oficial do backend (GET /ranking): ativos primeiro, em ordem decrescente da métrica
+  const rankingItems = ranking.data?.items ?? []
+  const metricValue = (item: { energyKwh: number; co2Emissions: number }) =>
+    rankingMetric === 'energia' ? Number(item.energyKwh) || 0 : Number(item.co2Emissions) || 0
+  const regionRanking = useMemo(
+    () =>
+      [...emissions].sort(
+        (a, b) => (Number(b.totalCo2Emissions) || 0) - (Number(a.totalCo2Emissions) || 0),
+      ),
+    [emissions],
+  )
+
+  const maxRankingValue = rankingItems.reduce((max, item) => Math.max(max, metricValue(item)), 0)
 
   if (loading && !lastSync) {
     return (
-      <aside ref={panelRef} className={`glass ${base.panel} ${styles.panel}`}>
-        <div style={{ padding: '20px', color: 'var(--text-primary)' }}>
-          A sincronizar com o backend...
-        </div>
+      <aside ref={panelRef} className={`glass ${base.panel} ${styles.panel}`} aria-busy="true" aria-label="Dashboard carregando">
+        <PanelSkeleton title="Dashboard" message="Sincronizando com o backend…" />
       </aside>
     )
   }
@@ -70,9 +104,12 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
   if (error && !lastSync) {
     return (
       <aside ref={panelRef} className={`glass ${base.panel} ${styles.panel}`}>
-        <div role="alert" style={{ padding: '20px', color: 'var(--text-primary)' }}>
-          <p>Não foi possível carregar o dashboard.</p>
-          <p style={{ color: 'var(--text-secondary)' }}>{error}</p>
+        <button type="button" className={base.close} onClick={onClose} aria-label="Fechar dashboard">
+          ×
+        </button>
+        <div role="alert" className={styles.state}>
+          <p className={styles.stateTitle}>Não foi possível carregar o dashboard.</p>
+          <p className={styles.stateText}>{error}</p>
           <button type="button" className={styles.refresh} onClick={refetch}>
             <RefreshCw size={14} strokeWidth={2} aria-hidden="true" />
             Tentar novamente
@@ -87,6 +124,7 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
       ref={panelRef}
       className={`glass ${base.panel} ${styles.panel}`}
       aria-labelledby="dashboard-panel-title"
+      aria-busy={loading}
     >
       <button type="button" className={base.close} onClick={onClose} aria-label="Fechar dashboard">
         ×
@@ -97,23 +135,39 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
           Dashboard
         </h2>
         <p className={base.subtitle}>
-          Últimas 24 h · {services.length} serviços · {regions.length} regiões
+          {periodOption.description} · {services.length} serviços · {regions.length} regiões
         </p>
-        {error && (
-          <p role="alert" className={base.subtitle}>
-            Falha ao atualizar: {error}
+        {summary && (
+          <p className={styles.stateCounts}>
+            <span data-state="active">{summary.services.active} ativos</span>
+            <span data-state="no_metrics">{summary.services.withoutMetrics} sem métricas</span>
+            <span data-state="unavailable">{summary.services.unavailable} indisponíveis</span>
           </p>
         )}
-                <button type="button" className={styles.refresh} onClick={refetch} disabled={loading}>
-          <RefreshCw size={14} strokeWidth={2} aria-hidden="true" />
-          {loading ? 'Atualizando...' : 'Atualizar dados'}
-        </button>
+        {error && (
+          <p role="alert" className={`${base.subtitle} ${styles.warning}`}>
+            Falha ao atualizar: {error} (exibindo os últimos dados recebidos)
+          </p>
+        )}
+        <div className={styles.toolbar}>
+          <PeriodFilter value={periodId} onChange={setPeriodId} disabled={loading} />
+          <button type="button" className={styles.refresh} onClick={refetch} disabled={loading}>
+            <RefreshCw size={14} strokeWidth={2} aria-hidden="true" className={loading ? styles.spin : undefined} />
+            {loading ? 'Atualizando…' : 'Atualizar'}
+          </button>
+        </div>
+        <p className={styles.meta} aria-live="polite">
+          {lastCollectionAt
+            ? `Última coleta ${formatRelative(lastCollectionAt)} (${formatTime(lastCollectionAt)})`
+            : 'Nenhuma coleta registrada ainda'}
+          {lastSync && ` · sincronizado às ${formatTime(lastSync)} · atualiza a cada 60 s`}
+        </p>
       </header>
 
       <div className={base.divider} />
 
       <dl className={styles.kpis}>
-        <div>
+        <div className={styles.kpi}>
           <dt className={base.label}>Energia</dt>
           <dd className={base.data}>
             <span className={`${base.value} ${styles.kpiValue}`}>
@@ -123,7 +177,7 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
           </dd>
         </div>
 
-        <div>
+        <div className={styles.kpi}>
           <dt className={base.label}>Emissões</dt>
           <dd className={base.data}>
             <span className={`${base.value} ${styles.kpiValue}`}>{totalCo2.value}</span>
@@ -131,110 +185,155 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
           </dd>
         </div>
 
-        <div>
+        <div className={styles.kpi}>
           <dt className={base.label}>Intensidade média</dt>
           <dd className={base.data}>
             <span className={`${base.value} ${styles.kpiValue}`}>
-              {integer.format(dbAverageIntensity)}
+              {hasEnergy ? integer.format(dbAverageIntensity) : '—'}
             </span>
-            g/kWh
+            gCO₂e/kWh
           </dd>
-          <dd className={`${base.badge} ${styles.kpiBadge}`} data-level={level.id}>
-            <CarbonLevelIcon icon={level.icon} /> {level.label}
-          </dd>
+          {hasEnergy && (
+            <dd className={`${base.badge} ${styles.kpiBadge}`} data-level={level.id}>
+              <CarbonLevelIcon icon={level.icon} /> {level.label}
+            </dd>
+          )}
         </div>
 
-        <div>
-          <dt className={base.label}>Renovável</dt>
+        <div className={styles.kpi}>
+          <dt className={base.label} title="Média da participação renovável de cada região, ponderada pela energia consumida nela">
+            Renovável
+          </dt>
           <dd className={base.data}>
             <span className={`${base.value} ${styles.kpiValue}`}>
-              {integer.format(renewableShare)}
+              {renewableShare !== null ? integer.format(renewableShare) : '—'}
             </span>
             %
           </dd>
-          <dd className={base.bar}>
-            <span className={base.barFill} style={{ width: `${renewableShare}%` }} />
-          </dd>
+          {renewableShare !== null && (
+            <dd className={base.bar}>
+              <span className={base.barFill} style={{ width: `${renewableShare}%` }} />
+            </dd>
+          )}
         </div>
       </dl>
 
-      <section className={styles.section}>
-        <h3 className={base.label}>Emissões por hora</h3>
-        <EmissionsChart points={EMISSIONS_HISTORY} />
-      </section>
+      <EvolutionChart />
 
       <div className={styles.columns}>
       <section className={styles.section}>
-        <h3 className={base.label}>Ranking de serviços</h3>
-        <ol className={styles.ranking}>
-          {serviceEmissions.length > 0 ? (
-            serviceEmissions.map((serviceData, index) => {
-              const serviceDetails = services.find((s) => s.id === serviceData.serviceId);
-              const regionDetails = regions.find((r) => r.regionCode === serviceDetails?.regionCode);
-              
-              const co2 = formatCo2(Number(serviceData.totalCo2Emissions) || 0);
-              const serviceLevel = getCarbonLevel(regionDetails?.carbonIntensity ?? 50);
+        <div className={styles.sectionHeader}>
+          <h3 className={base.label}>Ranking de serviços</h3>
+          <div className={styles.metricToggle} role="group" aria-label="Métrica do ranking">
+            {(['co2e', 'energia'] as const).map((metric) => (
+              <button
+                key={metric}
+                type="button"
+                aria-pressed={rankingMetric === metric}
+                className={rankingMetric === metric ? styles.metricActive : undefined}
+                onClick={() => setRankingMetric(metric)}
+              >
+                {metric === 'co2e' ? 'CO₂e' : 'Energia'}
+              </button>
+            ))}
+          </div>
+        </div>
+        {ranking.error && !ranking.data ? (
+          <p role="alert" className={`${styles.rankItem} ${styles.emptyItem}`}>
+            Não foi possível carregar o ranking: {ranking.error}{' '}
+            <button type="button" className={styles.linkButton} onClick={ranking.refetch}>
+              Tentar novamente
+            </button>
+          </p>
+        ) : !ranking.data ? (
+          <div aria-label="Carregando ranking">
+            {Array.from({ length: 3 }, (_, i) => (
+              <span key={i} className={`${styles.skeleton} ${styles.skeletonRow}`} />
+            ))}
+          </div>
+        ) : (
+        <ol className={styles.ranking} aria-busy={ranking.loading}>
+          {rankingItems.length > 0 ? (
+            rankingItems.map((item) => {
+              const regionDetails = regions.find((r) => r.regionCode === item.regionCode)
+              const isActive = item.state === 'active'
+              const co2 = formatCo2(Number(item.co2Emissions) || 0)
+              const serviceLevel = regionDetails ? getCarbonLevel(regionDetails.carbonIntensity) : null
+              const primary = rankingMetric === 'energia'
+                ? { value: precise.format(Number(item.energyKwh) || 0), unit: 'kWh' }
+                : co2
+              const secondary = rankingMetric === 'energia'
+                ? `${co2.value} ${co2.unit}`
+                : `${precise.format(Number(item.energyKwh) || 0)} kWh`
 
               return (
-                <li key={serviceData.serviceId || index} className={styles.rankItem}>
-                  <span className={styles.rankPosition}>{index + 1}</span>
+                <li key={item.serviceId} className={`${styles.rankItem} ${isActive ? '' : styles.rankInactive}`}>
+                  <span className={styles.rankPosition}>{item.rank}</span>
                   <div className={styles.rankBody}>
                     <div className={styles.rankRow}>
-                      <span className={styles.rankName}>{serviceDetails?.name || serviceData.serviceId}</span>
-                      <span className={styles.rankValue}>
-                        {co2.value} <small>{co2.unit}</small>
-                      </span>
+                      <span className={styles.rankName}>{item.name || item.serviceId}</span>
+                      {isActive ? (
+                        <span className={styles.rankValue}>
+                          {primary.value} <small>{primary.unit}</small>
+                        </span>
+                      ) : (
+                        <span className={styles.stateTag} data-state={item.state}>
+                          {SERVICE_STATE_LABELS[item.state]}
+                        </span>
+                      )}
                     </div>
                     <div className={styles.rankRow}>
-                      <span className={styles.rankRegion} data-level={serviceLevel.id}>
-                        <CarbonLevelIcon icon={serviceLevel.icon} /> {serviceDetails?.regionCode || 'Desconhecida'}
+                      <span className={styles.rankRegion} data-level={serviceLevel?.id}>
+                        {serviceLevel && <CarbonLevelIcon icon={serviceLevel.icon} />}{' '}
+                        {item.regionCode || 'Região desconhecida'}
                       </span>
                       <span className={styles.rankRegion}>
-                        {precise.format(Number(serviceData.totalEnergyKwh) || 0)} kWh
+                        {isActive ? `${secondary} · ${item.collectionsCount} coletas` : 'sem dados no período'}
                       </span>
                     </div>
-                    <span className={`${base.bar} ${styles.rankBar}`}>
-                      <span
-                        className={base.barFill}
-                        style={{
-                          width: `${maxServiceEmission > 0
-                            ? (Math.max(0, Number(serviceData.totalCo2Emissions) || 0) / maxServiceEmission) * 100
-                            : 0}%`,
-                        }}
-                      />
-                    </span>
+                    {isActive && (
+                      <span className={`${base.bar} ${styles.rankBar}`}>
+                        <span
+                          className={base.barFill}
+                          style={{ width: `${maxRankingValue > 0 ? (metricValue(item) / maxRankingValue) * 100 : 0}%` }}
+                        />
+                      </span>
+                    )}
                   </div>
                 </li>
               )
             })
           ) : (
-            <li className={styles.rankItem}>Sem dados de serviços registados.</li>
+            <li className={`${styles.rankItem} ${styles.emptyItem}`}>Nenhum serviço cadastrado.</li>
           )}
         </ol>
+        )}
       </section>
 
       <section className={styles.section}>
         <h3 className={base.label}>Emissões por região</h3>
         <ul className={base.services}>
-          {emissions.length > 0 ? (
-             emissions.map((emissionData, index) => {
-              const regionDetails = regions.find((r) => r.regionCode === emissionData.regionCode);
-              
+          {regionRanking.length > 0 ? (
+             regionRanking.map((emissionData, index) => {
+              const regionDetails = regions.find((r) => r.regionCode === emissionData.regionCode)
+
               const co2 = formatCo2(Number(emissionData.totalCo2Emissions) || 0)
-              const regionLevel = getCarbonLevel(regionDetails?.carbonIntensity ?? 50)
-              
-              const share = dbTotalEmissions > 0
-                ? (Number(emissionData.totalCo2Emissions) / dbTotalEmissions) * 100
+              const regionLevel = regionDetails ? getCarbonLevel(regionDetails.carbonIntensity) : null
+
+              const share = regionsTotalEmissions > 0
+                ? (Number(emissionData.totalCo2Emissions) / regionsTotalEmissions) * 100
                 : 0
 
-              const displayName = regionDetails?.city || emissionData.regionCode;
+              const displayName = regionDetails?.city || regionDetails?.region || emissionData.regionCode
 
               return (
                 <li key={emissionData.regionCode || index} className={styles.regionItem}>
-                  <span className={styles.rankRegion} data-level={regionLevel.id}>
-                    <CarbonLevelIcon icon={regionLevel.icon} />
+                  <span className={styles.rankRegion} data-level={regionLevel?.id}>
+                    {regionLevel && <CarbonLevelIcon icon={regionLevel.icon} />}
                   </span>
-                  <span className={styles.rankName}>{displayName}</span>
+                  <span className={styles.rankName} title={regionDetails ? `${regionDetails.carbonIntensity} gCO₂e/kWh` : undefined}>
+                    {displayName}
+                  </span>
                   <span className={styles.rankValue}>
                     {co2.value} <small>{co2.unit}</small>
                   </span>
@@ -244,7 +343,7 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
             })
           ) : (
              <li className={styles.regionItem}>
-               <span className={styles.rankName}>Nenhuma emissão registada no banco ainda.</span>
+               <span className={styles.rankName}>Nenhuma emissão registrada neste período.</span>
              </li>
           )}
         </ul>
@@ -252,7 +351,7 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
       </div>
 
       <p className={base.source}>
-        Fontes: GreenER Metrics Aggregator · GreenER Carbon Intensity API
+        Estimativa padronizada (não é medição elétrica real) · Fontes: GreenER Metrics Aggregator · GreenER Carbon Intensity API
       </p>
     </aside>
   )
