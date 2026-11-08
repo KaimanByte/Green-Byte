@@ -6,6 +6,9 @@ import { CollectionsRepository } from './collections.repository';
 import { Collection } from './collections.schema';
 import { ServicesService } from '../services/services.service';
 import { RegionsService } from '../regions/regions.service';
+import { ExternalHttpClient } from '../integrations/external-http.client';
+import { MetricsApiClient } from '../integrations/metrics-api.client';
+import { EnergyCalculator } from './energy.calculator';
 
 // Faz o mock global da API nativa 'fetch' utilizada pelo node
 const fetchMock = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -18,6 +21,7 @@ describe('CollectionsService', () => {
   let regionsService: jest.Mocked<RegionsService>;
 
   beforeEach(async () => {
+    process.env.METRICS_API_BASE_URL = 'https://metrics.test';
     // Cria os mocks para as dependências injetadas
     const mockCollectionsRepository = {
       findByServiceId: jest.fn(),
@@ -38,6 +42,9 @@ describe('CollectionsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CollectionsService,
+        ExternalHttpClient,
+        MetricsApiClient,
+        EnergyCalculator,
         { provide: CollectionsRepository, useValue: mockCollectionsRepository },
         { provide: ServicesService, useValue: mockServicesService },
         { provide: RegionsService, useValue: mockRegionsService },
@@ -51,6 +58,7 @@ describe('CollectionsService', () => {
   });
 
   afterEach(() => {
+    delete process.env.METRICS_API_BASE_URL;
     jest.clearAllMocks();
   });
 
@@ -109,6 +117,40 @@ describe('CollectionsService', () => {
       // Avaliação tolerante por conta das dízimas da divisão (3600 e 1000)
       expect(insertedData.energyKwh).toBeCloseTo(0.0008478333, 10);
       expect(insertedData.co2Emissions).toBeCloseTo(0.0720658, 7);
+      expect(Number.isFinite(insertedData.co2Emissions)).toBe(true);
+      expect(result.total).toBe(1);
+    });
+
+    it('uma falha em um serviço não impede a coleta dos outros', async () => {
+      (servicesService.findAllServices as jest.Mock<() => Promise<unknown>>).mockResolvedValue([
+        { id: 'svc-ok', regionCode: 'us-east' },
+        { id: 'svc-down', regionCode: 'us-east' },
+      ]);
+      (regionsService.findRegionByCode as jest.Mock<() => Promise<unknown>>).mockResolvedValue({
+        regionCode: 'us-east',
+        carbonIntensity: 380,
+      });
+      fetchMock.mockImplementation(async (url) =>
+        String(url).endsWith('/metrics/svc-down')
+          ? { ok: false, status: 500, json: async () => ({}) }
+          : {
+              ok: true,
+              json: async () => ({
+                collection_interval_seconds: 3600,
+                metrics: { cpu_percent: 100, memory_gb: 0, disk_gb: 0, network_gb: 0 },
+              }),
+            },
+      );
+      collectionsRepository.insertMany.mockImplementation(async (data) => data as Collection[]);
+
+      const result = await service.syncCollections();
+
+      // só o serviço que respondeu é gravado: 100 W por 1 h = 0,1 kWh; × 380 = 38 gCO₂e
+      expect(result.total).toBe(1);
+      const [saved] = collectionsRepository.insertMany.mock.calls[0][0];
+      expect(saved.serviceId).toBe('svc-ok');
+      expect(saved.energyKwh).toBeCloseTo(0.1, 12);
+      expect(saved.co2Emissions).toBeCloseTo(38, 9);
     });
 
     it('deve retornar zero coleções e não dar throw caso nenhum serviço exista', async () => {

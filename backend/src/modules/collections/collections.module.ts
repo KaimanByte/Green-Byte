@@ -15,9 +15,11 @@ import { RankingCompareController } from './ranking-compare.controller';
 import { RankingCompareService } from './ranking-compare.service';
 import { ServicesModule } from '../services/services.module';
 import { RegionsModule } from '../regions/regions.module';
+import { IntegrationsModule } from '../integrations/integrations.module';
+import { EnergyCalculator } from './energy.calculator';
 
 @Module({
-  imports: [DatabaseModule, ServicesModule, RegionsModule],
+  imports: [DatabaseModule, ServicesModule, RegionsModule, IntegrationsModule],
   controllers: [
     CollectionsController,
     ServiceHistoryController,
@@ -28,6 +30,7 @@ import { RegionsModule } from '../regions/regions.module';
   providers: [
     CollectionsService,
     CollectionsRepository,
+    EnergyCalculator,
     EnvironmentIndicatorsCalculator,
     EnvironmentIndicatorsService,
     ServiceHistoryService,
