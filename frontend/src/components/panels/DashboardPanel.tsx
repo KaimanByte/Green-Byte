@@ -13,6 +13,7 @@ import type { RankingMetric } from '../../types/api'
 import { SERVICE_STATE_LABELS } from '../../lib/serviceState'
 import { formatCo2, formatRelative, formatTime, integer, precise } from '../../lib/format'
 import { getPeriodOption } from '../../lib/periods'
+import { DASHBOARD_SOURCES } from '../../services/dashboardService'
 
 type Props = {
   onClose: () => void
@@ -28,6 +29,7 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
     serviceEmissions,
     loading,
     error,
+    failedSources,
     lastSync,
     refetch,
     periodId,
@@ -40,14 +42,24 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
   const ranking = useRanking(rankingMetric)
 
   // 2/3. Totais oficiais do período (GET /summary: só serviços ativos entram na soma).
-  //      Sem /summary ainda, soma os agregados por região/serviço.
-  const dbTotalEmissions = summary
-    ? Number(summary.totals.co2Emissions) || 0
-    : emissions.reduce((acc, curr) => acc + Number(curr.totalCo2Emissions || 0), 0)
+  //      Sem /summary, soma os agregados por região/serviço. Se a fonte da soma também
+  //      falhou (carga parcial), o total fica null e o painel exibe "—", nunca um 0 inventado.
+  const servicesFailed = failedSources.includes(DASHBOARD_SOURCES.services)
+  const regionsFailed = failedSources.includes(DASHBOARD_SOURCES.regions)
+  const emissionsFailed = failedSources.includes(DASHBOARD_SOURCES.emissions)
+  const serviceEmissionsFailed = failedSources.includes(DASHBOARD_SOURCES.serviceEmissions)
 
-  const dbTotalEnergy = summary
+  const dbTotalEmissions: number | null = summary
+    ? Number(summary.totals.co2Emissions) || 0
+    : emissionsFailed
+      ? null
+      : emissions.reduce((acc, curr) => acc + Number(curr.totalCo2Emissions || 0), 0)
+
+  const dbTotalEnergy: number | null = summary
     ? Number(summary.totals.energyKwh) || 0
-    : serviceEmissions.reduce((acc, curr) => acc + Number(curr.totalEnergyKwh || 0), 0)
+    : serviceEmissionsFailed
+      ? null
+      : serviceEmissions.reduce((acc, curr) => acc + Number(curr.totalEnergyKwh || 0), 0)
 
   // participação de cada região é calculada sobre a soma das próprias regiões
   const regionsTotalEmissions = emissions.reduce(
@@ -56,7 +68,8 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
   )
 
   // 4. Intensidade Média Real (ponderada pela energia de cada coleta)
-  const dbAverageIntensity = dbTotalEnergy > 0 ? (dbTotalEmissions / dbTotalEnergy) : 0
+  const hasEnergy = dbTotalEnergy !== null && dbTotalEnergy > 0 && dbTotalEmissions !== null
+  const dbAverageIntensity = hasEnergy ? dbTotalEmissions / dbTotalEnergy : 0
 
   // 5. Renovável: média do renewableSharePercent das regiões, ponderada pela energia consumida em cada uma.
   //    Sem energia no período não há o que ponderar → null (exibe "—", não um número inventado).
@@ -74,9 +87,8 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
   }, [emissions, regions])
 
   // 6. Configuração dos mostradores do cabeçalho
-  const totalCo2 = formatCo2(dbTotalEmissions)
+  const totalCo2 = dbTotalEmissions !== null ? formatCo2(dbTotalEmissions) : { value: '—', unit: 'gCO₂e' }
   const level = getCarbonLevel(dbAverageIntensity)
-  const hasEnergy = dbTotalEnergy > 0
 
   // ranking oficial do backend (GET /ranking): ativos primeiro, em ordem decrescente da métrica
   const rankingItems = ranking.data?.items ?? []
@@ -135,7 +147,8 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
           Dashboard
         </h2>
         <p className={base.subtitle}>
-          {periodOption.description} · {services.length} serviços · {regions.length} regiões
+          {periodOption.description} · {servicesFailed ? '—' : services.length} serviços ·{' '}
+          {regionsFailed ? '—' : regions.length} regiões
         </p>
         {summary && (
           <p className={styles.stateCounts}>
@@ -147,6 +160,11 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
         {error && (
           <p role="alert" className={`${base.subtitle} ${styles.warning}`}>
             Falha ao atualizar: {error} (exibindo os últimos dados recebidos)
+          </p>
+        )}
+        {!error && failedSources.length > 0 && (
+          <p role="status" className={`${base.subtitle} ${styles.warning}`}>
+            Sem resposta de: {failedSources.join(', ')}. O restante foi carregado normalmente.
           </p>
         )}
         <div className={styles.toolbar}>
@@ -171,7 +189,7 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
           <dt className={base.label}>Energia</dt>
           <dd className={base.data}>
             <span className={`${base.value} ${styles.kpiValue}`}>
-              {precise.format(dbTotalEnergy)}
+              {dbTotalEnergy !== null ? precise.format(dbTotalEnergy) : '—'}
             </span>
             kWh
           </dd>

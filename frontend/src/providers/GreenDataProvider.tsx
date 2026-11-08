@@ -78,6 +78,7 @@ export function GreenDataProvider({ children }: { children: ReactNode }) {
       summary: data?.summary ?? null,
       loading,
       error,
+      failedSources: data?.failedSources ?? [],
       refetch,
       lastSync: updatedAt,
       periodId,

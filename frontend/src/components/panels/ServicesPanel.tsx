@@ -39,6 +39,7 @@ export function ServicesPanel({ onClose, panelRef }: Props) {
     latestCollections,
     loading,
     error,
+    failedSources,
     lastSync,
     refetch,
     periodId,
@@ -132,6 +133,11 @@ export function ServicesPanel({ onClose, panelRef }: Props) {
         {error && (
           <p role="alert" className={`${base.subtitle} ${dash.warning}`}>
             Falha ao atualizar: {error} (exibindo os últimos dados recebidos)
+          </p>
+        )}
+        {!error && failedSources.length > 0 && (
+          <p role="status" className={`${base.subtitle} ${dash.warning}`}>
+            Sem resposta de: {failedSources.join(', ')}. O restante foi carregado normalmente.
           </p>
         )}
         <div className={dash.toolbar}>

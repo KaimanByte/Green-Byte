@@ -14,6 +14,24 @@ import * as THREE from 'three'
 
 const EARTH_RADIUS = 1.35
 
+const EARTH_TEXTURES = ['/earth-day.jpg', '/earth-normal.jpg', '/earth-clouds.png']
+
+/**
+ * Cor (superfície e nuvens) em sRGB; o normal map continua linear.
+ * Ajustado no callback de carregamento do useTexture, e não no valor retornado
+ * pelo hook (react-hooks/immutability). Função de módulo: referência estável,
+ * então o drei só a chama quando as texturas carregam.
+ */
+function setEarthColorSpace(textures: THREE.Texture | THREE.Texture[]) {
+  const [surface, , clouds] = Array.isArray(textures) ? textures : [textures]
+  for (const texture of [surface, clouds]) {
+    if (texture && texture.colorSpace !== THREE.SRGBColorSpace) {
+      texture.colorSpace = THREE.SRGBColorSpace
+      texture.needsUpdate = true
+    }
+  }
+}
+
 // distância normal da câmera (mais longe em tela em pé, pro globo caber)
 const getDefaultDistance = (size: { width: number; height: number }) =>
   size.width / size.height < 0.8 ? 7.8 : 5.2
@@ -88,14 +106,7 @@ function Earth({ regions, selectedCode, onSelectRegion, focusRequest, introPhase
       .multiplyScalar(getDefaultDistance(size) * ZOOM_FACTOR)
   }, [focusRequest, regions, camera, size])
   const cloudsRef = useRef<THREE.Mesh>(null)
-  const [surfaceMap, normalMap, cloudsMap] = useTexture([
-    '/earth-day.jpg',
-    '/earth-normal.jpg',
-    '/earth-clouds.png',
-  ])
-
-  surfaceMap.colorSpace = THREE.SRGBColorSpace
-  cloudsMap.colorSpace = THREE.SRGBColorSpace
+  const [surfaceMap, normalMap, cloudsMap] = useTexture(EARTH_TEXTURES, setEarthColorSpace)
 
   //parar qnd selecionar regiao
    useFrame((_, delta) => {
@@ -201,13 +212,14 @@ function CameraLight() {
 
 function CameraFit({ isIntroDone }: { isIntroDone: boolean }) {
   const { camera, size } = useThree()
+  const { width, height } = size
 
   useEffect(() => {
     if (!isIntroDone) return
-    camera.position.set(0, 0, getDefaultDistance(size))
+    camera.position.set(0, 0, getDefaultDistance({ width, height }))
     camera.lookAt(0, 0, 0)
     camera.updateProjectionMatrix()
-  }, [camera, size.height, size.width, isIntroDone])
+  }, [camera, width, height, isIntroDone])
 
   return null
 }

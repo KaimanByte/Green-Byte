@@ -24,6 +24,8 @@ export type GreenDataContextValue = {
   loading: boolean
   /** Mensagem legível do último erro de carregamento, ou `null`. */
   error: string | null
+  /** Fontes que falharam na última carga (carga parcial); vazio quando todas responderam. */
+  failedSources: string[]
   refetch: () => void
   /** Momento da última sincronização bem-sucedida com o backend. */
   lastSync: Date | null
