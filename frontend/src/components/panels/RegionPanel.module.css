@@ -12,13 +12,16 @@
   color: var(--text-primary);
   font-family: var(--font-body);
   transform: translateY(-50%);
-  animation: panel-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: panel-in var(--dur-panel) var(--ease-spring-soft);
 }
 
 @keyframes panel-in {
   from {
     opacity: 0;
-    transform: translate(16px, -50%);
+    transform: translate(20px, -50%) scale(0.97);
+  }
+  40% {
+    opacity: 1;
   }
   to {
     opacity: 1;
@@ -46,7 +49,7 @@
 }
 
 .close:focus-visible {
-  outline: 2px solid var(--text-primary);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -73,9 +76,9 @@
 }
 
 .divider {
-  height: 1px;
-  margin: 20px 0;
-  background: var(--divider);
+  /* separação por espaço, não por linha (estilo Apple) */
+  height: 0;
+  margin: 18px 0;
 }
 
 /* ---------- números ---------- */
@@ -160,9 +163,10 @@
 
 .services li {
   padding: 10px 14px;
-  border: 1px solid var(--divider);
+  border: 1px solid transparent;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-1);
+  box-shadow: var(--surface-highlight);
   font-size: 14px;
 }
 

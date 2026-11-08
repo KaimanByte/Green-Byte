@@ -41,7 +41,7 @@ export function PeriodFilter({ value, onChange, disabled = false }: Props) {
             aria-checked={isActive}
             tabIndex={isActive ? 0 : -1}
             data-period={option.id}
-            className={`${styles.option} ${isActive ? styles.active : ''}`}
+            className={`${styles.option} ${isActive ? `liquid liquid--tint liquid--static ${styles.active}` : ''}`}
             onClick={() => onChange(option.id)}
             disabled={disabled && !isActive}
             title={option.description}

@@ -111,7 +111,7 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
           <p className={styles.stateTitle}>Não foi possível carregar o dashboard.</p>
           <p className={styles.stateText}>{error}</p>
           <button type="button" className={styles.refresh} onClick={refetch}>
-            <RefreshCw size={14} strokeWidth={2} aria-hidden="true" />
+            <RefreshCw size={14} strokeWidth={1.75} aria-hidden="true" />
             Tentar novamente
           </button>
         </div>
@@ -152,7 +152,7 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
         <div className={styles.toolbar}>
           <PeriodFilter value={periodId} onChange={setPeriodId} disabled={loading} />
           <button type="button" className={styles.refresh} onClick={refetch} disabled={loading}>
-            <RefreshCw size={14} strokeWidth={2} aria-hidden="true" className={loading ? styles.spin : undefined} />
+            <RefreshCw size={14} strokeWidth={1.75} aria-hidden="true" className={loading ? styles.spin : undefined} />
             {loading ? 'Atualizando…' : 'Atualizar'}
           </button>
         </div>

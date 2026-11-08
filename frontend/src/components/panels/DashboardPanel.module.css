@@ -18,6 +18,31 @@ aside.panel {
     /* só entra depois que a linha se desenha (0,15s + 0,35s), com uma leve sobreposição */
   animation-delay: 0.45s;
   animation-fill-mode: both;
+  animation-duration: var(--dur-panel);
+  animation-timing-function: var(--ease-spring-soft);
+}
+
+/* troca de painel com outro já aberto (Dashboard <-> Serviços): entra na hora,
+   num fade curto com leve subida, sem o vazio de esperar a linha */
+:global(.panel-swap) aside.panel {
+  animation-name: panel-swap;
+  animation-delay: 0s;
+  animation-duration: 0.45s;
+  animation-timing-function: var(--ease-spring-soft);
+}
+
+@keyframes panel-swap {
+  from {
+    opacity: 0;
+    transform: translate(0, calc(-50% + 10px)) scale(0.985);
+  }
+  50% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%);
+  }
 }
 
 .section {
@@ -55,9 +80,10 @@ aside.panel {
 .chart {
   margin: 8px 0 0;
   padding: 12px 14px 10px;
-  border: 1px solid var(--divider);
+  border: 1px solid transparent;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-1);
+  box-shadow: var(--surface-highlight);
 }
 
 .chart svg {
@@ -118,9 +144,10 @@ aside.panel {
   display: flex;
   gap: 12px;
   padding: 10px 14px;
-  border: 1px solid var(--divider);
+  border: 1px solid transparent;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-1);
+  box-shadow: var(--surface-highlight);
   font-size: 14px;
 }
 
@@ -222,10 +249,14 @@ aside.panel {
     animation-name: sheet-in;
   }
 
+  :global(.panel-swap) aside.panel {
+    animation-name: sheet-in;
+  }
+
   @keyframes sheet-in {
     from {
       opacity: 0;
-      transform: translateY(16px);
+      transform: translateY(24px) scale(0.98);
     }
     to {
       opacity: 1;
@@ -268,7 +299,7 @@ aside.panel {
 }
 
 .refresh:focus-visible {
-  outline: 2px solid var(--text-primary);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -323,8 +354,8 @@ aside.panel {
 .kpi {
   padding: 12px 14px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.035);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 0 0 1px var(--divider);
+  background: var(--surface-1);
+  box-shadow: var(--surface-highlight);
 }
 
 .sectionHeader {
@@ -345,7 +376,7 @@ aside.panel {
 }
 
 .chart:focus-visible {
-  outline: 2px solid var(--text-primary);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -435,12 +466,14 @@ aside.panel {
   color: var(--text-secondary);
 }
 
+/* esqueleto: uma faixa de luz suave atravessa o bloco, como no iOS */
 .skeleton {
   display: block;
   border-radius: 8px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
-  background-size: 200% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
+  background:
+    linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.09) 50%, transparent 70%) 0 0 / 250% 100%,
+    var(--surface-1);
+  animation: shimmer 1.8s var(--ease-out-soft) infinite;
 }
 
 .skeletonLabel {
@@ -462,17 +495,18 @@ aside.panel {
 
 .skeletonChart {
   min-height: 104px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
-  background-size: 200% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
+  background:
+    linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.06) 50%, transparent 70%) 0 0 / 250% 100%,
+    var(--surface-1);
+  animation: shimmer 1.8s var(--ease-out-soft) infinite;
 }
 
 @keyframes shimmer {
   from {
-    background-position: 100% 0;
+    background-position: 120% 0, 0 0;
   }
   to {
-    background-position: -100% 0;
+    background-position: -120% 0, 0 0;
   }
 }
 
@@ -579,7 +613,7 @@ aside.panel {
 }
 
 .metricToggle button:focus-visible {
-  outline: 2px solid var(--text-primary);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 

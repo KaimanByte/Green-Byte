@@ -7,6 +7,7 @@ import { latLngToVector3 } from '../../lib/geo'
 import { RegionMarker } from './RegionMarker'
 import { DeepSky, EarthIntroLayers, IntroCamera, SolarSystem, SunLight, WarpStars } from './SpaceIntro'
 import { BlurredBackground } from './SpaceFocus'
+import { LiquidLens } from './LiquidLens'
 import { spaceFade, type IntroPhase } from '../../lib/intro'
 import * as THREE from 'three'
 
@@ -278,6 +279,8 @@ export function GloboScene({
           maxDistance={12}
           rotateSpeed={0.45}
         />
+        {/* refração do vidro líquido atrás dos botões (depois da cena desenhada) */}
+        <LiquidLens />
         
       </Canvas>
     </main>

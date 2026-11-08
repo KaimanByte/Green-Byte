@@ -9,12 +9,14 @@ aside.panel {
   padding: 48px 40px 40px;              
   transform: none;
   animation-name: login-in;
+  animation-duration: var(--dur-panel);
+  animation-timing-function: var(--ease-spring-soft);
   animation-delay: 0.45s;
   animation-fill-mode: both;
 }
 
 @keyframes login-in {
-  from { opacity: 0; transform: translateX(16px); }
+  from { opacity: 0; transform: translateX(20px) scale(0.97); }
   to { opacity: 1; transform: none; }
 }
 
@@ -33,7 +35,7 @@ aside.panel {
 
 .input:focus-visible,
 .submit:focus-visible {
-  outline: 2px solid var(--text-primary);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -45,15 +47,10 @@ aside.panel {
   justify-content: center;
   gap: 8px;
   height: 44px;
-  border: 1px solid var(--glass-border);
+  /* vidro tingido vem do .liquid--tint (styles/liquid.css) */
   border-radius: 999px;
-  background: var(--glass-fill);
   color: var(--text-primary);
   font-family: var(--font-display);
   font-weight: 600;
   letter-spacing: 0.04em;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.submit:hover { background: var(--glass-fill-hover); }
+}

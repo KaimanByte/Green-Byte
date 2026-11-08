@@ -32,3 +32,22 @@
     backdrop-filter: none;
   }
 }
+
+/* contraste aumentado: fundo quase opaco e contorno bem visível */
+@media (prefers-contrast: more) {
+  .glass {
+    --glass-fill: rgba(12, 16, 18, 0.92);
+    --glass-highlight: rgba(255, 255, 255, 0.6);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* celular e telas de toque: desfoque menor, bem mais leve para a GPU */
+@media (max-width: 760px), (pointer: coarse) {
+  :root {
+    --glass-blur: 12px;
+    --glass-saturation: 1.4;
+    --glass-fill: rgba(12, 16, 18, 0.5); /* compensa o desfoque menor na leitura */
+  }
+}

@@ -1,9 +1,8 @@
 /* Comparação histórica: várias linhas (uma por serviço) no mesmo eixo de tempo. */
 
 .section {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--divider);
+  /* separação por espaço, não por linha */
+  margin-top: 26px;
 }
 
 .chart svg {
@@ -141,7 +140,7 @@
 }
 
 .legendItem:focus-visible {
-  outline: 2px solid var(--text-primary);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 

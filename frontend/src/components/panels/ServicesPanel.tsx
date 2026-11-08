@@ -96,7 +96,7 @@ export function ServicesPanel({ onClose, panelRef }: Props) {
           <p className={dash.stateTitle}>Não foi possível carregar os serviços.</p>
           <p className={dash.stateText}>{error}</p>
           <button type="button" className={dash.refresh} onClick={refetch}>
-            <RefreshCw size={14} strokeWidth={2} aria-hidden="true" />
+            <RefreshCw size={14} strokeWidth={1.75} aria-hidden="true" />
             Tentar novamente
           </button>
         </div>
@@ -137,7 +137,7 @@ export function ServicesPanel({ onClose, panelRef }: Props) {
         <div className={dash.toolbar}>
           <PeriodFilter value={periodId} onChange={setPeriodId} disabled={loading} />
           <button type="button" className={dash.refresh} onClick={refetch} disabled={loading}>
-            <RefreshCw size={14} strokeWidth={2} aria-hidden="true" className={loading ? dash.spin : undefined} />
+            <RefreshCw size={14} strokeWidth={1.75} aria-hidden="true" className={loading ? dash.spin : undefined} />
             {loading ? 'Atualizando…' : 'Atualizar'}
           </button>
         </div>
@@ -178,7 +178,7 @@ export function ServicesPanel({ onClose, panelRef }: Props) {
           disabled={selectedIds.length < 2 || isComparing}
           onClick={() => setIsComparing(true)}
         >
-          <GitCompareArrows size={14} strokeWidth={2} aria-hidden="true" />
+          <GitCompareArrows size={14} strokeWidth={1.75} aria-hidden="true" />
           Comparar
         </button>
       </div>
@@ -252,7 +252,7 @@ export function ServicesPanel({ onClose, panelRef }: Props) {
                       </span>
                     </span>
 
-                    <ChevronDown size={16} strokeWidth={2} aria-hidden="true" className={styles.chevron} />
+                    <ChevronDown size={16} strokeWidth={1.75} aria-hidden="true" className={styles.chevron} />
                   </button>
                 </div>
 

@@ -2,7 +2,7 @@
 .middle,
 .bottom {
   transform-box: view-box;
-  transition: transform 0.3s ease, opacity 0.2s;
+  transition: transform var(--dur-spring) var(--ease-spring), opacity 0.2s;
 }
 
 .top { transform-origin: 14px 9px; }
@@ -11,4 +11,4 @@
 
 .open .top { transform: translateY(5px) rotate(45deg); }
 .open .middle { opacity: 0; }
-.open .bottom { transform: translateY(-5px) rotate(-45deg); }
+.open .bottom { transform: translateY(-5px) rotate(-45deg); }

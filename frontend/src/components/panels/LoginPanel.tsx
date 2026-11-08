@@ -61,11 +61,12 @@ export function LoginPanel({ onClose, panelRef }: Props) {
 
         {error && <p role="alert" className={styles.error}>{error}</p>}
 
-        <button type="submit" className={styles.submit}>
-          <LogIn size={14} strokeWidth={2} aria-hidden="true" />
+        <button type="submit" className={`liquid liquid--tint ${styles.submit}`}>
+          <span className="liquid__ring" aria-hidden="true" />
+          <LogIn size={14} strokeWidth={1.75} aria-hidden="true" />
           Entrar
         </button>
       </form>
     </aside>
   )
-}
+}

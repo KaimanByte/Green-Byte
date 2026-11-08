@@ -8,6 +8,9 @@ import './styles/liquid.css'
 import './index.css'
 import App from './App.tsx'
 import { GreenDataProvider } from './providers/GreenDataProvider'
+import { trackLiquidPointer } from './lib/liquidPointer'
+
+trackLiquidPointer()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

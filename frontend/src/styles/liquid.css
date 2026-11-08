@@ -1,69 +1,83 @@
-/* ---------- botão de vidro líquido ---------- */
+/* posição do brilho (em % do botão): registradas pra poderem animar suave */
+@property --mx {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 35%;
+}
+
+@property --my {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 8%;
+}
+
+@property --liquid-shine {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgba(255, 255, 255, 0.18);
+}
+
+/* ---------- botão de vidro líquido ----------
+   vidro bem transparente (dá pra ver as estrelas atrás) com cara de bolha:
+   aro fino, brilho espalhado por dentro da borda, reflexo em meia-lua no topo
+   e um reflexo fraco embaixo. quase sem desfoque, então também é leve pra GPU */
 .liquid {
   /* força dos brilhos: ajuste aqui se ficar forte ou fraco demais */
-  --liquid-edge: rgba(255, 255, 255, 0.32);
-  --liquid-edge-soft: rgba(255, 255, 255, 0.12);
-  --liquid-shine: rgba(255, 255, 255, 0.1);
-  --liquid-glow: rgba(120, 255, 210, 0.1); /* brilho verde-água interno */
+  --liquid-edge: rgba(255, 255, 255, 0.14);      /* aro fino em volta */
+  --liquid-highlight: rgba(255, 255, 255, 0.28); /* luz na borda de cima/esquerda */
+  --liquid-shine: rgba(255, 255, 255, 0.18);     /* reflexo em meia-lua no topo */
+  --liquid-glow: rgba(255, 255, 255, 0.13);      /* brilho por dentro da borda (bolha) */
+  --liquid-tint: rgba(255, 255, 255, 0.02);      /* película do vidro */
   --liquid-reflection: 14px; /* distância do reflexo do ícone */
-    --liquid-frost: 0.1;      /* escurecimento do vidro (o --glass-frost do estilo 2) */
-  --liquid-blur: 20px;
---liquid-saturation: 3;       /* desfoque do fundo */
+  --liquid-frost: 0;         /* escurecimento do vidro (0 = só vidro) */
+  --liquid-blur: 1.5px;      /* desfoque bem leve: as estrelas continuam visíveis */
+  --liquid-saturation: 1.5;
 
   position: relative;
-   border: none;
-  background: hsl(0 0% 0% / var(--liquid-frost));
-  -webkit-backdrop-filter: blur(var(--liquid-blur)) saturate(var(--liquid-saturation));
-  backdrop-filter: blur(var(--liquid-blur)) saturate(var(--liquid-saturation));
-   box-shadow:
-    /* brilhos nos cantos opostos (estilo 1) */
-    inset 2px -2px 1px -1px var(--liquid-edge),
-    inset -2px 2px 1px -1px var(--liquid-edge),
-    inset 6px -6px 1px -6px var(--liquid-edge-soft),
-    inset -6px 6px 1px -6px var(--liquid-edge-soft),
-    /* aro de luz por dentro (estilo 2) */
-    inset 0 0 2px 1px rgba(255, 255, 255, 0.12),
-    inset 0 0 10px 4px rgba(255, 255, 255, 0.04),
-    /* profundidade suave (estilo 2) */
-    inset 0 4px 16px rgba(17, 17, 26, 0.05),
-    inset 0 8px 24px rgba(17, 17, 26, 0.05),
-    inset 0 6px 56px rgba(17, 17, 26, 0.05),
-    /* sombra externa */
-    0 4px 8px rgba(0, 0, 0, 0.35);
+  border: none;
+  background:
+    linear-gradient(160deg, var(--liquid-tint), transparent 60%),
+    hsl(0 0% 0% / var(--liquid-frost));
+  -webkit-backdrop-filter: blur(var(--liquid-blur)) saturate(var(--liquid-saturation)) brightness(1.08);
+  backdrop-filter: blur(var(--liquid-blur)) saturate(var(--liquid-saturation)) brightness(1.08);
+  box-shadow:
+    /* aro fino e uniforme */
+    inset 0 0 0 1px var(--liquid-edge),
+    /* luz vindo de cima/esquerda e um resto do lado oposto (refração) */
+    inset 1px 1px 1px var(--liquid-highlight),
+    inset -1px -1px 1px rgba(255, 255, 255, 0.09),
+    /* brilho espalhado por dentro da borda: o centro fica limpo, como bolha */
+    inset 0 0 12px 1px var(--liquid-glow),
+    /* sombra externa macia */
+    0 8px 24px rgba(0, 0, 0, 0.3);
   color: var(--text-primary);
   cursor: pointer;
   user-select: none;
-  transition: transform 0.25s;
+  /* mola ao soltar/passar o mouse; o brilho segue o cursor (--mx/--my, lib/liquidPointer.ts) */
+  transition:
+    transform var(--dur-spring) var(--ease-spring),
+    --mx 0.25s ease-out,
+    --my 0.25s ease-out,
+    --liquid-shine 0.3s ease-out;
 }
 
-/* brilho interno, deslocado para baixo (no original era uma sombra preta) */
+/* reflexo em meia-lua no topo (só gradiente, sem filter: barato para a GPU) */
 .liquid::before {
   content: '';
   position: absolute;
-  left: 8px;
-  right: 8px;
-  top: 35%;
-  height: calc(100% - 16px);
+  inset: 0;
   border-radius: inherit;
-  border: 1px solid var(--liquid-glow);
-  filter: blur(8px);
+  background: radial-gradient(70% 45% at var(--mx) var(--my), var(--liquid-shine), transparent 70%);
   pointer-events: none;
 }
 
-/* reflexo diagonal nos cantos */
+/* reflexo fraco embaixo, do lado oposto */
 .liquid::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(
-    45deg,
-    var(--liquid-shine) 0%,
-    transparent 25%,
-    transparent 75%,
-    var(--liquid-shine) 100%
-  );
-  filter: blur(7px);
+  background: radial-gradient(60% 35% at 70% 100%, rgba(255, 255, 255, 0.09), transparent 70%);
   pointer-events: none;
 }
 
@@ -72,7 +86,7 @@
   position: absolute;
   inset: 4px;
   border-radius: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   filter: blur(1px);
   pointer-events: none;
 }
@@ -83,17 +97,47 @@
 }
 
 .liquid:hover {
-  transform: translateY(-3px);
+  --liquid-shine: rgba(255, 255, 255, 0.24);
+  transform: translateY(-2px);
 }
 
+/* apertar: encolhe rápido; soltar: volta com a mola */
 .liquid:active {
-  transform: scale(0.94);
+  transform: scale(0.95);
+  transition-duration: 0.12s;
 }
 
-/* dentro da barra lateral o fundo é liso: desfoque não faz diferença */
-nav .liquid {
+/* vidro não "enxerga" outro vidro: dentro da barra lateral ou de um painel .glass
+   o fundo já está desfocado, então o botão não faz outro desfoque (economiza GPU) */
+nav .liquid,
+.glass .liquid {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+}
+
+/* refração: a distorção do fundo é feita no WebGL, atrás dos botões
+   (components/scenes/LiquidLens.tsx), e funciona em qualquer navegador */
+
+/* ---------- variantes (inspiradas no Liquid Glass da Apple) ---------- */
+
+/* clear: mais transparente, para ficar sobre fundos fortes (globo, espaço).
+   desfoque menor = mais leve quando há vários na tela */
+.liquid--clear {
+  --liquid-blur: 0px;
+  --liquid-glow: rgba(255, 255, 255, 0.11);
+}
+
+/* tingida: vidro com o verde do GreenByte, para a ação principal ou o item ativo */
+.liquid--tint {
+  --liquid-edge: rgba(125, 255, 196, 0.24);
+  --liquid-highlight: rgba(190, 255, 225, 0.3);
+  --liquid-glow: rgba(125, 255, 196, 0.12);
+  --liquid-tint: rgba(125, 255, 196, 0.12);
+}
+
+/* sem "pulo" no hover: para campos e controles segmentados */
+.liquid--static:hover {
+  transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -104,5 +148,42 @@ nav .liquid {
   .liquid:hover,
   .liquid:active {
     transform: none;
+  }
+}
+
+/* contraste aumentado: vidro quase opaco e contorno nítido, sem reflexos */
+@media (prefers-contrast: more) {
+  .liquid {
+    --liquid-frost: 0.85;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+  }
+
+  .liquid--tint {
+    background: rgba(20, 70, 50, 0.95);
+    box-shadow: inset 0 0 0 1px #7dffc4;
+  }
+
+  .liquid::before,
+  .liquid::after,
+  .liquid__ring {
+    display: none;
+  }
+}
+
+/* transparência reduzida: mesmo vidro escuro do .glass */
+@media (prefers-reduced-transparency: reduce) {
+  .liquid {
+    --liquid-frost: 0.9;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* celular e telas de toque: sem desfoque nenhum (o mais leve possível) */
+@media (max-width: 760px), (pointer: coarse) {
+  .liquid {
+    --liquid-blur: 0px;
   }
 }

@@ -30,9 +30,10 @@ export function IntroOverlay({ phase, onSkip }: Props) {
         alt="GreenByte · Monitoramento ambiental"
         draggable={false}
       />
-      <button type="button" className={`glass ${styles.skip}`} onClick={onSkip}>
+      <button type="button" className={`liquid liquid--clear ${styles.skip}`} onClick={onSkip}>
+        <span className="liquid__ring" aria-hidden="true" />
         Pular
-        <ChevronRight size={16} strokeWidth={2} aria-hidden="true" />
+        <ChevronRight size={16} strokeWidth={1.75} aria-hidden="true" />
       </button>
     </div>
   )

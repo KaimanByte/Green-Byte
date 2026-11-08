@@ -45,10 +45,8 @@ function App() {
     return () => window.clearTimeout(timer)
   }, [introPhase, isSceneReady])
 
-  // pular: na logo começa o zoom; no meio do zoom vai direto pro globo
-  const skipIntro = useCallback(() => {
-    setIntroPhase((phase) => (phase === 'hold' ? 'zoom' : 'done'))
-  }, [])
+  // pular: um clique só leva direto pro globo (na logo ou no meio do zoom)
+  const skipIntro = useCallback(() => setIntroPhase('done'), [])
 
   const finishIntro = useCallback(() => setIntroPhase('done'), [])
 
@@ -57,6 +55,15 @@ function App() {
   // dashboard/serviços aparecem ao lado do menu, ligados ao item por uma linha
   const showLogin = isMenuOpen && isLoginOpen
   const openPanelId = isMenuOpen && !isLoginOpen && PANEL_IDS.includes(activeItem) ? activeItem : null
+
+  // trocar de painel com outro já aberto: o novo entra na hora, sem esperar a linha
+  // se desenhar de novo (padrão do React pra lembrar o valor do render anterior)
+  const [lastPanelId, setLastPanelId] = useState<string | null>(openPanelId)
+  const [isPanelSwap, setIsPanelSwap] = useState(false)
+  if (openPanelId !== lastPanelId) {
+    setIsPanelSwap(lastPanelId !== null && openPanelId !== null)
+    setLastPanelId(openPanelId)
+  }
 
   const selectedRegion = regions.find((region) => region.code === selectedRegionCode) ?? null
 
@@ -148,11 +155,13 @@ const selectItem = useCallback((id: string) => {
           panelRef={panelRef}
         />
 
-        {openPanelId === SERVICES_ID ? (
-          <ServicesPanel key={openPanelId} onClose={closeMenu} panelRef={dashboardRef} />
-        ) : openPanelId ? (
-          <DashboardPanel key={openPanelId} onClose={closeMenu} panelRef={dashboardRef} />
-        ) : null}
+        <div className={isPanelSwap ? 'panel-swap' : undefined} style={{ display: 'contents' }}>
+          {openPanelId === SERVICES_ID ? (
+            <ServicesPanel key={openPanelId} onClose={closeMenu} panelRef={dashboardRef} />
+          ) : openPanelId ? (
+            <DashboardPanel key={openPanelId} onClose={closeMenu} panelRef={dashboardRef} />
+          ) : null}
+        </div>
         <Connector
           anchorSelector={openPanelId ? `[data-menu-item="${openPanelId}"]` : null}
           panelRef={dashboardRef}

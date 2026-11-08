@@ -14,5 +14,5 @@ type Props = {
 
 export function CarbonLevelIcon({ icon }: Props) {
   const Icon = ICONS[icon]
-  return <Icon size={14} strokeWidth={2} aria-hidden="true" />
-}
+  return <Icon size={14} strokeWidth={1.75} aria-hidden="true" />
+}
