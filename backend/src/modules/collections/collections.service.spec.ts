@@ -164,6 +164,34 @@ describe('CollectionsService', () => {
     });
   });
 
+  describe('syncCollections com métricas inválidas', () => {
+    it('não grava o serviço cujas métricas viriam como NaN; grava os outros', async () => {
+      (servicesService.findAllServices as jest.Mock<() => Promise<unknown>>).mockResolvedValue([
+        { id: 'svc-ok', regionCode: 'us-east' },
+        { id: 'svc-quebrado', regionCode: 'us-east' },
+      ]);
+      (regionsService.findRegionByCode as jest.Mock<() => Promise<unknown>>).mockResolvedValue({
+        regionCode: 'us-east',
+        carbonIntensity: 380,
+      });
+      fetchMock.mockImplementation(async (url) => ({
+        ok: true,
+        json: async () =>
+          String(url).endsWith('/metrics/svc-quebrado')
+            ? { collection_interval_seconds: 30, metrics: { cpu_percent: 'alto', memory_gb: 1, disk_gb: 1, network_gb: 0 } }
+            : { collection_interval_seconds: 30, metrics: { cpu_percent: 10, memory_gb: 1, disk_gb: 1, network_gb: 0 } },
+      }));
+      collectionsRepository.insertMany.mockImplementation(async (data) => data as Collection[]);
+
+      const result = await service.syncCollections();
+
+      expect(result.total).toBe(1);
+      const saved = collectionsRepository.insertMany.mock.calls[0][0];
+      expect(saved.map((c) => c.serviceId)).toEqual(['svc-ok']);
+      expect(saved.every((c) => Number.isFinite(c.energyKwh) && Number.isFinite(c.co2Emissions))).toBe(true);
+    });
+  });
+
   describe('findHistory', () => {
     const serviceId = 'svc-1';
 

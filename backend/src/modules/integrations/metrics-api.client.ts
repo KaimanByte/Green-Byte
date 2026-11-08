@@ -82,7 +82,50 @@ export class MetricsApiClient {
       },
     });
 
+    const problem = this.findMetricsProblem(payload);
+    if (problem) {
+      throw new BadGatewayException(`Métricas de ${serviceId} em formato inválido: ${problem}.`);
+    }
+
     return payload as ExternalServiceMetrics;
+  }
+
+  /**
+   * Confere o JSON de GET /metrics/:id antes de qualquer cálculo: sem isso, um campo
+   * ausente ou texto vira NaN em energia/CO₂e e vai parar no banco.
+   * Devolve a descrição do primeiro problema encontrado, ou null se estiver tudo certo.
+   */
+  private findMetricsProblem(value: unknown): string | null {
+    if (typeof value !== 'object' || value === null) return 'a resposta não é um objeto';
+
+    const payload = value as Record<string, unknown>;
+    if (!this.isNumberInRange(payload.collection_interval_seconds, 0, Number.POSITIVE_INFINITY, false)) {
+      return '"collection_interval_seconds" deve ser um número maior que zero';
+    }
+
+    const metrics = payload.metrics as Record<string, unknown> | null | undefined;
+    if (typeof metrics !== 'object' || metrics === null) return '"metrics" ausente';
+
+    if (!this.isNumberInRange(metrics.cpu_percent, 0, 100)) {
+      return '"metrics.cpu_percent" deve ser um número entre 0 e 100';
+    }
+    for (const field of ['memory_gb', 'disk_gb', 'network_gb'] as const) {
+      if (!this.isNumberInRange(metrics[field], 0, Number.POSITIVE_INFINITY)) {
+        return `"metrics.${field}" deve ser um número maior ou igual a zero`;
+      }
+    }
+
+    return null;
+  }
+
+  /** Número finito dentro de [min, max] (ou (min, max] quando `includeMin` é false). */
+  private isNumberInRange(value: unknown, min: number, max: number, includeMin = true): boolean {
+    return (
+      typeof value === 'number' &&
+      Number.isFinite(value) &&
+      (includeMin ? value >= min : value > min) &&
+      value <= max
+    );
   }
 
   private isExternalService(value: unknown): value is ExternalService {
