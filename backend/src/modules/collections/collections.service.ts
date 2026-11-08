@@ -1,48 +1,24 @@
-import {
-  BadGatewayException,
-  BadRequestException,
-  GatewayTimeoutException,
-  Injectable,
-  Logger,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { CollectionsRepository, RegionEmissions, ServiceEmissions } from './collections.repository';
 import { NewCollection } from './collections.schema';
 import { CollectionHistoryQuery } from './collection-history.query';
 import { CollectionResponseDto, SyncCollectionsResponseDto } from './dto/collection.dto';
+import { EnergyCalculator } from './energy.calculator';
 import { ServicesService } from '../services/services.service';
 import { RegionsService } from '../regions/regions.service';
-
-interface MetricsPayload {
-  collection_interval_seconds: number;
-  metrics: {
-    cpu_percent: number;
-    memory_gb: number;
-    disk_gb: number;
-    network_gb: number;
-  };
-}
+import { MetricsApiClient } from '../integrations/metrics-api.client';
 
 @Injectable()
 export class CollectionsService {
   private readonly logger = new Logger(CollectionsService.name);
-  private readonly metricsBaseUrl: string;
-  private readonly requestTimeoutMs = 5_000;
-
-  // Constantes de cálculo baseadas no modelo padrão
-  private readonly CPU_MAX_POWER_W = 100;
-  private readonly RAM_POWER_PER_GB_W = 0.375;
-  private readonly DISK_POWER_PER_GB_W = 0.01;
-  private readonly NETWORK_POWER_PER_GB_W = 0.02;
 
   constructor(
     private readonly collectionsRepository: CollectionsRepository,
     private readonly servicesService: ServicesService,
     private readonly regionsService: RegionsService,
-  ) {
-    const baseUrl = process.env.METRICS_API_BASE_URL || 'https://metrics.unilaunch.org';
-    this.metricsBaseUrl = baseUrl.replace(/\/+$/, '');
-  }
+    private readonly metricsApi: MetricsApiClient,
+    private readonly energyCalculator: EnergyCalculator,
+  ) {}
 
   async findByServiceId(serviceId: string, limit = 100): Promise<CollectionResponseDto[]> {
     return this.collectionsRepository.findByServiceId(serviceId, limit);
@@ -100,34 +76,30 @@ export class CollectionsService {
 
     for (const service of services) {
       try {
-        const payload = await this.fetchServiceMetrics(service.id);
+        const payload = await this.metricsApi.getServiceMetrics(service.id);
         const region = await this.regionsService.findRegionByCode(service.regionCode);
-        const carbonIntensity = region.carbonIntensity;
 
-        // 1. Cálculo de Potência (Watts) com o modelo padronizado
-        const powerWatts = 
-          ((payload.metrics.cpu_percent / 100) * this.CPU_MAX_POWER_W) +
-          (payload.metrics.memory_gb * this.RAM_POWER_PER_GB_W) +
-          (payload.metrics.disk_gb * this.DISK_POWER_PER_GB_W) +
-          (payload.metrics.network_gb * this.NETWORK_POWER_PER_GB_W);
-
-        // 2. Cálculo de Energia (kWh)
-        const hours = payload.collection_interval_seconds / 3600;
-        const energyKwh = (powerWatts * hours) / 1000;
-
-        // 3. CO2e (gCO2e) = energia_kWh × carbon_intensity_gco2e_per_kwh
-        const co2Emissions = energyKwh * carbonIntensity;
-
-        newCollections.push({
-          serviceId: service.id,
+        const usage = {
           cpuPercent: payload.metrics.cpu_percent,
           memoryGb: payload.metrics.memory_gb,
           diskGb: payload.metrics.disk_gb,
-          networkGb: payload.metrics.network_gb, // NOTA: Certifique-se que 'networkGb' exista em 'NewCollection' (collections.schema.ts)
-          energyKwh: energyKwh,
-          co2Emissions: co2Emissions,
-        } as NewCollection);
+          networkGb: payload.metrics.network_gb,
+        };
+        const { energyKwh, co2Emissions } = this.energyCalculator.calculate(
+          usage,
+          payload.collection_interval_seconds,
+          region.carbonIntensity,
+        );
 
+        // a rede entra no cálculo de energia, mas não tem coluna própria no banco
+        newCollections.push({
+          serviceId: service.id,
+          cpuPercent: usage.cpuPercent,
+          memoryGb: usage.memoryGb,
+          diskGb: usage.diskGb,
+          energyKwh,
+          co2Emissions,
+        });
       } catch (error) {
         this.logger.warn(`Falha ao coletar métricas para o serviço ${service.id}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
         continue;
@@ -140,29 +112,5 @@ export class CollectionsService {
       total: saved.length,
       collections: saved,
     };
-  }
-
-  private async fetchServiceMetrics(serviceId: string): Promise<MetricsPayload> {
-    const url = `${this.metricsBaseUrl}/metrics/${serviceId}`;
-    let response: Response;
-
-    try {
-      response = await fetch(url, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        signal: AbortSignal.timeout(this.requestTimeoutMs),
-      });
-    } catch (error: unknown) {
-      if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
-        throw new GatewayTimeoutException(`Timeout ao buscar métricas de ${serviceId}`);
-      }
-      throw new ServiceUnavailableException(`Indisponível para buscar métricas de ${serviceId}`);
-    }
-
-    if (!response.ok) {
-      throw new BadGatewayException(`Erro HTTP ${response.status} ao buscar métricas de ${serviceId}`);
-    }
-
-    return response.json();
   }
 }

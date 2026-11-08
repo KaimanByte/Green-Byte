@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import { ServicesRepository } from './services.repository';
+import { ExternalHttpClient } from '../integrations/external-http.client';
+import { MetricsApiClient } from '../integrations/metrics-api.client';
 
 describe('ServicesService', () => {
   let service: ServicesService;
@@ -34,6 +36,9 @@ describe('ServicesService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ServicesService,
+        // clientes reais: os testes passam pelo HTTP até o fetch simulado
+        ExternalHttpClient,
+        MetricsApiClient,
         {
           provide: ServicesRepository,
           useValue: repository,

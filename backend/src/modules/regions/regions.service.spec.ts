@@ -7,6 +7,8 @@ import {
 import { RegionsRepository } from './regions.repository';
 import { RegionsService } from './regions.service';
 import { NewRegion, Region } from './regions.schema';
+import { CarbonApiClient } from '../integrations/carbon-api.client';
+import { ExternalHttpClient } from '../integrations/external-http.client';
 import { jest } from '@jest/globals';
 
 type AsyncFn = (...args: unknown[]) => Promise<unknown>;
@@ -64,7 +66,11 @@ describe('RegionsService', () => {
       // Mock atualizado para upsertMany
       upsertMany: jest.fn<AsyncFn>(async (data: unknown) => data as NewRegion[]),
     };
-    service = new RegionsService(repository as unknown as RegionsRepository);
+    // cliente real da API de carbono: os testes passam pelo HTTP até o fetch simulado
+    service = new RegionsService(
+      repository as unknown as RegionsRepository,
+      new CarbonApiClient(new ExternalHttpClient()),
+    );
   });
 
   afterEach(() => {
