@@ -4,6 +4,7 @@ import { UsersRepository } from '../users/users.repository';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
+import { User } from '../users/users.schema';
 
 @Injectable()
 export class AuthService {
@@ -12,7 +13,7 @@ export class AuthService {
     private readonly usersRepository: UsersRepository,
   ) {}
 
-  async validateUser(email: string, password: string): Promise<any> {
+  async validateUser(email: string, password: string): Promise<Omit<User, 'hashPassword'>> {
     const user = await this.usersRepository.findByEmail(email);
     if (!user) {
       throw new UnauthorizedException('Email ou senha inválidos.');
@@ -23,7 +24,7 @@ export class AuthService {
       throw new UnauthorizedException('Email ou senha inválidos.');
     }
 
-    const { hashPassword, ...result } = user;
+    const { hashPassword: _hashPassword, ...result } = user;
     return result;
   }
 
@@ -32,4 +33,4 @@ export class AuthService {
     const payload = { sub: user.id, email: user.email };
     return { access_token: this.jwtService.sign(payload), user };
   }
-  }
+}
