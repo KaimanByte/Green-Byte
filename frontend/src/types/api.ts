@@ -185,3 +185,17 @@ export type TimeSeriesCompareDto = {
   /** uma série por serviço, na ordem dos ids pedidos */
   series: TimeSeriesCompareSeriesDto[]
 }
+
+/** Usuário sem a senha — UserResponseDto (createdAt chega como string ISO no JSON) */
+export type UserDto = {
+  id: number
+  email: string
+  createdAt: string
+}
+
+/** POST /auth/login — LoginResponseDto */
+export type LoginResponseDto = {
+  /** token JWT para o cabeçalho `Authorization: Bearer` */
+  access_token: string
+  user: UserDto
+}
