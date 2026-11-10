@@ -1,14 +1,15 @@
-/* posição do brilho (em % do botão): registradas pra poderem animar suave */
+/* posição fixa do brilho (em % do botão): luz vindo de cima/esquerda,
+   oposta ao reflexo fraco de baixo (.liquid::after, em 70% 100%) */
 @property --mx {
   syntax: '<percentage>';
   inherits: true;
-  initial-value: 35%;
+  initial-value: 30%;
 }
 
 @property --my {
   syntax: '<percentage>';
   inherits: true;
-  initial-value: 8%;
+  initial-value: 0%;
 }
 
 @property --liquid-shine {
@@ -53,11 +54,9 @@
   color: var(--text-primary);
   cursor: pointer;
   user-select: none;
-  /* mola ao soltar/passar o mouse; o brilho segue o cursor (--mx/--my, lib/liquidPointer.ts) */
+  /* mola ao soltar/passar o mouse; o brilho fica parado e só acende um pouco no hover */
   transition:
     transform var(--dur-spring) var(--ease-spring),
-    --mx 0.25s ease-out,
-    --my 0.25s ease-out,
     --liquid-shine 0.3s ease-out;
 }
 

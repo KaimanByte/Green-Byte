@@ -135,7 +135,7 @@ export function SearchBar({ regions, onSelect }: Props) {
         </ul>
       )}
 
-      <div className={`liquid liquid--static ${styles.field}`}>
+      <div className={`liquid liquid--static ${styles.field}`} data-liquid-lens="edge">
         <span className="liquid__ring" aria-hidden="true" />
         <Search size={16} strokeWidth={1.75} aria-hidden="true" className={styles.icon} />
         <input
