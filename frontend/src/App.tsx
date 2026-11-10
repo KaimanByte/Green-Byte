@@ -7,6 +7,7 @@ import { CollectionDate } from './components/layouts/CollectionDate'
 import { LOGIN_ID, PANEL_IDS, SERVICES_ID, menuItems } from './components/layouts/menuItems'
 import { LoginPanel } from './components/panels/LoginPanel'
 import { useGlobeRegions } from './hooks/useGlobeRegions'
+import { useAuth } from './hooks/useAuth'
 import { RegionPanel } from './components/panels/RegionPanel'
 import { Connector } from './components/panels/Connector'
 import { DashboardPanel } from './components/panels/DashboardPanel'
@@ -29,6 +30,9 @@ function App() {
   const [introPhase, setIntroPhase] = useState<IntroPhase>(() => (prefersReducedMotion() ? 'done' : 'hold'))
   const [isLoginOpen, setIsLoginOpen] = useState(false)
   const loginRef = useRef<HTMLElement>(null)
+
+  // usuário logado aparece no menu, no lugar do botão LOGIN
+  const { user } = useAuth()
 
   // regiões reais do backend (GET /regions + GET /services)
   const regions = useGlobeRegions()
@@ -181,6 +185,7 @@ const selectItem = useCallback((id: string) => {
           items={menuItems}
           activeId={activeItem}
           onSelect={selectItem}
+          userEmail={user?.email ?? null}
         />
       </div>
     </>

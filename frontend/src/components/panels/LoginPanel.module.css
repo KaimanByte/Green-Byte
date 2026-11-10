@@ -41,6 +41,11 @@ aside.panel {
 
 .error { margin: 0; font-size: 13px; color: #ff8a80; }
 
+/* e-mail de quem está logado */
+.account { margin: 0; color: var(--text-primary); overflow-wrap: anywhere; }
+
+.submit:disabled { opacity: 0.6; cursor: progress; }
+
 .submit {
   display: inline-flex;
   align-items: center;

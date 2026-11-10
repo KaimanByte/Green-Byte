@@ -10,9 +10,11 @@ type Props = {
   items: MenuItem[]
   activeId: string
   onSelect: (id: string) => void
+  /** e-mail de quem está logado; sem ele o botão mostra LOGIN */
+  userEmail?: string | null
 }
 
-export function Sidebar({ isOpen, onToggle, onClose, items, activeId, onSelect }: Props) 
+export function Sidebar({ isOpen, onToggle, onClose, items, activeId, onSelect, userEmail = null }: Props) 
 {
     useEffect(() => {
         if (!isOpen) return
@@ -113,11 +115,13 @@ export function Sidebar({ isOpen, onToggle, onClose, items, activeId, onSelect }
 
         <button
           type="button"
-          className={`${styles.login} ${activeId === LOGIN_ID ? styles.loginActive : ''}`}
+          className={`${styles.login} ${userEmail ? styles.loginUser : ''} ${activeId === LOGIN_ID ? styles.loginActive : ''}`}
           data-menu-item={LOGIN_ID}
           onClick={() => onSelect(LOGIN_ID)}
+          aria-label={userEmail ? `Conta: ${userEmail}` : undefined}
+          title={userEmail ?? undefined}
           >
-            LOGIN
+            {userEmail ?? 'LOGIN'}
           </button>
 
         <footer className={styles.footer}>

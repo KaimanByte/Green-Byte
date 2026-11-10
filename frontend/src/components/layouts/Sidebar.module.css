@@ -260,6 +260,15 @@
   color: var(--text-primary);
 }
 
+/* logado: mostra o e-mail (cortado com reticências se não couber) */
+.loginUser {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
 .login:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
