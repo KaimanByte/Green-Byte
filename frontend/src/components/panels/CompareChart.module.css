@@ -1,0 +1,189 @@
+/* Comparação histórica: várias linhas (uma por serviço) no mesmo eixo de tempo. */
+
+.section {
+  /* separação por espaço, não por linha */
+  margin-top: 26px;
+}
+
+.chart svg {
+  height: 140px;
+}
+
+@container (min-width: 600px) {
+  .chart svg {
+    height: 180px;
+  }
+}
+
+.gridLine {
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.series {
+  opacity: 1;
+  transition: opacity 0.25s ease;
+  animation: seriesIn 0.45s ease both;
+}
+
+.seriesDimmed {
+  opacity: 0.18;
+}
+
+.line {
+  fill: none;
+  stroke: var(--line-color);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--line-color) 45%, transparent));
+  transition: stroke-width 0.2s ease;
+}
+
+.seriesStrong .line {
+  stroke-width: 2.6;
+}
+
+@keyframes seriesIn {
+  from {
+    opacity: 0;
+  }
+}
+
+.dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line-color);
+  box-shadow: 0 0 0 2px rgba(14, 20, 22, 0.9), 0 0 8px var(--line-color);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* uma grade só para o tooltip inteiro: cor | serviço | valor alinhados entre as linhas */
+.tooltip {
+  grid-template-columns: auto max-content auto;
+  align-items: center;
+  gap: 4px 8px;
+  text-align: left;
+  z-index: 2;
+}
+
+.tooltip > :first-child {
+  grid-column: 1 / -1;
+}
+
+.tooltipRow {
+  display: contents;
+}
+
+.tooltipRow strong {
+  font-size: 12px;
+}
+
+.tooltipRow small,
+.tooltipRow em {
+  font-weight: 400;
+  font-style: normal;
+  color: var(--text-muted);
+}
+
+.tooltipName {
+  overflow: hidden;
+  max-width: 130px;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+}
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--line-color);
+  box-shadow: 0 0 6px var(--line-color);
+}
+
+/* ---------- legenda interativa ---------- */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line-color) 40%, transparent);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.legendItem:hover {
+  background: color-mix(in srgb, var(--line-color) 14%, transparent);
+}
+
+.legendItem:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.legendItem[aria-pressed='false'] {
+  opacity: 0.5;
+  box-shadow: inset 0 0 0 1px var(--divider);
+}
+
+.legendItem[aria-pressed='false'] .swatch {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line-color);
+}
+
+.legendItem:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.legendName {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legendValue {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .series,
+  .line,
+  .legendItem {
+    animation: none;
+    transition: none;
+  }
+}

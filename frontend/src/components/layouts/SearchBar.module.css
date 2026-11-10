@@ -20,12 +20,15 @@
   gap: 10px;
   position: relative;
   border-radius: var(--radius-pill);
+  cursor: text;
+  /* um pouco mais escuro que o botão: é um campo de leitura */
+  --liquid-frost: 0.12;
 }
 
 .field:focus-within {
-  /* focado: contorno um pouco mais visível e vidro mais escuro pra leitura */
-  --glass-highlight: rgba(255, 255, 255, 0.35);
-  --glass-fill: rgba(12, 16, 18, 0.6);
+  /* focado: bordas mais claras e vidro mais escuro pra leitura */
+  --liquid-edge: rgba(255, 255, 255, 0.24);
+  --liquid-frost: 0.4;
 }
 
 .icon {
@@ -74,7 +77,7 @@
 }
 
 .clear:focus-visible {
-  outline: 2px solid var(--text-primary);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 

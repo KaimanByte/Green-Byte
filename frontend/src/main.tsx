@@ -8,10 +8,13 @@ import './styles/liquid.css'
 import './index.css'
 import App from './App.tsx'
 import { GreenDataProvider } from './providers/GreenDataProvider'
+import { AuthProvider } from './providers/AuthProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <GreenDataProvider>
-      <App />
-    </GreenDataProvider>
+    <AuthProvider>
+      <GreenDataProvider>
+        <App />
+      </GreenDataProvider>
+    </AuthProvider>
   </StrictMode>)

@@ -24,15 +24,15 @@
 }
 
 .marker:focus-visible {
-  outline: 2px solid var(--text-primary);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
 /* selecionado: brilhos mais fortes */
 .selected {
-  --liquid-edge: rgba(255, 255, 255, 0.6);
-  --liquid-shine: rgba(255, 255, 255, 0.2);
-  --liquid-glow: rgba(255, 255, 255, 0.15);
+  --liquid-edge: rgba(255, 255, 255, 0.28);
+  --liquid-shine: rgba(255, 255, 255, 0.1);
+  --liquid-glow: rgba(255, 255, 255, 0.1);
 }
 
 /* ---------- nome da cidade, ligado ao marcador por um fio ---------- */
@@ -81,4 +81,14 @@
 /* selecionado: o nome já está no painel, e a linha do painel sai pela direita */
 .selected .label {
   opacity: 0;
+}
+/* marcadores aparecem suaves quando a intro termina */
+.anchor {
+  animation: anchor-in 0.9s ease;
+}
+
+@keyframes anchor-in {
+  from {
+    opacity: 0;
+  }
 }

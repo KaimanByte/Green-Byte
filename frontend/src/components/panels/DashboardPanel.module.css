@@ -18,6 +18,31 @@ aside.panel {
     /* só entra depois que a linha se desenha (0,15s + 0,35s), com uma leve sobreposição */
   animation-delay: 0.45s;
   animation-fill-mode: both;
+  animation-duration: var(--dur-panel);
+  animation-timing-function: var(--ease-spring-soft);
+}
+
+/* troca de painel com outro já aberto (Dashboard <-> Serviços): entra na hora,
+   num fade curto com leve subida, sem o vazio de esperar a linha */
+:global(.panel-swap) aside.panel {
+  animation-name: panel-swap;
+  animation-delay: 0s;
+  animation-duration: 0.45s;
+  animation-timing-function: var(--ease-spring-soft);
+}
+
+@keyframes panel-swap {
+  from {
+    opacity: 0;
+    transform: translate(0, calc(-50% + 10px)) scale(0.985);
+  }
+  50% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%);
+  }
 }
 
 .section {
@@ -55,9 +80,10 @@ aside.panel {
 .chart {
   margin: 8px 0 0;
   padding: 12px 14px 10px;
-  border: 1px solid var(--divider);
+  border: 1px solid transparent;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-1);
+  box-shadow: var(--surface-highlight);
 }
 
 .chart svg {
@@ -118,9 +144,10 @@ aside.panel {
   display: flex;
   gap: 12px;
   padding: 10px 14px;
-  border: 1px solid var(--divider);
+  border: 1px solid transparent;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-1);
+  box-shadow: var(--surface-highlight);
   font-size: 14px;
 }
 
@@ -222,10 +249,14 @@ aside.panel {
     animation-name: sheet-in;
   }
 
+  :global(.panel-swap) aside.panel {
+    animation-name: sheet-in;
+  }
+
   @keyframes sheet-in {
     from {
       opacity: 0;
-      transform: translateY(16px);
+      transform: translateY(24px) scale(0.98);
     }
     to {
       opacity: 1;
@@ -268,7 +299,7 @@ aside.panel {
 }
 
 .refresh:focus-visible {
-  outline: 2px solid var(--text-primary);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -276,4 +307,332 @@ aside.panel {
   .refresh svg {
     transition: none;
   }
+}
+/* ---------- barra de ferramentas: período + atualizar ---------- */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.toolbar .refresh {
+  margin-top: 0;
+}
+
+.refresh:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.meta {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.warning {
+  color: #ffd479;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ---------- indicadores: cartões estáveis (sem vidro sobre vidro) ---------- */
+.kpi {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--surface-1);
+  box-shadow: var(--surface-highlight);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sectionHint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ---------- gráfico: tooltip, cursor, vazio ---------- */
+.chartPlot {
+  position: relative;
+}
+
+.chart:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.chartCursor {
+  stroke: rgba(255, 255, 255, 0.45);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.chartTooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  display: grid;
+  gap: 1px;
+  min-width: 112px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(14, 20, 22, 0.92);
+  box-shadow: inset 0 0 0 1px var(--glass-highlight), 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: center;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.chartTooltip strong {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.chartTooltipTime {
+  color: var(--text-muted);
+}
+
+.chartEmpty {
+  display: grid;
+  place-items: center;
+  min-height: 80px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.chartEmpty figcaption {
+  margin: 0;
+}
+
+.chartCompact svg {
+  height: 48px !important;
+}
+
+.linkButton {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #7dffc4;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.emptyItem {
+  color: var(--text-muted);
+}
+
+/* ---------- estados: erro e carregamento ---------- */
+.state {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  padding: 8px 4px;
+  color: var(--text-primary);
+}
+
+.stateTitle {
+  margin: 0;
+  font-weight: 600;
+}
+
+.stateText {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* esqueleto: uma faixa de luz suave atravessa o bloco, como no iOS */
+.skeleton {
+  display: block;
+  border-radius: 8px;
+  background:
+    linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.09) 50%, transparent 70%) 0 0 / 250% 100%,
+    var(--surface-1);
+  animation: shimmer 1.8s var(--ease-out-soft) infinite;
+}
+
+.skeletonLabel {
+  width: 60%;
+  height: 10px;
+}
+
+.skeletonValue {
+  width: 80%;
+  height: 26px;
+  margin-top: 8px;
+}
+
+.skeletonRow {
+  height: 52px;
+  margin-top: 8px;
+  border-radius: 14px;
+}
+
+.skeletonChart {
+  min-height: 104px;
+  background:
+    linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.06) 50%, transparent 70%) 0 0 / 250% 100%,
+    var(--surface-1);
+  animation: shimmer 1.8s var(--ease-out-soft) infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 120% 0, 0 0;
+  }
+  to {
+    background-position: -120% 0, 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin,
+  .skeleton,
+  .skeletonChart {
+    animation: none;
+  }
+}
+
+/* cartões não podem estourar a largura do painel */
+.kpi {
+  min-width: 0;
+}
+
+.kpi dd {
+  overflow-wrap: anywhere;
+}
+
+@container (min-width: 540px) {
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 680px) {
+  .kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ---------- estados dos serviços (GET /summary e /ranking) ---------- */
+.stateCounts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 14px;
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stateCounts span::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: 1px;
+}
+
+.stateCounts [data-state='active'],
+.stateTag[data-state='active'] {
+  color: #7dffc4;
+}
+
+.stateCounts [data-state='no_metrics'],
+.stateTag[data-state='no_metrics'] {
+  color: #ffd479;
+}
+
+.stateCounts [data-state='unavailable'],
+.stateTag[data-state='unavailable'] {
+  color: #ff8a7a;
+}
+
+.stateTag {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.rankInactive {
+  opacity: 0.7;
+}
+
+.metricToggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px var(--glass-highlight);
+}
+
+.metricToggle button {
+  padding: 3px 10px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.metricToggle button:hover {
+  color: var(--text-primary);
+}
+
+.metricToggle button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.metricToggle .metricActive {
+  color: var(--text-primary);
+  background: rgba(125, 255, 196, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(125, 255, 196, 0.35);
+}
+
+.sectionHeader .linkButton {
+  font-size: 12px;
+}
+
+.chartNote {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.metricToggle {
+  flex-wrap: wrap;
 }

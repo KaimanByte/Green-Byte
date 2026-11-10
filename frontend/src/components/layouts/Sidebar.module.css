@@ -8,8 +8,7 @@
   backdrop-filter: blur(6px);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.4s ease;
-  
+  transition: opacity 0.5s var(--ease-out-soft);
 }
 
 .backdropVisible {
@@ -31,12 +30,11 @@
   place-items: center;
   color: var(--text-primary);
   cursor: pointer;
-  transition: transform 0.25s;
 }
 
 
 .toggle:focus-visible {
-  outline: 2px solid var(--text-primary);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -46,8 +44,21 @@
      fica exatamente a 16px da borda de dentro da barra */
   --panel-inset: 16px;
   --toggle-end: calc(var(--panel-inset) + 64px);
-  /* fundo, brilho e desfoque vêm do .glass (styles/glass.css) */
-  
+  /* vidro líquido: desfoque menor que o dos painéis (pra refração da borda aparecer,
+     ver LiquidLens.tsx), película um pouco mais escura pra leitura, aro fino e brilho
+     de bolha como nos botões .liquid */
+  --glass-blur: 10px;
+  --glass-fill: rgba(12, 16, 18, 0.42);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    inset 1px 1px 1px rgba(255, 255, 255, 0.2),
+    inset -1px -1px 1px rgba(255, 255, 255, 0.07),
+    inset 0 0 28px 2px rgba(255, 255, 255, 0.05),
+    var(--glass-shadow);
+  background:
+    radial-gradient(90% 30% at 30% 0%, rgba(255, 255, 255, 0.07), transparent 70%),
+    var(--glass-fill);
+
 
   position: fixed;
   z-index: 20;
@@ -71,36 +82,51 @@
     round var(--radius-pill)
   );
   visibility: hidden;
+  /* fechando: o vidro "volta" para dentro do botão, rápido e sem quique */
   transition:
-    clip-path 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
-    visibility 0s linear 0.45s; /* só esconde depois que a animação termina */
+    clip-path 0.42s var(--ease-out-soft),
+    visibility 0s linear 0.42s; /* só esconde depois que a animação termina */
 }
 
 /* ABERTO: recorte do tamanho da barra inteira */
 .open {
   clip-path: inset(0 0 0 0 round var(--radius-sidebar));
   visibility: visible;
+  /* abrindo: o vidro do botão estica até virar a barra, com mola macia */
   transition:
-    clip-path 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
+    clip-path var(--dur-panel) var(--ease-spring-soft),
     visibility 0s;
 }
 
 /* ---------- conteúdo: entra um pouco depois da barra ---------- */
+.login,
 .title,
-.list,
+.list li,
 .footer {
   opacity: 0;
-  transform: translateX(-8px);
-  transition: opacity 0.2s, transform 0.2s;
+  transform: translateX(-10px);
+  transition: opacity 0.18s, transform 0.18s;
 }
-
+.open .login,
 .open .title,
-.open .list,
+.open .list li,
 .open .footer {
   opacity: 1;
   transform: none;
-  transition: opacity 0.3s 0.15s, transform 0.3s 0.15s;
+  transition:
+    opacity 0.35s var(--ease-out-soft) var(--delay, 0.12s),
+    transform var(--dur-spring) var(--ease-spring) var(--delay, 0.12s);
 }
+
+/* itens entram em cascata, um depois do outro */
+.open .list li:nth-child(1) { --delay: 0.14s; }
+.open .list li:nth-child(2) { --delay: 0.18s; }
+.open .list li:nth-child(3) { --delay: 0.22s; }
+.open .list li:nth-child(4) { --delay: 0.26s; }
+.open .list li:nth-child(5) { --delay: 0.3s; }
+.open .list li:nth-child(6) { --delay: 0.34s; }
+.open .login { --delay: 0.3s; }
+.open .footer { --delay: 0.34s; }
 
 .title {
   height: 64px;
@@ -114,9 +140,44 @@
 }
 
 /* ---------- itens ---------- */
-.list {
-  list-style: none;
+/* lista + pílula do item ativo, que desliza por baixo dos itens */
+.listWrap {
+  --item-step: 58px; /* altura do item (48) + espaço entre itens (10) */
+  position: relative;
   margin: 24px 0 0;
+}
+
+.indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  border-radius: var(--radius-item);
+  pointer-events: none;
+  transform: translateY(calc(var(--active-index) * var(--item-step)));
+  opacity: 0;
+  transition:
+    transform var(--dur-spring) var(--ease-spring),
+    opacity 0.3s var(--ease-out-soft);
+}
+
+.open .indicator {
+  opacity: 1;
+  transition:
+    transform var(--dur-spring) var(--ease-spring),
+    opacity 0.35s var(--ease-out-soft) 0.12s;
+}
+
+.open .indicatorHidden,
+.indicatorHidden {
+  opacity: 0;
+}
+
+.list {
+  position: relative; /* itens por cima da pílula */
+  list-style: none;
+  margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -139,7 +200,12 @@
   font-weight: 500;
   text-align: left;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.2s, color 0.2s, transform var(--dur-spring) var(--ease-spring);
+}
+
+.item:active {
+  transform: scale(0.97);
+  transition-duration: 0.12s;
 }
 
 .item:hover {
@@ -148,15 +214,14 @@
 }
 
 .item:focus-visible {
-  outline: 2px solid var(--text-primary);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
+/* ativo: só muda a cor (texto branco, ícone verde) e ganha a pílula de vidro.
+   peso e caixa do texto continuam iguais, pra palavra não "pular" ao selecionar */
 .itemActive {
-
   color: var(--text-primary);
-  font-weight: 700;
-  text-transform: uppercase;
 }
 
 .dot {
@@ -172,9 +237,54 @@
   opacity: 1;
 }
 
+/* ---------- login (acima da linha do rodapé) ---------- */
+.login {
+  margin-top: auto;
+  margin-bottom: 12px;
+  align-self: center;
+  padding: 6px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s, background 0.2s, color 0.2s;}
+
+.login:hover,
+.loginActive {
+  background: var(--glass-fill-hover);
+  color: var(--text-primary);
+}
+
+/* logado: mostra o e-mail (cortado com reticências se não couber) */
+.loginUser {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.login:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+
+.open .login {
+  transition:
+    opacity 0.35s var(--ease-out-soft) var(--delay),
+    transform var(--dur-spring) var(--ease-spring) var(--delay),
+    background 0.2s,
+    color 0.2s;
+}
+
 /* ---------- rodapé ---------- */
 .footer {
-  margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid var(--divider);
   display: flex;
@@ -197,8 +307,29 @@
   .panel,
   .open,
   .title,
-  .list,
-  .footer {
+  .list li,
+  .footer,
+  .login,
+  .item,
+  .indicator {
     transition: none;
+  }
+}
+/* ---------- ícone do item (no lugar do ponto) ---------- */
+.icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.itemActive .icon {
+  opacity: 1;
+  color: #7dffc4;
+}
+
+/* contraste aumentado / transparência reduzida: barra quase opaca, como os painéis */
+@media (prefers-contrast: more), (prefers-reduced-transparency: reduce) {
+  .panel {
+    --glass-fill: rgba(12, 16, 18, 0.94);
+    background: var(--glass-fill);
   }
 }

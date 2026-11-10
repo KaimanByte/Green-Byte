@@ -1,0 +1,61 @@
+aside.panel {
+  --panel-left: calc(16px + 280px + 40px);
+  z-index: 15;
+  top: auto;
+  bottom: 96px;                          
+  left: var(--panel-left);
+  right: auto;
+  width: min(440px, calc(100vw - 32px));  
+  padding: 48px 40px 40px;              
+  transform: none;
+  animation-name: login-in;
+  animation-duration: var(--dur-panel);
+  animation-timing-function: var(--ease-spring-soft);
+  animation-delay: 0.45s;
+  animation-fill-mode: both;
+}
+
+@keyframes login-in {
+  from { opacity: 0; transform: translateX(20px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+.form { display: flex; flex-direction: column; gap: 20px; }  
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.input {
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-item);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.input:focus-visible,
+.submit:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.error { margin: 0; font-size: 13px; color: #ff8a80; }
+
+/* e-mail de quem está logado */
+.account { margin: 0; color: var(--text-primary); overflow-wrap: anywhere; }
+
+.submit:disabled { opacity: 0.6; cursor: progress; }
+
+.submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  /* vidro tingido vem do .liquid--tint (styles/liquid.css) */
+  border-radius: 999px;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}

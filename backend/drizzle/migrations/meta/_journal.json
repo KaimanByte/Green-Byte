@@ -15,6 +15,20 @@
       "when": 1792126085949,
       "tag": "0001_low_vin_gonzales",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793924955478,
+      "tag": "0002_clean_mole_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794090575842,
+      "tag": "0003_watery_franklin_richards",
+      "breakpoints": true
     }
   ]
 }

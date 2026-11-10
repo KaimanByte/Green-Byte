@@ -1,11 +1,11 @@
-FROM node:20-alpine AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 
 COPY package*.json ./
 
 RUN npm ci
 
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
@@ -17,7 +17,16 @@ RUN npm run build
 ENV NODE_ENV=production
 RUN npm prune --production && npm cache clean --force
 
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS migrator
+WORKDIR /app
+
+COPY package*.json ./
+COPY --from=deps /app/node_modules ./node_modules
+COPY drizzle.config.ts ./
+COPY drizzle ./drizzle
+COPY src/database/database.schema.ts ./src/database/database.schema.ts
+
+FROM node:24-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

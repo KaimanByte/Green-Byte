@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, timestamp, doublePrecision } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, timestamp, doublePrecision, index } from 'drizzle-orm/pg-core';
 import { services } from '../services/services.schema';
 
 export const collections = pgTable('collections', {
@@ -13,7 +13,10 @@ export const collections = pgTable('collections', {
   diskGb: doublePrecision('disk_gb').notNull(),
   energyKwh: doublePrecision('energy_kwh').notNull(),
   co2Emissions: doublePrecision('co2_emissions').notNull(),
-});
+}, (table) => [
+  // Suporta consultas de histórico por serviço e período (DB-04)
+  index('collections_service_id_timestamp_idx').on(table.serviceId, table.timestamp),
+]);
 
 export type Collection = typeof collections.$inferSelect;
 export type NewCollection = typeof collections.$inferInsert;

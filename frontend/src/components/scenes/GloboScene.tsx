@@ -1,55 +1,36 @@
-import { OrbitControls, useTexture } from '@react-three/drei'
+import { OrbitControls, PerformanceMonitor, useTexture } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type {Region} from '../../data/regions'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { latLngToVector3 } from '../../lib/geo'
 import { RegionMarker } from './RegionMarker'
+import { DeepSky, EarthIntroLayers, IntroCamera, SolarSystem, SunLight, WarpStars } from './SpaceIntro'
+import { BlurredBackground } from './SpaceFocus'
+import { LiquidLens } from './LiquidLens'
+import { spaceFade, type IntroPhase } from '../../lib/intro'
 import * as THREE from 'three'
 
 
-function Starfield() {
-  const positions = useMemo(() => {
-    const count = 2600
-    const vertices = new Float32Array(count * 3)
-    let seed = 73421
-
-    const random = () => {
-      seed = (seed * 16807) % 2147483647
-      return (seed - 1) / 2147483646
-    }
-
-    for (let index = 0; index < count; index += 1) {
-      const theta = random() * Math.PI * 2
-      const phi = Math.acos(2 * random() - 1)
-      const radius = 12 + random() * 38
-      vertices[index * 3] = radius * Math.sin(phi) * Math.cos(theta)
-      vertices[index * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta)
-      vertices[index * 3 + 2] = radius * Math.cos(phi)
-    }
-
-    return vertices
-  }, [])
-
-  return (
-    <points frustumCulled={false}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-      </bufferGeometry>
-      <pointsMaterial
-        color="#dceaff"
-        size={0.075}
-        sizeAttenuation
-        transparent
-        opacity={0.9}
-        depthWrite={false}
-      />
-    </points>
-  )
-}
-
-
 const EARTH_RADIUS = 1.35
+
+const EARTH_TEXTURES = ['/earth-day.jpg', '/earth-normal.jpg', '/earth-clouds.png']
+
+/**
+ * Cor (superfície e nuvens) em sRGB; o normal map continua linear.
+ * Ajustado no callback de carregamento do useTexture, e não no valor retornado
+ * pelo hook (react-hooks/immutability). Função de módulo: referência estável,
+ * então o drei só a chama quando as texturas carregam.
+ */
+function setEarthColorSpace(textures: THREE.Texture | THREE.Texture[]) {
+  const [surface, , clouds] = Array.isArray(textures) ? textures : [textures]
+  for (const texture of [surface, clouds]) {
+    if (texture && texture.colorSpace !== THREE.SRGBColorSpace) {
+      texture.colorSpace = THREE.SRGBColorSpace
+      texture.needsUpdate = true
+    }
+  }
+}
 
 // distância normal da câmera (mais longe em tela em pé, pro globo caber)
 const getDefaultDistance = (size: { width: number; height: number }) =>
@@ -69,9 +50,11 @@ type EarthProps = {
   selectedCode: string | null
   onSelectRegion: (code: string) => void
   focusRequest?: FocusRequest | null
+  introPhase?: IntroPhase
 }
 
-function Earth({ regions, selectedCode, onSelectRegion, focusRequest }: EarthProps) {
+function Earth({ regions, selectedCode, onSelectRegion, focusRequest, introPhase = 'done' }: EarthProps) {
+  const isIntroDone = introPhase === 'done'
   const earthRef = useRef<THREE.Mesh>(null)
   const targetRotationRef = useRef<number | null>(null)
   const camera = useThree((state) => state.camera)
@@ -92,12 +75,13 @@ function Earth({ regions, selectedCode, onSelectRegion, focusRequest }: EarthPro
 
   // fechou o painel: afasta de volta pra distância normal, mantendo o ângulo
   useEffect(() => {
-    if (selectedCode) return
+    // durante a intro quem mexe na câmera é o IntroCamera
+    if (selectedCode || !isIntroDone) return
     cameraTargetRef.current = camera.position
       .clone()
       .normalize()
       .multiplyScalar(getDefaultDistance(size))
-  }, [selectedCode, camera, size])
+  }, [selectedCode, camera, size, isIntroDone])
 
 
   // calcula quanto girar no eixo y pra região ficar de frente pra câmera
@@ -122,14 +106,7 @@ function Earth({ regions, selectedCode, onSelectRegion, focusRequest }: EarthPro
       .multiplyScalar(getDefaultDistance(size) * ZOOM_FACTOR)
   }, [focusRequest, regions, camera, size])
   const cloudsRef = useRef<THREE.Mesh>(null)
-  const [surfaceMap, normalMap, cloudsMap] = useTexture([
-    '/earth-day.jpg',
-    '/earth-normal.jpg',
-    '/earth-clouds.png',
-  ])
-
-  surfaceMap.colorSpace = THREE.SRGBColorSpace
-  cloudsMap.colorSpace = THREE.SRGBColorSpace
+  const [surfaceMap, normalMap, cloudsMap] = useTexture(EARTH_TEXTURES, setEarthColorSpace)
 
   //parar qnd selecionar regiao
    useFrame((_, delta) => {
@@ -170,7 +147,8 @@ function Earth({ regions, selectedCode, onSelectRegion, focusRequest }: EarthPro
           roughness={0.92}
           metalness={0}
         />
-        {regions.map((region) => (
+        {!isIntroDone && <EarthIntroLayers radius={EARTH_RADIUS} />}
+        {isIntroDone && regions.map((region) => (
           <RegionMarker
             key={region.code}
             region={region}
@@ -210,55 +188,111 @@ function Earth({ regions, selectedCode, onSelectRegion, focusRequest }: EarthPro
 const LIGHT_OFFSET = new THREE.Vector3(-4, 2, 5)
 
 // a luz gira junto com a câmera: arrastar o globo não leva o lado escuro pra frente
+// na intro quem ilumina é o sol (Terra em crescente); perto do globo volta essa luz
 function CameraLight() {
   const lightRef = useRef<THREE.DirectionalLight>(null)
+  const ambientRef = useRef<THREE.AmbientLight>(null)
 
   useFrame(({ camera }) => {
-    lightRef.current?.position.copy(LIGHT_OFFSET).applyQuaternion(camera.quaternion)
+    const fade = spaceFade(camera.position.length())
+    if (lightRef.current) {
+      lightRef.current.position.copy(LIGHT_OFFSET).applyQuaternion(camera.quaternion)
+      lightRef.current.intensity = 3.8 * (1 - fade)
+    }
+    if (ambientRef.current) ambientRef.current.intensity = THREE.MathUtils.lerp(0.36, 0.03, fade)
   })
 
-  return <directionalLight ref={lightRef} position={LIGHT_OFFSET} intensity={3.8} />
+  return (
+    <>
+      <ambientLight ref={ambientRef} intensity={0.36} />
+      <directionalLight ref={lightRef} position={LIGHT_OFFSET} intensity={3.8} />
+    </>
+  )
 }
 
-function CameraFit() {
+function CameraFit({ isIntroDone }: { isIntroDone: boolean }) {
   const { camera, size } = useThree()
+  const { width, height } = size
 
   useEffect(() => {
-    camera.position.set(0, 0, getDefaultDistance(size))
+    if (!isIntroDone) return
+    camera.position.set(0, 0, getDefaultDistance({ width, height }))
     camera.lookAt(0, 0, 0)
     camera.updateProjectionMatrix()
-  }, [camera, size.height, size.width])
+  }, [camera, width, height, isIntroDone])
 
   return null
 }
 
-export function GloboScene({ regions, selectedCode, onSelectRegion, focusRequest }: EarthProps) {
+type GloboSceneProps = EarthProps & {
+  onIntroReady?: () => void
+  onIntroDone?: () => void
+}
+
+export function GloboScene({
+  regions,
+  selectedCode,
+  onSelectRegion,
+  focusRequest,
+  introPhase = 'done',
+  onIntroReady = () => {},
+  onIntroDone = () => {},
+}: GloboSceneProps) {
+  const isIntroDone = introPhase === 'done'
+  // resolução se adapta ao computador: se os quadros caírem, desenha com menos pixels
+  const [dpr, setDpr] = useState(() => Math.min(window.devicePixelRatio, 1.5))
+
   return (
     <main className="App" aria-label="Terra no espaço">
       <Canvas
         className="space-canvas"
-        camera={{ fov: 42, near: 0.1, far: 100, position: [0, 0, 5.2] }}
-        dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: false }}
+        camera={{ fov: 42, near: 0.1, far: 1500, position: [0, 0, 5.2] }}
+        dpr={dpr}
+        // em notebook com duas placas, pede a placa de vídeo dedicada
+        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
       >
-        <color attach="background" args={['#000000']} />
-        <CameraFit />
-        <ambientLight intensity={0.36} />
+        <PerformanceMonitor
+          flipflops={3}
+          onChange={({ factor }) => setDpr(Math.min(window.devicePixelRatio, 0.75 + 0.75 * factor))}
+          onFallback={() => setDpr(0.75)}
+        />
+        <CameraFit isIntroDone={isIntroDone} />
+        {!isIntroDone && (
+          <IntroCamera
+            phase={introPhase}
+            getEndDistance={getDefaultDistance}
+            onReady={onIntroReady}
+            onDone={onIntroDone}
+          />
+        )}
+        {/* fundo numa cena à parte, desfocado perto do globo (sem Suspense próprio:
+            a cena só aparece com todas as texturas prontas) */}
+        <BlurredBackground>
+          <color attach="background" args={['#000000']} />
+          <CameraLight />
+          <SolarSystem />
+        </BlurredBackground>
+        <SunLight />
+        <DeepSky />
+        {!isIntroDone && <WarpStars active={introPhase === 'zoom'} />}
         <CameraLight />
-        <Starfield />
          <Earth
           regions={regions}
           selectedCode={selectedCode}
           onSelectRegion={onSelectRegion}
           focusRequest={focusRequest}
+          introPhase={introPhase}
         />
         <OrbitControls
           makeDefault
+          enabled={isIntroDone}
           enablePan={false}
           minDistance={3.4}
           maxDistance={12}
           rotateSpeed={0.45}
         />
+        {/* refração do vidro líquido atrás dos botões (depois da cena desenhada) */}
+        <LiquidLens />
         
       </Canvas>
     </main>

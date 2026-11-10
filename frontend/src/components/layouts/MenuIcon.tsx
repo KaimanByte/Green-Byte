@@ -10,7 +10,7 @@ export function MenuIcon({ open }: Props) {
       viewBox="0 0 28 28"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth="1.75"
       strokeLinecap="round"
       aria-hidden="true"
       className={open ? styles.open : undefined}
@@ -20,4 +20,4 @@ export function MenuIcon({ open }: Props) {
       <line className={styles.bottom} x1="6" y1="19" x2="22" y2="19" />
     </svg>
   )
-}
+}

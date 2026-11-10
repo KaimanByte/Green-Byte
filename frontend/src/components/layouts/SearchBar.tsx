@@ -135,8 +135,9 @@ export function SearchBar({ regions, onSelect }: Props) {
         </ul>
       )}
 
-      <div className={`glass ${styles.field}`}>
-        <Search size={16} strokeWidth={2} aria-hidden="true" className={styles.icon} />
+      <div className={`liquid liquid--static ${styles.field}`} data-liquid-lens="edge">
+        <span className="liquid__ring" aria-hidden="true" />
+        <Search size={16} strokeWidth={1.75} aria-hidden="true" className={styles.icon} />
         <input
           ref={inputRef}
           type="text"
@@ -169,7 +170,7 @@ export function SearchBar({ regions, onSelect }: Props) {
             }}
             aria-label="Limpar busca"
           >
-            <X size={14} strokeWidth={2} />
+            <X size={14} strokeWidth={1.75} />
           </button>
         ) : (
           <kbd className={styles.hint} aria-hidden="true">/</kbd>

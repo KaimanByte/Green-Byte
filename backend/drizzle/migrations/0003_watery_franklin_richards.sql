@@ -1,0 +1,1 @@
+CREATE INDEX "collections_service_id_timestamp_idx" ON "collections" USING btree ("service_id","timestamp");

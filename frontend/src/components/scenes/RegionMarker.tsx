@@ -49,11 +49,11 @@ export function RegionMarker({ region, radius, isSelected, onSelect }: Props) {
 
   return (
     <group ref={anchorRef} position={position}>
-      <Html center zIndexRange={[100, 0]}>
+      <Html center zIndexRange={[100, 0]} className={styles.anchor}>
         <button
           ref={buttonRef}
           type="button"
-          className={`liquid ${styles.marker} ${isSelected ? styles.selected : ''}`}
+          className={`liquid liquid--clear ${isSelected ? 'liquid--tint' : ''} ${styles.marker} ${isSelected ? styles.selected : ''}`}
           data-region={region.code}
           data-visible="true" // <- Importante: já inicia como true para o GloboScene detectar
           aria-label={`Ver detalhes de ${region.city}`}
@@ -72,4 +72,4 @@ export function RegionMarker({ region, radius, isSelected, onSelect }: Props) {
       </Html>
     </group>
   )
-}
+}

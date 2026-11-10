@@ -71,3 +71,20 @@ body {
     height: 100dvh;
   }
 }
+
+/* interface entra suave quando a intro termina */
+.ui-reveal {
+  animation: ui-reveal 0.9s ease;
+}
+
+@keyframes ui-reveal {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-reveal {
+    animation: none;
+  }
+}

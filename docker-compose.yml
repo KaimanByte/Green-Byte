@@ -9,12 +9,23 @@ services:
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d green_byte"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  migrate:
+    build:
+      context: ./backend
+      target: migrator
+    env_file:
+      - .env
+    command: npm run db:migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
 
   backend:
     build: ./backend
@@ -25,9 +36,15 @@ services:
       - .env
     environment:
       - DB_HOST=postgres
+      # obrigatórias (o backend não sobe sem elas): o compose avisa se faltarem no .env
+      - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no .env (veja o .env.example)}
+      - ADM_EMAIL=${ADM_EMAIL:?defina ADM_EMAIL no .env (veja o .env.example)}
+      - ADM_PASSWORD=${ADM_PASSWORD:?defina ADM_PASSWORD no .env (veja o .env.example)}
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   frontend:
     build: ./frontend

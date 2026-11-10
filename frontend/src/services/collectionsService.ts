@@ -3,6 +3,8 @@ import type {
   EmissionsPeriod,
   RegionEmissionsDto,
   ServiceEmissionsDto,
+  TimeSeriesCompareDto,
+  TimeSeriesDto,
 } from '../types/api'
 import { request, type RequestOptions } from './api'
 
@@ -33,6 +35,48 @@ export function getEmissionsByService(
   return request<ServiceEmissionsDto[]>('/collections/emissions/service', {
     ...options,
     query: { start: period.start, end: period.end },
+  })
+}
+
+/**
+ * GET /collections/timeseries?from=&to=&serviceId=&bucketSeconds=
+ * Evolução das métricas: média das coletas gravadas em cada intervalo (não é soma acumulada).
+ * Sem `serviceId`, considera todos os serviços.
+ */
+export function getTimeSeries(
+  period: EmissionsPeriod,
+  params: { serviceId?: string; bucketSeconds?: number } = {},
+  options?: RequestOptions,
+): Promise<TimeSeriesDto> {
+  return request<TimeSeriesDto>('/collections/timeseries', {
+    ...options,
+    query: {
+      from: period.start,
+      to: period.end,
+      serviceId: params.serviceId,
+      bucketSeconds: params.bucketSeconds,
+    },
+  })
+}
+
+/**
+ * GET /collections/timeseries/compare — uma série por serviço (2 a 10), todas com o mesmo período
+ * e `bucketSeconds`. Cada ponto é a média das coletas daquele serviço no intervalo.
+ */
+export function compareTimeSeries(
+  ids: string[],
+  period: EmissionsPeriod,
+  params: { bucketSeconds?: number } = {},
+  options?: RequestOptions,
+): Promise<TimeSeriesCompareDto> {
+  return request<TimeSeriesCompareDto>('/collections/timeseries/compare', {
+    ...options,
+    query: {
+      ids: ids.join(','),
+      from: period.start,
+      to: period.end,
+      bucketSeconds: params.bucketSeconds,
+    },
   })
 }
 

@@ -32,7 +32,7 @@ Energia (kWh) = Potência (W) × Tempo (h) / 1000
 CO₂e (g)      = Energia (kWh) × Intensidade de Carbono (gCO₂e/kWh)
 ```
 
-Fórmulas completas, constantes e um exemplo numérico passo a passo estão em [`docs/calculos.md`](Green-Byte\docs\calculos.md).
+Fórmulas completas, constantes e um exemplo numérico passo a passo estão em [`docs/calculos.md`](./docs/calculos.md).
 
 ## Entregas de Sprints
 
@@ -71,6 +71,7 @@ Todas as entregas seguem os prazos acordados no calendário da disciplina. Para 
 - **Banco de Dados:** PostgreSQL 16 com Drizzle ORM
 - **Testes e qualidade:** Jest e oxlint (backend), ESLint (frontend)
 - **Orquestração:** Docker e Docker Compose
+- **Node.js nas imagens Docker:** 24 (Alpine)
 
 ## Arquitetura
 
@@ -98,7 +99,7 @@ O frontend nunca acessa o banco diretamente. Toda regra de negócio, cálculo e 
 
 ## Estrutura
 
-- `docker-compose.yml`: orquestração dos containers (frontend, backend e PostgreSQL)
+- `docker-compose.yml`: orquestração dos containers (frontend, migration, backend e PostgreSQL)
 - `.env.example`: modelo das variáveis de ambiente; copie para `.env`
 - `backend/`: API NestJS
   - `backend/src/database/`: conexão e schema do Drizzle ORM
@@ -112,6 +113,7 @@ O frontend nunca acessa o banco diretamente. Toda regra de negócio, cálculo e 
 Pré-requisitos:
 
 - Docker Engine e Docker Compose instalados.
+- Node.js 24, apenas para executar o projeto fora dos containers.
 
 Passo a passo:
 
@@ -134,6 +136,8 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
+O Compose aguarda o PostgreSQL ficar saudável, executa as migrations versionadas pelo Drizzle e só então inicia o backend. É esperado que o serviço `migrate` termine com status `Exited (0)` após aplicar — ou confirmar que já aplicou — as migrations.
+
 4. Verifique se os serviços estão em execução:
 
 ```
@@ -154,6 +158,8 @@ docker compose down
 
 > Para apagar também os dados do banco, use `docker compose down -v`. Isso remove o volume `postgres_data`.
 
+> **Atualização de ambiente:** se o seu volume PostgreSQL foi criado antes da adoção do serviço `migrate`, recrie-o uma única vez com `docker compose down -v` antes de subir novamente. Esse comando apaga os dados locais do banco.
+
 ## URLs
 
 Conforme o mapeamento de portas definido no `docker-compose.yml`:
@@ -164,15 +170,42 @@ Conforme o mapeamento de portas definido no `docker-compose.yml`:
 
 ## Variáveis de ambiente
 
-| Variável       | Descrição                                      | Valor no `.env.example`                                 |
-| -------------- | ---------------------------------------------- | ------------------------------------------------------- |
-| `DATABASE_URL` | String de conexão do backend com o PostgreSQL  | `postgresql://postgres:postgres@postgres:5432/green_byte` |
-| `JWT_SECRET`   | Segredo usado para assinar os tokens de login  | `your_super_secret_key_change_me`                       |
-| `PORT`         | Porta da API                                   | `3001`                                                  |
-| `FRONTEND_URL` | URL do frontend                                | `http://localhost:3000`                                 |
-| `NODE_ENV`     | Ambiente de execução                           | `development`                                           |
+| Variável | Descrição | Valor no `.env.example` |
+| --- | --- | --- |
+| `DATABASE_URL` | Conexão do backend e do serviço de migration com o PostgreSQL. | `postgresql://postgres:postgres@postgres:5432/green_byte` |
+| `JWT_SECRET` | Segredo usado para assinar os tokens de login. Obrigatória. | `your_super_secret_key_change_me` |
+| `ADM_EMAIL` | E-mail do administrador criado apenas quando ainda não há usuários. Obrigatória. | `admin@greenbyte.com` |
+| `ADM_PASSWORD` | Senha do administrador inicial. Obrigatória. | `admin_password` |
+| `METRICS_API_BASE_URL` | URL base da API de métricas. Obrigatória. | `https://metrics.unilaunch.org` |
+| `CARBON_API_BASE_URL` | URL base da API de intensidade de carbono. Obrigatória. | `https://carbon.unilaunch.org` |
+| `PORT` | Porta da API. | `3001` |
+| `FRONTEND_URL` | URL permitida para o frontend. | `http://localhost:3000` |
+| `NODE_ENV` | Ambiente de execução. | `development` |
+| `COLLECTION_INTERVAL_SECONDS` | Intervalo entre ciclos automáticos de descoberta e coleta, em segundos. Aceita inteiros de 1 a 2147483. | `30` |
 
-> Altere o `JWT_SECRET` antes de qualquer uso fora do ambiente local. O arquivo `.env` não é versionado.
+> Troque `JWT_SECRET` e `ADM_PASSWORD` antes de qualquer uso fora do ambiente local. O arquivo `.env` não é versionado.
+
+### Agendamento da coleta periódica
+
+O backend executa um ciclo completo de sincronização assim que a aplicação inicia. Depois da conclusão desse ciclo inicial, a descoberta de regiões/serviços e a coleta de métricas são executadas periodicamente conforme `COLLECTION_INTERVAL_SECONDS`.
+
+- Unidade: segundos.
+- Padrão: `30` segundos, caso a variável não seja informada.
+- Valor aceito: número inteiro entre `1` e `2147483`. Valores inválidos impedem a inicialização do serviço e geram uma mensagem explícita.
+- Concorrência: se o intervalo vencer enquanto outro ciclo ainda estiver em execução, o novo disparo é ignorado; ciclos não são executados em paralelo.
+- Observabilidade: cada ciclo registra início, término, duração e, em caso de falha, a etapa que apresentou o erro.
+
+Para alterar o intervalo, edite `COLLECTION_INTERVAL_SECONDS` no `.env`. Exemplo para executar a cada 2 minutos:
+
+```env
+COLLECTION_INTERVAL_SECONDS=120
+```
+
+Após alterar o `.env`, recrie o container do backend para aplicar a configuração:
+
+```bash
+docker compose up -d --build --force-recreate backend
+```
 
 ## Banco de Dados
 
@@ -184,14 +217,22 @@ Conforme o mapeamento de portas definido no `docker-compose.yml`:
   - Database: `green_byte`
   - User: `postgres`
   - Password: `postgres`
-- O acesso aos dados é feito com **Drizzle ORM**. O schema fica em `backend/src/database/schema.ts` e as migrações em `backend/drizzle/migrations/`.
+- O acesso aos dados é feito com **Drizzle ORM**. O schema fica em `backend/src/database/database.schema.ts` e as migrations em `backend/drizzle/migrations/`.
+- No Docker Compose, o serviço `migrate` executa `npm run db:migrate` automaticamente antes do backend iniciar. Não é necessário aplicar SQLs manualmente pelo Postgres.
 
-Para aplicar as migrações no banco que está rodando no Docker:
+Para aplicar manualmente as migrations em um PostgreSQL exposto pelo Docker, entre em `backend`, instale as dependências com `npm ci` e informe a conexão pela porta do host (`5434`):
 
-```
+```bash
 cd backend
 npm ci
-DATABASE_URL=postgresql://postgres:postgres@localhost:5434/green_byte npx drizzle-kit migrate
+DATABASE_URL=postgresql://postgres:postgres@localhost:5434/green_byte npm run db:migrate
+```
+
+No PowerShell, defina a variável na sessão antes do comando:
+
+```powershell
+$env:DATABASE_URL = 'postgresql://postgres:postgres@localhost:5434/green_byte'
+npm run db:migrate
 ```
 
 ## Desenvolvimento e testes
@@ -203,6 +244,7 @@ cd backend
 npm ci
 npm run lint        # análise estática (oxlint)
 npm test            # testes unitários (Jest)
+npm run build
 npm run test:e2e    # testes end-to-end
 ```
 
@@ -210,9 +252,10 @@ Frontend:
 
 ```
 cd frontend
-npm install
+npm ci
 npm run dev         # servidor de desenvolvimento (Vite)
 npm run lint
+npm run build
 ```
 
 ## Fluxo de trabalho
