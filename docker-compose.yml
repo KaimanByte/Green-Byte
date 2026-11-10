@@ -25,6 +25,10 @@ services:
       - .env
     environment:
       - DB_HOST=postgres
+      # obrigatórias (o backend não sobe sem elas): o compose avisa se faltarem no .env
+      - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no .env (veja o .env.example)}
+      - ADM_EMAIL=${ADM_EMAIL:?defina ADM_EMAIL no .env (veja o .env.example)}
+      - ADM_PASSWORD=${ADM_PASSWORD:?defina ADM_PASSWORD no .env (veja o .env.example)}
     depends_on:
       postgres:
         condition: service_healthy

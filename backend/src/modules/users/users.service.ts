@@ -4,6 +4,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersRepository } from './users.repository';
 import { User, NewUser } from './users.schema';
 import * as bcrypt from 'bcrypt';
+import { requireEnv } from '../../common/env';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -16,10 +17,13 @@ export class UsersService implements OnModuleInit {
   }
 
   private async seedInitialUser() {
+    // lidas antes de consultar o banco: sem ADM_EMAIL e ADM_PASSWORD o backend não sobe,
+    // em vez de criar o administrador com uma senha padrão escrita no código
+    const defaultEmail = requireEnv('ADM_EMAIL');
+    const defaultPassword = requireEnv('ADM_PASSWORD');
+
     const existingUsers = await this.userRepository.findAll();
     if (existingUsers.length === 0) {
-      const defaultEmail = process.env.ADM_EMAIL || 'admin@admin.com';
-      const defaultPassword = process.env.ADM_PASSWORD || 'Admin123!';
 
       const hashedPassword = await bcrypt.hash(defaultPassword, this.saltRounds);
       

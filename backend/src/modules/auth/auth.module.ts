@@ -5,14 +5,18 @@ import { UsersModule } from '../users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { requireEnv } from '../../common/env';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'default_secret_key',
-      signOptions: { expiresIn: '1d' },
+    // sem JWT_SECRET o backend não sobe: nada de chave padrão escrita no código
+    JwtModule.registerAsync({
+      useFactory: () => ({
+        secret: requireEnv('JWT_SECRET'),
+        signOptions: { expiresIn: '1d' },
+      }),
     }),
   ],
   controllers: [AuthController],
