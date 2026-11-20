@@ -71,6 +71,15 @@ describe('ValidationPipe global', () => {
       const messages = await messagesFor({ email: 'invalido' }, UpdateUserDto);
       expect(messages).toEqual(['Informe um e-mail válido.']);
     });
+
+    it('rejeita papel diferente de admin ou operator', async () => {
+      const messages = await messagesFor(
+        { email: 'dev@empresa.com', hashPassword: 'SenhaSegura123!', role: 'superuser' },
+        CreateUserDto,
+      );
+
+      expect(messages).toEqual(['Papel inválido: use "admin" ou "operator".']);
+    });
   });
 
   it('não interfere em query e parâmetros de rota tipados como texto', async () => {

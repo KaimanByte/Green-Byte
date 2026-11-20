@@ -1,3 +1,4 @@
+import { Authorize } from '../auth/decorators/authorize.decorator';
 import {
   Controller,
   Get,
@@ -77,6 +78,8 @@ export class RegionsController {
   @ApiGatewayTimeoutResponse({
     description: 'A API externa excedeu o tempo limite da requisição.',
   })
+  // sincronização é operação de monitoramento: exige login e papel admin ou operator (AU-06)
+  @Authorize('admin', 'operator')
   async syncRegions(): Promise<SincronizacaoRegioesResponseDto> {
     return this.regionsService.syncRegions();
   }
