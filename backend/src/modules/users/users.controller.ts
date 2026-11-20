@@ -42,8 +42,8 @@ export class UsersController {
   @ApiCreatedResponse({ description: 'Usuário criado.', type: UserResponseDto })
   @ApiBadRequestResponse({ description: 'Dados inválidos ou papel diferente de admin/operator.' })
   @ApiConflictResponse({ description: 'Já existe um usuário com este e-mail.' })
-  create(@Body() dto: CreateUserDto): Promise<PublicUser> {
-    return this.usersService.create(dto);
+  create(@Body() dto: CreateUserDto, @CurrentUser() actor: AuthenticatedUser): Promise<PublicUser> {
+    return this.usersService.create(dto, actor);
   }
 
   @Get()

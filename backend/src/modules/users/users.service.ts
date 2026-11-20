@@ -1,6 +1,7 @@
-import { ConflictException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException, OnModuleInit, Optional } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { requireEnv } from '../../common/env';
+import { AuditActor, AuditService } from '../audit/audit.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { LifecycleActor, UserLifecyclePolicy } from './user-lifecycle.policy';
@@ -20,6 +21,7 @@ export class UsersService implements OnModuleInit {
   constructor(
     private readonly userRepository: UsersRepository,
     private readonly policy: UserLifecyclePolicy = new UserLifecyclePolicy(),
+    @Optional() private readonly auditService?: AuditService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -51,7 +53,7 @@ export class UsersService implements OnModuleInit {
     }
   }
 
-  async create(dto: CreateUserDto): Promise<PublicUser> {
+  async create(dto: CreateUserDto, actor?: LifecycleActor): Promise<PublicUser> {
     const role = dto.role ?? OPERATOR_ROLE;
     this.policy.assertValidRole(role);
 
@@ -65,7 +67,12 @@ export class UsersService implements OnModuleInit {
       role,
       isActive: dto.isActive ?? true,
     });
-    return toPublicUser(user);
+    const publicUser = toPublicUser(user);
+    const auditActor = this.toAuditActor(actor);
+    if (this.auditService && auditActor) {
+      await this.auditService.recordUserCreated(auditActor, publicUser.id, publicUser);
+    }
+    return publicUser;
   }
 
   async findAll(): Promise<PublicUser[]> {
@@ -117,7 +124,17 @@ export class UsersService implements OnModuleInit {
     if (Object.keys(changes).length === 0) {
       return target;
     }
-    return toPublicUser(await this.persistUpdate(id, changes));
+    const updated = toPublicUser(await this.persistUpdate(id, changes));
+    const auditActor = this.toAuditActor(actor);
+    if (this.auditService && auditActor) {
+      const keys = Object.keys(changes);
+      if (keys.length === 1 && keys[0] === 'isActive') {
+        await this.auditService.recordUserStatusChanged(auditActor, id, target, updated);
+      } else {
+        await this.auditService.recordUserUpdated(auditActor, id, target, updated);
+      }
+    }
+    return updated;
   }
 
   async setActive(id: number, isActive: boolean, actor: LifecycleActor): Promise<PublicUser> {
@@ -127,7 +144,12 @@ export class UsersService implements OnModuleInit {
     if (target.isActive === isActive) {
       return target;
     }
-    return toPublicUser(await this.persistUpdate(id, { isActive }));
+    const updated = toPublicUser(await this.persistUpdate(id, { isActive }));
+    const auditActor = this.toAuditActor(actor);
+    if (this.auditService && auditActor) {
+      await this.auditService.recordUserStatusChanged(auditActor, id, target, updated);
+    }
+    return updated;
   }
 
   async remove(id: number, actor: LifecycleActor): Promise<PublicUser> {
@@ -138,7 +160,19 @@ export class UsersService implements OnModuleInit {
     if (!removed) {
       throw new NotFoundException('Usuário não encontrado.');
     }
-    return toPublicUser(removed);
+    const publicRemoved = toPublicUser(removed);
+    const auditActor = this.toAuditActor(actor);
+    if (this.auditService && auditActor) {
+      await this.auditService.recordUserDeleted(auditActor, id, publicRemoved);
+    }
+    return publicRemoved;
+  }
+
+  private toAuditActor(actor?: LifecycleActor): AuditActor | null {
+    if (!actor?.email || !actor?.role) {
+      return null;
+    }
+    return { id: actor.id, email: actor.email, role: actor.role };
   }
 
   private async getExisting(id: number): Promise<User> {

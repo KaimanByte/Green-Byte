@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { AuditService } from '../audit/audit.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserLifecyclePolicy } from './user-lifecycle.policy';
 import { UsersRepository } from './users.repository';
@@ -41,7 +42,23 @@ function createRepo(): RepoMock {
   };
 }
 
-const ADMIN_ACTOR = { id: 1 };
+const ADMIN_ACTOR = { id: 1, email: 'admin@greenbyte.test', role: 'admin' as const };
+
+type AuditMock = {
+  recordUserCreated: jest.Mock<AuditService['recordUserCreated']>;
+  recordUserUpdated: jest.Mock<AuditService['recordUserUpdated']>;
+  recordUserStatusChanged: jest.Mock<AuditService['recordUserStatusChanged']>;
+  recordUserDeleted: jest.Mock<AuditService['recordUserDeleted']>;
+};
+
+function createAuditMock(): AuditMock {
+  return {
+    recordUserCreated: jest.fn<AuditService['recordUserCreated']>(),
+    recordUserUpdated: jest.fn<AuditService['recordUserUpdated']>(),
+    recordUserStatusChanged: jest.fn<AuditService['recordUserStatusChanged']>(),
+    recordUserDeleted: jest.fn<AuditService['recordUserDeleted']>(),
+  };
+}
 
 describe('UsersService: administrador inicial (seed)', () => {
   let repo: RepoMock;
@@ -97,16 +114,25 @@ describe('UsersService: administrador inicial (seed)', () => {
 
 describe('UsersService: CRUD e ciclo de vida', () => {
   let repo: RepoMock;
+  let audit: AuditMock;
   let service: UsersService;
 
   beforeEach(() => {
     repo = createRepo();
-    service = new UsersService(repo as unknown as UsersRepository, new UserLifecyclePolicy());
+    audit = createAuditMock();
+    service = new UsersService(
+      repo as unknown as UsersRepository,
+      new UserLifecyclePolicy(),
+      audit as unknown as AuditService,
+    );
   });
 
   describe('create', () => {
-    it('cria operator por padrão, ativo, e nunca devolve o hash', async () => {
-      const result = await service.create({ email: 'op@greenbyte.test', hashPassword: 'SenhaSegura123!' });
+    it('cria operator por padrão, ativo, registra auditoria e nunca devolve o hash', async () => {
+      const result = await service.create(
+        { email: 'op@greenbyte.test', hashPassword: 'SenhaSegura123!' },
+        ADMIN_ACTOR,
+      );
 
       const saved = repo.create.mock.calls[0][0];
       expect(saved.role).toBe('operator');
@@ -114,6 +140,7 @@ describe('UsersService: CRUD e ciclo de vida', () => {
       await expect(bcrypt.compare('SenhaSegura123!', saved.hashPassword)).resolves.toBe(true);
       expect(result).not.toHaveProperty('hashPassword');
       expect(result).toMatchObject({ email: 'op@greenbyte.test', role: 'operator', isActive: true });
+      expect(audit.recordUserCreated).toHaveBeenCalledWith(ADMIN_ACTOR, result.id, result);
     });
 
     it('aceita criar admin e conta inativa', async () => {
@@ -182,14 +209,27 @@ describe('UsersService: CRUD e ciclo de vida', () => {
       await expect(bcrypt.compare('NovaSenha123!', changes.hashPassword ?? '')).resolves.toBe(true);
       expect(result).toMatchObject({ role: 'admin' });
       expect(result).not.toHaveProperty('hashPassword');
+      expect(audit.recordUserUpdated).toHaveBeenCalledWith(
+        ADMIN_ACTOR,
+        2,
+        expect.objectContaining({ id: 2, email: 'op@greenbyte.test', role: 'operator' }),
+        result,
+      );
     });
 
     it('permite alterar isActive via update respeitando a política de ciclo de vida', async () => {
       repo.findById.mockResolvedValueOnce(makeUser({ id: 2, role: 'operator' }));
       repo.update.mockResolvedValueOnce(makeUser({ id: 2, role: 'operator', isActive: false }));
 
-      await expect(service.update(2, { isActive: false }, ADMIN_ACTOR)).resolves.toMatchObject({ isActive: false });
+      const updated = await service.update(2, { isActive: false }, ADMIN_ACTOR);
+      expect(updated).toMatchObject({ isActive: false });
       expect(repo.update).toHaveBeenCalledWith(2, { isActive: false });
+      expect(audit.recordUserStatusChanged).toHaveBeenCalledWith(
+        ADMIN_ACTOR,
+        2,
+        expect.objectContaining({ isActive: true }),
+        updated,
+      );
 
       repo.findById.mockResolvedValueOnce(makeUser({ id: 1 }));
       await expect(service.update(1, { isActive: false }, ADMIN_ACTOR)).rejects.toBeInstanceOf(ForbiddenException);
@@ -246,6 +286,7 @@ describe('UsersService: CRUD e ciclo de vida', () => {
 
       await expect(service.setActive(2, false, ADMIN_ACTOR)).resolves.toMatchObject({ isActive: false });
       expect(repo.update).toHaveBeenLastCalledWith(2, { isActive: false });
+      expect(audit.recordUserStatusChanged).toHaveBeenCalledTimes(1);
 
       repo.findById.mockResolvedValueOnce(makeUser({ id: 2, role: 'operator', isActive: false }));
       repo.update.mockResolvedValueOnce(makeUser({ id: 2, role: 'operator', isActive: true }));
@@ -279,6 +320,7 @@ describe('UsersService: CRUD e ciclo de vida', () => {
 
       expect(repo.delete).toHaveBeenCalledWith(2);
       expect(result).not.toHaveProperty('hashPassword');
+      expect(audit.recordUserDeleted).toHaveBeenCalledWith(ADMIN_ACTOR, 2, result);
     });
 
     it('bloqueia auto-remoção (403)', async () => {

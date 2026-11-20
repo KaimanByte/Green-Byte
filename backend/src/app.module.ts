@@ -10,9 +10,10 @@ import { StartupSyncService } from './startup-sync.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { AuditModule } from './modules/audit/audit.module';
 
 @Module({
-  imports: [DatabaseModule, ServicesModule, RegionsModule, CollectionsModule, ScheduleModule.forRoot(), UsersModule, AuthModule],
+  imports: [DatabaseModule, ServicesModule, RegionsModule, CollectionsModule, ScheduleModule.forRoot(), UsersModule, AuthModule, AuditModule],
   controllers: [AppController],
   providers: [
     StartupSyncService,
