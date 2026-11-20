@@ -1,30 +1,38 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { GreenDataContext, type GreenDataContextValue } from '../contexts/GreenDataContext'
 import { useFetch } from '../hooks/useFetch'
-import { getDashboardData, type DashboardData } from '../services/dashboardService'
+import { DEFAULT_POLL_INTERVAL_MS } from '../lib/polling'
 import { DEFAULT_PERIOD_ID, getPeriodRange, type PeriodId } from '../lib/periods'
+import { getDashboardData, type DashboardData } from '../services/dashboardService'
+import { fetchSafePollIntervalMs } from '../services/monitoringService'
 import type { EmissionsPeriod } from '../types/api'
-
-/**
- * O backend coleta a cada 30 s (cron do StartupSyncService); GET /services também
- * consulta a API externa. Atualizar a cada 60 s mantém o painel vivo sem pesar na API.
- */
-const AUTO_REFRESH_MS = 60_000
 
 type DashboardResult = DashboardData & { period: EmissionsPeriod }
 
 /**
  * Busca os dados do backend uma única vez e os compartilha com todo o app,
- * evitando que cada componente dispare suas próprias requisições.
+ * acompanhando dinamicamente o intervalo efetivo da coleta (limitado a 60 s).
  */
 export function GreenDataProvider({ children }: { children: ReactNode }) {
   const [periodId, setPeriodIdState] = useState<PeriodId>(DEFAULT_PERIOD_ID)
+  const [pollIntervalMs, setPollIntervalMs] = useState<number>(DEFAULT_POLL_INTERVAL_MS)
+  const pollIntervalMsRef = useRef<number>(DEFAULT_POLL_INTERVAL_MS)
+
+  useEffect(() => {
+    pollIntervalMsRef.current = pollIntervalMs
+  }, [pollIntervalMs])
 
   // a janela é calculada a cada busca (inclusive no refetch), sempre terminando "agora"
   const fetcher = useCallback(
     async (signal: AbortSignal): Promise<DashboardResult> => {
       const period = getPeriodRange(periodId)
-      const data = await getDashboardData(signal, period)
+      const [data, nextPollMs] = await Promise.all([
+        getDashboardData(signal, period),
+        fetchSafePollIntervalMs(pollIntervalMsRef.current, { signal }),
+      ])
+      if (!signal.aborted && nextPollMs !== pollIntervalMsRef.current) {
+        setPollIntervalMs(nextPollMs)
+      }
       return { ...data, period }
     },
     [periodId],
@@ -41,12 +49,12 @@ export function GreenDataProvider({ children }: { children: ReactNode }) {
     [refetch],
   )
 
-  // atualização periódica só com a aba visível; volta a atualizar ao reabrir a aba
+  // atualização periódica reprogramada pelo intervalo efetivo (máx. 60 s) e só com a aba visível
   useEffect(() => {
     let timer = 0
     const schedule = () => {
       window.clearInterval(timer)
-      if (document.visibilityState === 'visible') timer = window.setInterval(refetch, AUTO_REFRESH_MS)
+      if (document.visibilityState === 'visible') timer = window.setInterval(refetch, pollIntervalMs)
     }
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') refetch()
@@ -59,7 +67,7 @@ export function GreenDataProvider({ children }: { children: ReactNode }) {
       window.clearInterval(timer)
       document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [refetch])
+  }, [refetch, pollIntervalMs])
 
   const value = useMemo<GreenDataContextValue>(() => {
     const latestCollections = data?.latestCollections ?? []
