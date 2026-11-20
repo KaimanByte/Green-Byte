@@ -5,6 +5,8 @@ import { PublicUser } from './users.schema';
 /** Quem executa a ação: o usuário autenticado na requisição. */
 export interface LifecycleActor {
   id: number;
+  email?: string;
+  role?: UserRole;
 }
 
 /**

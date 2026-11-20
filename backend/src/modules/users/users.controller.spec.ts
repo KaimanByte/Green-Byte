@@ -50,7 +50,7 @@ describe('UsersController', () => {
   it('encaminha cada operação ao serviço, passando o admin autenticado nas ações sensíveis', async () => {
     const createDto = { email: user.email, hashPassword: 'SenhaSegura123!', role: 'operator' as const };
 
-    await expect(controller.create(createDto)).resolves.toEqual(user);
+    await expect(controller.create(createDto, actor)).resolves.toEqual(user);
     await expect(controller.findAll()).resolves.toEqual([user]);
     await expect(controller.findById(user.id)).resolves.toEqual(user);
     await expect(controller.findByEmail(user.email)).resolves.toEqual(user);
@@ -58,7 +58,7 @@ describe('UsersController', () => {
     await expect(controller.setStatus(user.id, { isActive: false }, actor)).resolves.toMatchObject({ isActive: false });
     await expect(controller.remove(user.id, actor)).resolves.toEqual(user);
 
-    expect(usersService.create).toHaveBeenCalledWith(createDto);
+    expect(usersService.create).toHaveBeenCalledWith(createDto, actor);
     expect(usersService.update).toHaveBeenCalledWith(user.id, { role: 'admin' }, actor);
     expect(usersService.setActive).toHaveBeenCalledWith(user.id, false, actor);
     expect(usersService.remove).toHaveBeenCalledWith(user.id, actor);
