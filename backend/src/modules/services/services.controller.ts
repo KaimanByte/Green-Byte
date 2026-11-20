@@ -1,3 +1,4 @@
+import { Authorize } from '../auth/decorators/authorize.decorator';
 import { Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
 import {
   ApiBadGatewayResponse,
@@ -66,6 +67,8 @@ export class ServicesController {
   @ApiBadGatewayResponse({ description: 'A API externa retornou erro ou dados em formato inválido.' })
   @ApiServiceUnavailableResponse({ description: 'Não foi possível conectar à API externa.' })
   @ApiGatewayTimeoutResponse({ description: 'A API externa excedeu o tempo limite da requisição.' })
+  // sincronização é operação de monitoramento: exige login e papel admin ou operator (AU-06)
+  @Authorize('admin', 'operator')
   async syncServices(): Promise<SyncServicesResponseDto> {
     return this.servicesService.syncServices();
   }
