@@ -9,18 +9,21 @@ import { User } from '../users/users.schema';
 describe('AuthService', () => {
   let service: AuthService;
   let findByEmail: jest.MockedFunction<UsersRepository['findByEmail']>;
-  let sign: jest.MockedFunction<JwtService['sign']>;
+  // `sign` tem sobrecargas (string | Buffer | object); o serviço só usa a de payload em objeto
+  let sign: jest.Mock<(payload: object) => string>;
 
   const user: User = {
     id: 7,
     email: 'admin@greenbyte.test',
     hashPassword: '',
+    role: 'admin',
+    active: true,
     createdAt: new Date('2026-11-01T00:00:00.000Z'),
   };
 
   beforeEach(() => {
     findByEmail = jest.fn<UsersRepository['findByEmail']>();
-    sign = jest.fn<JwtService['sign']>();
+    sign = jest.fn<(payload: object) => string>();
     sign.mockReturnValue('signed-jwt');
 
     service = new AuthService(
@@ -36,6 +39,8 @@ describe('AuthService', () => {
     await expect(service.validateUser(user.email, 'SenhaSegura123!')).resolves.toEqual({
       id: user.id,
       email: user.email,
+      role: user.role,
+      active: user.active,
       createdAt: user.createdAt,
     });
   });
@@ -64,8 +69,27 @@ describe('AuthService', () => {
 
     await expect(service.login({ email: user.email, password: 'SenhaSegura123!' })).resolves.toEqual({
       access_token: 'signed-jwt',
-      user: { id: user.id, email: user.email, createdAt: user.createdAt },
+      user: { id: user.id, email: user.email, role: user.role, active: user.active, createdAt: user.createdAt },
     });
     expect(sign).toHaveBeenCalledWith({ sub: user.id, email: user.email });
+  });
+
+  it('rejeita conta desativada mesmo com a senha correta, e não emite token', async () => {
+    const hashPassword = await bcrypt.hash('SenhaSegura123!', 4);
+    findByEmail.mockResolvedValue({ ...user, hashPassword, active: false });
+
+    await expect(service.login({ email: user.email, password: 'SenhaSegura123!' })).rejects.toThrow(
+      new UnauthorizedException('Conta desativada. Procure um administrador.'),
+    );
+    expect(sign).not.toHaveBeenCalled();
+  });
+
+  it('conta desativada com senha errada recebe a resposta genérica', async () => {
+    const hashPassword = await bcrypt.hash('SenhaCorreta123!', 4);
+    findByEmail.mockResolvedValue({ ...user, hashPassword, active: false });
+
+    await expect(service.validateUser(user.email, 'SenhaErrada123!')).rejects.toThrow(
+      new UnauthorizedException('Email ou senha inválidos.'),
+    );
   });
 });

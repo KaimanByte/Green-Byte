@@ -24,6 +24,11 @@ export class AuthService {
       throw new UnauthorizedException('Email ou senha inválidos.');
     }
 
+    // só depois de conferir a senha: quem não sabe a senha não descobre que a conta existe
+    if (!user.active) {
+      throw new UnauthorizedException('Conta desativada. Procure um administrador.');
+    }
+
     const { hashPassword: _hashPassword, ...result } = user;
     return result;
   }

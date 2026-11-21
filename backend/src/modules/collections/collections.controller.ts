@@ -1,5 +1,5 @@
-import { Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, HttpCode, HttpStatus, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CollectionsService } from './collections.service';
 import {
   CollectionResponseDto,
@@ -7,6 +7,9 @@ import {
   ServiceEmissionsDto,
   SyncCollectionsResponseDto,
 } from './dto/collection.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @ApiTags('Coletas e Emissões')
 @Controller('collections')
@@ -60,11 +63,15 @@ export class CollectionsController {
 
   @Post('sync')
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'operator')
   @ApiOperation({
     summary: 'Sincroniza métricas e calcula emissões',
     description: 'Varre todos os serviços ativos, busca suas métricas na API externa, cruza com a intensidade de carbono da região e grava a coleta calculada.',
   })
   @ApiOkResponse({ type: SyncCollectionsResponseDto })
+  @ApiForbiddenResponse({ description: 'Autenticação e papel de administrador ou operador são obrigatórios.' })
   async syncCollections(): Promise<SyncCollectionsResponseDto> {
     return this.collectionsService.syncCollections();
   }

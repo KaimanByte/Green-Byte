@@ -1,6 +1,8 @@
-import { Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBadGatewayResponse,
+  ApiBearerAuth,
+  ApiForbiddenResponse,
   ApiGatewayTimeoutResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -12,6 +14,9 @@ import {
 import { ServicesService } from './services.service';
 import { ServiceResponseDto, SyncServicesResponseDto } from './dto/service.dto';
 import { Service } from './services.schema';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @ApiTags('Serviços')
 @Controller('services')
@@ -58,11 +63,15 @@ export class ServicesController {
 
   @Post('sync')
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'operator')
   @ApiOperation({
     summary: 'Sincroniza os serviços com a API externa de métricas',
     description: 'Consulta GET /services na API externa e grava (insere ou atualiza) cada serviço no banco.',
   })
   @ApiOkResponse({ description: 'Serviços sincronizados com sucesso.', type: SyncServicesResponseDto })
+  @ApiForbiddenResponse({ description: 'Autenticação e papel de administrador ou operador são obrigatórios.' })
   @ApiBadGatewayResponse({ description: 'A API externa retornou erro ou dados em formato inválido.' })
   @ApiServiceUnavailableResponse({ description: 'Não foi possível conectar à API externa.' })
   @ApiGatewayTimeoutResponse({ description: 'A API externa excedeu o tempo limite da requisição.' })

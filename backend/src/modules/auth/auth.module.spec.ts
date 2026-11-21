@@ -1,11 +1,18 @@
+import { Global, Module } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { AuthModule } from './auth.module';
 import { UsersRepository } from '../users/users.repository';
+import { AuditService } from '../audit/audit.service';
+
+/** No app o AuditModule é global (e depende do banco); aqui basta um substituto vazio. */
+@Global()
+@Module({ providers: [{ provide: AuditService, useValue: {} }], exports: [AuditService] })
+class AuditStubModule {}
 
 /** Monta o AuthModule sem banco: o repositório de usuários é substituído por um objeto vazio. */
 const compileAuthModule = () =>
-  Test.createTestingModule({ imports: [AuthModule] })
+  Test.createTestingModule({ imports: [AuthModule, AuditStubModule] })
     .overrideProvider(UsersRepository)
     .useValue({})
     .compile();

@@ -5,9 +5,12 @@ import {
   HttpStatus,
   Param,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadGatewayResponse,
+  ApiBearerAuth,
+  ApiForbiddenResponse,
   ApiGatewayTimeoutResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -19,6 +22,9 @@ import {
 import { RegionsService } from './regions.service';
 import { RegiaoResponseDto } from './dto/regiao-response.dto';
 import { SincronizacaoRegioesResponseDto } from './dto/sincronizacao-regioes-response.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @ApiTags('Regiões')
 @Controller('regions')
@@ -59,6 +65,9 @@ export class RegionsController {
 
   @Post('sync')
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'operator')
   @ApiOperation({
     summary: 'Sincroniza as regiões com a API Greener Carbon Intensity',
     description:
@@ -68,6 +77,7 @@ export class RegionsController {
     description: 'Regiões sincronizadas com sucesso.',
     type: SincronizacaoRegioesResponseDto,
   })
+  @ApiForbiddenResponse({ description: 'Autenticação e papel de administrador ou operador são obrigatórios.' })
   @ApiBadGatewayResponse({
     description: 'A API externa retornou erro ou dados em formato inválido.',
   })
