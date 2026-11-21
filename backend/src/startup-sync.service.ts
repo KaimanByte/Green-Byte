@@ -7,26 +7,53 @@ import { SchedulerRegistry } from '@nestjs/schedule';
 import { RegionsService } from './modules/regions/regions.service';
 import { ServicesService } from './modules/services/services.service';
 import { CollectionsService } from './modules/collections/collections.service';
+import { SettingsService } from './modules/settings/settings.service';
+import { readCollectionIntervalFromEnv } from './common/collection-interval';
 
-const DEFAULT_COLLECTION_INTERVAL_SECONDS = 30;
-const MAX_INTERVAL_SECONDS = Math.floor(2_147_483_647 / 1_000);
 const PERIODIC_SYNC_INTERVAL_NAME = 'green-byte-periodic-sync';
+
+type SyncTrigger = 'inicialização' | 'periódico';
+
+/** Resultado do último ciclo de sincronização, para o indicador de saúde da coleta. */
+export interface SyncCycleStatus {
+  trigger: SyncTrigger;
+  startedAt: Date;
+  finishedAt: Date;
+  durationMs: number;
+  succeeded: boolean;
+  /** etapa em que o ciclo falhou, ou null */
+  failedStep: string | null;
+  errorMessage: string | null;
+  /** coletas gravadas no ciclo */
+  collectionsSaved: number;
+}
+
+export interface CollectionStatus {
+  intervalSeconds: number;
+  isRunning: boolean;
+  /** próximo disparo do agendador, ou null antes do primeiro agendamento */
+  nextRunAt: Date | null;
+  lastCycle: SyncCycleStatus | null;
+}
 
 @Injectable()
 export class StartupSyncService implements OnApplicationBootstrap {
   private readonly logger = new Logger(StartupSyncService.name);
-  private readonly collectionIntervalMs: number;
+  private collectionIntervalMs: number;
   private isSyncRunning = false;
   private isPeriodicSyncScheduled = false;
+  private lastCycle: SyncCycleStatus | null = null;
+  private nextRunAt: Date | null = null;
 
   constructor(
     private readonly regionsService: RegionsService,
     private readonly servicesService: ServicesService,
     private readonly collectionsService: CollectionsService,
     private readonly schedulerRegistry: SchedulerRegistry,
+    private readonly settingsService: SettingsService,
   ) {
-    this.collectionIntervalMs =
-      this.readCollectionIntervalSeconds() * 1_000;
+    // valor do .env validado já na criação: um intervalo inválido derruba o startup
+    this.collectionIntervalMs = readCollectionIntervalFromEnv() * 1_000;
   }
 
   /**
@@ -35,7 +62,45 @@ export class StartupSyncService implements OnApplicationBootstrap {
    */
   async onApplicationBootstrap(): Promise<void> {
     this.logger.log('Iniciando sincronização automática de startup...');
+    await this.loadConfiguredInterval();
+    this.settingsService.onIntervalChange((seconds) => this.reschedule(seconds));
     await this.runFullSync('inicialização');
+    this.schedulePeriodicSync();
+  }
+
+  /** Situação atual da coleta (para o painel administrativo). */
+  getStatus(): CollectionStatus {
+    return {
+      intervalSeconds: this.collectionIntervalMs / 1_000,
+      isRunning: this.isSyncRunning,
+      nextRunAt: this.nextRunAt,
+      lastCycle: this.lastCycle,
+    };
+  }
+
+  /**
+   * O intervalo salvo pelo administrador (banco) vale mais que o do .env.
+   * Se o banco não responder, a coleta segue com o valor do .env.
+   */
+  private async loadConfiguredInterval(): Promise<void> {
+    try {
+      const settings = await this.settingsService.getSettings();
+      this.collectionIntervalMs = settings.collectionIntervalSeconds * 1_000;
+    } catch (error) {
+      this.logger.warn(
+        `Não foi possível ler o intervalo configurado; usando o do ambiente. ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /** Aplica um novo intervalo na hora: troca o temporizador sem reiniciar o backend. */
+  private reschedule(intervalSeconds: number): void {
+    this.collectionIntervalMs = intervalSeconds * 1_000;
+    // ainda no ciclo inicial: o agendamento que vem a seguir já usa o novo valor
+    if (!this.isPeriodicSyncScheduled) return;
+
+    this.schedulerRegistry.deleteInterval(PERIODIC_SYNC_INTERVAL_NAME);
+    this.isPeriodicSyncScheduled = false;
     this.schedulePeriodicSync();
   }
 
@@ -45,9 +110,12 @@ export class StartupSyncService implements OnApplicationBootstrap {
       return;
     }
 
+    const intervalMs = this.collectionIntervalMs;
     const interval = setInterval(() => {
+      this.nextRunAt = new Date(Date.now() + intervalMs);
       void this.runFullSync('periódico');
-    }, this.collectionIntervalMs);
+    }, intervalMs);
+    this.nextRunAt = new Date(Date.now() + intervalMs);
 
     this.schedulerRegistry.addInterval(PERIODIC_SYNC_INTERVAL_NAME, interval);
     this.isPeriodicSyncScheduled = true;
@@ -61,7 +129,7 @@ export class StartupSyncService implements OnApplicationBootstrap {
    * Executa descoberta e coleta em sequência. A trava impede que um novo ciclo
    * comece enquanto o anterior ainda estiver em execução.
    */
-  private async runFullSync(trigger: 'inicialização' | 'periódico'): Promise<void> {
+  private async runFullSync(trigger: SyncTrigger): Promise<void> {
     if (this.isSyncRunning) {
       this.logger.warn(
         `Ciclo ${trigger} ignorado: já existe uma sincronização em andamento.`,
@@ -74,6 +142,8 @@ export class StartupSyncService implements OnApplicationBootstrap {
     const startedAtIso = new Date(startedAt).toISOString();
     let currentStep = 'regiões';
     let succeeded = false;
+    let errorMessage: string | null = null;
+    let collectionsSaved = 0;
 
     this.logger.log(`[${trigger}] Ciclo de sincronização iniciado em ${startedAtIso}.`);
 
@@ -87,11 +157,13 @@ export class StartupSyncService implements OnApplicationBootstrap {
 
       // 3. Coleta e persistência das métricas dos serviços.
       currentStep = 'coleta de métricas';
-      await this.collectionsService.syncCollections();
+      const result = await this.collectionsService.syncCollections();
+      collectionsSaved = result?.total ?? 0;
 
       succeeded = true;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      errorMessage = message;
       const stack = error instanceof Error ? error.stack : undefined;
       this.logger.error(
         `[${trigger}] Falha durante a etapa de ${currentStep}: ${message}`,
@@ -106,34 +178,17 @@ export class StartupSyncService implements OnApplicationBootstrap {
       this.logger.log(
         `[${trigger}] Ciclo ${result}. Início: ${startedAtIso}; fim: ${finishedAtIso}; duração: ${durationMs} ms.`,
       );
+      this.lastCycle = {
+        trigger,
+        startedAt: new Date(startedAt),
+        finishedAt: new Date(finishedAt),
+        durationMs,
+        succeeded,
+        failedStep: succeeded ? null : currentStep,
+        errorMessage,
+        collectionsSaved,
+      };
       this.isSyncRunning = false;
     }
-  }
-
-  private readCollectionIntervalSeconds(): number {
-    const configuredValue = process.env.COLLECTION_INTERVAL_SECONDS?.trim();
-
-    if (!configuredValue) {
-      return DEFAULT_COLLECTION_INTERVAL_SECONDS;
-    }
-
-    if (!/^\d+$/.test(configuredValue)) {
-      throw new Error(
-        'COLLECTION_INTERVAL_SECONDS deve ser um número inteiro positivo expresso em segundos.',
-      );
-    }
-
-    const intervalSeconds = Number(configuredValue);
-    if (
-      !Number.isSafeInteger(intervalSeconds) ||
-      intervalSeconds < 1 ||
-      intervalSeconds > MAX_INTERVAL_SECONDS
-    ) {
-      throw new Error(
-        `COLLECTION_INTERVAL_SECONDS deve estar entre 1 e ${MAX_INTERVAL_SECONDS} segundos.`,
-      );
-    }
-
-    return intervalSeconds;
   }
 }

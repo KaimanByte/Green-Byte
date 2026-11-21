@@ -26,6 +26,23 @@ export const ENERGY_MODEL = {
   NETWORK_POWER_PER_GB_W: 0.02,
 } as const;
 
+/** Parâmetros de potência da máquina (W); editáveis na área administrativa. */
+export interface EnergyModel {
+  /** Potência da CPU a 100% de uso. */
+  cpuMaxWatts: number;
+  ramWattsPerGb: number;
+  diskWattsPerGb: number;
+  networkWattsPerGb: number;
+}
+
+/** Modelo padrão do desafio, usado quando nenhum outro é informado. */
+export const DEFAULT_ENERGY_MODEL: EnergyModel = {
+  cpuMaxWatts: ENERGY_MODEL.CPU_MAX_POWER_W,
+  ramWattsPerGb: ENERGY_MODEL.RAM_POWER_PER_GB_W,
+  diskWattsPerGb: ENERGY_MODEL.DISK_POWER_PER_GB_W,
+  networkWattsPerGb: ENERGY_MODEL.NETWORK_POWER_PER_GB_W,
+};
+
 /**
  * Regra de negócio do cálculo de energia e CO₂e, separada do CollectionsService
  * (que só orquestra API externa → cálculo → banco). Função pura: sem I/O.
@@ -33,12 +50,12 @@ export const ENERGY_MODEL = {
 @Injectable()
 export class EnergyCalculator {
   /** Potência (W) = CPU% × potência máxima + memória, disco e rede × potência por GB. */
-  powerWatts(usage: ResourceUsage): number {
+  powerWatts(usage: ResourceUsage, model: EnergyModel = DEFAULT_ENERGY_MODEL): number {
     return (
-      (usage.cpuPercent / 100) * ENERGY_MODEL.CPU_MAX_POWER_W +
-      usage.memoryGb * ENERGY_MODEL.RAM_POWER_PER_GB_W +
-      usage.diskGb * ENERGY_MODEL.DISK_POWER_PER_GB_W +
-      usage.networkGb * ENERGY_MODEL.NETWORK_POWER_PER_GB_W
+      (usage.cpuPercent / 100) * model.cpuMaxWatts +
+      usage.memoryGb * model.ramWattsPerGb +
+      usage.diskGb * model.diskWattsPerGb +
+      usage.networkGb * model.networkWattsPerGb
     );
   }
 
@@ -46,8 +63,13 @@ export class EnergyCalculator {
    * Energia (kWh) = potência (W) × horas do intervalo ÷ 1000.
    * CO₂e (g) = energia (kWh) × intensidade de carbono (gCO₂e/kWh).
    */
-  calculate(usage: ResourceUsage, intervalSeconds: number, carbonIntensity: number): EnergyEstimate {
-    const powerWatts = this.powerWatts(usage);
+  calculate(
+    usage: ResourceUsage,
+    intervalSeconds: number,
+    carbonIntensity: number,
+    model: EnergyModel = DEFAULT_ENERGY_MODEL,
+  ): EnergyEstimate {
+    const powerWatts = this.powerWatts(usage, model);
     const energyKwh = (powerWatts * (intervalSeconds / 3600)) / 1000;
     const co2Emissions = energyKwh * carbonIntensity;
 

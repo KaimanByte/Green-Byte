@@ -7,6 +7,7 @@ import { EnergyCalculator } from './energy.calculator';
 import { ServicesService } from '../services/services.service';
 import { RegionsService } from '../regions/regions.service';
 import { MetricsApiClient } from '../integrations/metrics-api.client';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class CollectionsService {
@@ -18,6 +19,7 @@ export class CollectionsService {
     private readonly regionsService: RegionsService,
     private readonly metricsApi: MetricsApiClient,
     private readonly energyCalculator: EnergyCalculator,
+    private readonly settingsService: SettingsService,
   ) {}
 
   async findByServiceId(serviceId: string, limit = 100): Promise<CollectionResponseDto[]> {
@@ -72,6 +74,8 @@ export class CollectionsService {
       return { total: 0, collections: [] };
     }
 
+    // parâmetros da máquina lidos uma vez por ciclo: todas as coletas do ciclo usam o mesmo modelo
+    const energyModel = await this.settingsService.getEnergyModel();
     const newCollections: NewCollection[] = [];
 
     for (const service of services) {
@@ -89,6 +93,7 @@ export class CollectionsService {
           usage,
           payload.collection_interval_seconds,
           region.carbonIntensity,
+          energyModel,
         );
 
         // a rede entra no cálculo de energia, mas não tem coluna própria no banco
