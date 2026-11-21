@@ -16,6 +16,9 @@ export const collections = pgTable('collections', {
 }, (table) => [
   // Suporta consultas de histórico por serviço e período (DB-04)
   index('collections_service_id_timestamp_idx').on(table.serviceId, table.timestamp),
+  // Consultas só por período, sem serviço (dashboard, ranking, totais por região/serviço,
+  // resumo): o índice acima começa por service_id e não serve para filtrar só o horário
+  index('collections_timestamp_idx').on(table.timestamp),
 ]);
 
 export type Collection = typeof collections.$inferSelect;
