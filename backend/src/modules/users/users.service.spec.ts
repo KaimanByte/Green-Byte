@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { DatabaseService } from '../../database/database.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserLifecyclePolicy } from './user-lifecycle.policy';
@@ -308,6 +309,14 @@ describe('UsersService: CRUD e ciclo de vida', () => {
 
       await expect(service.setActive(7, false, ADMIN_ACTOR)).rejects.toBeInstanceOf(BadRequestException);
     });
+
+    it('não grava nada nem audita quando o estado já é o desejado (no-op)', async () => {
+      repo.findById.mockResolvedValueOnce(makeUser({ id: 2, role: 'operator', isActive: true }));
+
+      await expect(service.setActive(2, true, ADMIN_ACTOR)).resolves.toMatchObject({ id: 2, isActive: true });
+      expect(repo.update).not.toHaveBeenCalled();
+      expect(audit.recordUserStatusChanged).not.toHaveBeenCalled();
+    });
   });
 
   describe('remove', () => {
@@ -338,8 +347,53 @@ describe('UsersService: CRUD e ciclo de vida', () => {
       expect(repo.delete).not.toHaveBeenCalled();
     });
 
-    it('404 para usuário inexistente', async () => {
+    it('404 para usuário inexistente ou quando update/delete retornam null', async () => {
       await expect(service.remove(99, ADMIN_ACTOR)).rejects.toBeInstanceOf(NotFoundException);
+
+      repo.findById.mockResolvedValueOnce(makeUser({ id: 2, role: 'operator' }));
+      repo.delete.mockResolvedValueOnce(null);
+      await expect(service.remove(2, ADMIN_ACTOR)).rejects.toBeInstanceOf(NotFoundException);
+
+      repo.findById.mockResolvedValueOnce(makeUser({ id: 2, role: 'operator' }));
+      repo.update.mockResolvedValueOnce(null);
+      await expect(service.update(2, { role: 'admin' }, ADMIN_ACTOR)).rejects.toBeInstanceOf(NotFoundException);
     });
+  });
+});
+
+describe('UsersRepository', () => {
+  it('executa consultas, contagem de admins ativos, criação, atualização e remoção', async () => {
+    const sample = makeUser();
+    const orderBy = jest.fn<() => Promise<User[]>>().mockResolvedValue([sample]);
+    const selectWhere = jest
+      .fn<() => Promise<unknown[]>>()
+      .mockResolvedValueOnce([sample])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([sample])
+      .mockResolvedValueOnce([{ total: 2 }])
+      .mockResolvedValueOnce([]);
+    const insertReturning = jest.fn<() => Promise<User[]>>().mockResolvedValue([sample]);
+    const updateReturning = jest.fn<() => Promise<User[]>>().mockResolvedValueOnce([sample]).mockResolvedValueOnce([]);
+    const deleteReturning = jest.fn<() => Promise<User[]>>().mockResolvedValueOnce([sample]).mockResolvedValueOnce([]);
+
+    const db = {
+      select: () => ({ from: () => ({ orderBy, where: selectWhere }) }),
+      insert: () => ({ values: () => ({ returning: insertReturning }) }),
+      update: () => ({ set: () => ({ where: () => ({ returning: updateReturning }) }) }),
+      delete: () => ({ where: () => ({ returning: deleteReturning }) }),
+    };
+    const repository = new UsersRepository({ db } as unknown as DatabaseService);
+
+    await expect(repository.findAll()).resolves.toEqual([sample]);
+    await expect(repository.findById(1)).resolves.toEqual(sample);
+    await expect(repository.findById(99)).resolves.toBeNull();
+    await expect(repository.findByEmail(sample.email)).resolves.toEqual(sample);
+    await expect(repository.countActiveAdmins()).resolves.toBe(2);
+    await expect(repository.countActiveAdmins()).resolves.toBe(0);
+    await expect(repository.create({ email: sample.email, hashPassword: sample.hashPassword })).resolves.toEqual(sample);
+    await expect(repository.update(1, { role: 'operator' })).resolves.toEqual(sample);
+    await expect(repository.update(99, { role: 'operator' })).resolves.toBeNull();
+    await expect(repository.delete(1)).resolves.toEqual(sample);
+    await expect(repository.delete(99)).resolves.toBeNull();
   });
 });

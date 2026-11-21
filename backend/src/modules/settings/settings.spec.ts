@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import { BadRequestException, ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { Reflector } from '@nestjs/core';
+import { DatabaseService } from '../../database/database.service';
 import { CollectionHealthSnapshot, StartupSyncService } from '../../startup-sync.service';
 import { AuditService } from '../audit/audit.service';
 import { AuthenticatedUser } from '../auth/authenticated-user';
@@ -62,6 +63,8 @@ describe('resolveRecommendedPollSeconds (regra de teto 60s)', () => {
     expect(resolveRecommendedPollSeconds(-10)).toBe(30);
     expect(resolveRecommendedPollSeconds(Number.NaN, 45)).toBe(45);
     expect(resolveRecommendedPollSeconds(Number.NaN, 120)).toBe(60);
+    expect(resolveRecommendedPollSeconds(undefined, -1)).toBe(30);
+    expect(resolveRecommendedPollSeconds(undefined, Number.NaN)).toBe(30);
   });
 });
 
@@ -138,6 +141,62 @@ describe('SettingsService', () => {
     expect(updateSettings).not.toHaveBeenCalled();
     expect(reschedulePeriodicSync).not.toHaveBeenCalled();
     expect(recordMonitoringConfigUpdated).not.toHaveBeenCalled();
+  });
+
+  it('usa intervalo efetivo do StartupSyncService quando getSettings não traz valor e propaga falha de persistência', async () => {
+    getSettings.mockResolvedValueOnce(undefined as unknown as Settings);
+    await service.updateCollectionInterval(50, adminActor);
+    expect(recordMonitoringConfigUpdated).toHaveBeenCalledWith(
+      adminActor,
+      1,
+      { collectionIntervalSeconds: 30 },
+      { collectionIntervalSeconds: 50 },
+    );
+
+    updateSettings.mockRejectedValueOnce(new Error('Erro ao gravar settings'));
+    await expect(service.updateCollectionInterval(40, adminActor)).rejects.toThrow('Erro ao gravar settings');
+    expect(reschedulePeriodicSync).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SettingsRepository', () => {
+  const row: Settings = {
+    id: 1,
+    collectionIntervalSeconds: 60,
+    cpuMaxWatts: 150,
+    ramWattsPerGb: 3,
+    diskWattsPerGb: 1,
+    updatedAt: new Date('2026-11-20T00:00:00.000Z'),
+  };
+
+  it('retorna registro existente ou cria inicial em getSettings; atualiza ou insere em updateSettings', async () => {
+    const selectWhere = jest.fn<() => Promise<Settings[]>>().mockResolvedValueOnce([row]).mockResolvedValueOnce([]);
+    const insertReturning = jest.fn<() => Promise<Settings[]>>().mockResolvedValue([row]);
+    const insertValues = jest.fn<() => { returning: typeof insertReturning }>().mockReturnValue({
+      returning: insertReturning,
+    });
+    const updateReturning = jest.fn<() => Promise<Settings[]>>().mockResolvedValueOnce([row]).mockResolvedValueOnce([]);
+    const updateWhere = jest.fn<() => { returning: typeof updateReturning }>().mockReturnValue({
+      returning: updateReturning,
+    });
+    const updateSet = jest.fn<() => { where: typeof updateWhere }>().mockReturnValue({ where: updateWhere });
+
+    const db = {
+      select: () => ({ from: () => ({ where: selectWhere }) }),
+      insert: () => ({ values: insertValues }),
+      update: () => ({ set: updateSet }),
+    };
+    const repository = new SettingsRepository({ db } as unknown as DatabaseService);
+
+    await expect(repository.getSettings()).resolves.toEqual(row);
+    expect(insertValues).not.toHaveBeenCalled();
+
+    await expect(repository.getSettings()).resolves.toEqual(row);
+    expect(insertValues).toHaveBeenCalledWith({ id: 1 });
+
+    await expect(repository.updateSettings({ collectionIntervalSeconds: 60 })).resolves.toEqual(row);
+    await expect(repository.updateSettings({ collectionIntervalSeconds: 90 })).resolves.toEqual(row);
+    expect(insertValues).toHaveBeenLastCalledWith({ id: 1, collectionIntervalSeconds: 90 });
   });
 });
 

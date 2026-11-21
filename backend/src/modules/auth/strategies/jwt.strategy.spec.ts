@@ -61,5 +61,18 @@ describe('JwtStrategy', () => {
         'Acesso não autorizado. Conta desativada.',
       );
     });
+
+    it('reflete o papel atualizado no banco mesmo com claim antigo e propaga erro de consulta', async () => {
+      findById.mockResolvedValueOnce({ ...user, role: 'admin' });
+      await expect(strategy.validate({ sub: 5, email: user.email, role: 'operator' })).resolves.toMatchObject({
+        id: 5,
+        role: 'admin',
+      });
+
+      findById.mockRejectedValueOnce(new Error('Falha no banco'));
+      await expect(strategy.validate({ sub: 5, email: user.email, role: 'operator' })).rejects.toThrow(
+        'Falha no banco',
+      );
+    });
   });
 });
