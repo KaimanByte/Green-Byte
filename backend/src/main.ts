@@ -1,10 +1,8 @@
-import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
-async function bootstrap(): Promise<void> {
-  const logger = new Logger('Bootstrap');
+async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const swaggerConfig = new DocumentBuilder()
@@ -24,8 +22,8 @@ async function bootstrap(): Promise<void> {
   });
   await app.listen(port);
 
-  logger.log(`Servidor rodando em http://localhost:${port}`);
-  logger.log(`Swagger disponível em http://localhost:${port}/api/docs`);
-  logger.log(`Frontend disponível em ${frontendUrl}`);
+  console.log(`Servidor rodando em http://localhost:${port}`);
+  console.log(`Swagger disponível em http://localhost:${port}/api/docs`);
+  console.log(`Frontend disponível em ${frontendUrl}`);
 }
-void bootstrap();
+bootstrap();

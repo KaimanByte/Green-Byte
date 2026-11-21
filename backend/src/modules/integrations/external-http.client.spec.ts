@@ -2,7 +2,6 @@ import { jest } from '@jest/globals';
 import {
   BadGatewayException,
   GatewayTimeoutException,
-  Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ExternalHttpClient, ExternalRequestMessages, requireBaseUrl } from './external-http.client';
@@ -54,7 +53,7 @@ describe('ExternalHttpClient', () => {
 
   it('converte falha de conexão em 503', async () => {
     fetchMock.mockRejectedValue(new TypeError('fetch failed'));
-    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
+    jest.spyOn((client as unknown as { logger: { error: () => void } }).logger, 'error').mockImplementation(() => {});
 
     const error = await client.getJson('https://api.test/x', { messages }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ServiceUnavailableException);
@@ -63,7 +62,7 @@ describe('ExternalHttpClient', () => {
 
   it('converte status de erro em 502, repassando o status para a mensagem', async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
-    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
+    jest.spyOn((client as unknown as { logger: { warn: () => void } }).logger, 'warn').mockImplementation(() => {});
 
     const error = await client.getJson('https://api.test/x', { messages }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(BadGatewayException);

@@ -15,13 +15,7 @@ describe('AuthController', () => {
     const dto = { email: 'admin@greenbyte.test', password: 'SenhaSegura123!' };
     const response = {
       access_token: 'jwt-assinado',
-      user: {
-        id: 7,
-        email: dto.email,
-        role: 'admin' as const,
-        isActive: true,
-        createdAt: new Date('2026-11-01T00:00:00.000Z'),
-      },
+      user: { id: 7, email: dto.email, createdAt: '2026-11-01T00:00:00.000Z' },
     };
     login.mockResolvedValue(response);
 

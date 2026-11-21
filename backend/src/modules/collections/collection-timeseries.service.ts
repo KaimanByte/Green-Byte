@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ServicesRepository } from '../services/services.repository';
-import type { Service } from '../services/services.schema';
 import { CollectionsRepository, TimeSeriesRow } from './collections.repository';
 import { HISTORY_UNITS } from './dto/history-summary.dto';
 import {
@@ -131,13 +130,11 @@ export class CollectionTimeSeriesService {
 
     const services = await this.servicesRepository.findAll();
     const serviceById = new Map(services.map((service) => [service.id, service]));
-    const targetServices: Service[] = [];
     for (const id of ids) {
       const service = serviceById.get(id);
       if (!service || service.status === REMOVED_STATUS) {
         throw new NotFoundException(`Serviço "${id}" não encontrado.`);
       }
-      targetServices.push(service);
     }
 
     const rows = await this.collectionsRepository.getTimeSeriesByService(
@@ -152,9 +149,10 @@ export class CollectionTimeSeriesService {
       rowsByService.get(row.serviceId)?.push(row);
     }
 
-    const series = targetServices.map((service) => {
+    const series = ids.map((id) => {
+      const service = serviceById.get(id)!;
       // o banco já ordena por intervalo; reordenar aqui garante a ordem mesmo se a consulta mudar
-      const points = (rowsByService.get(service.id) ?? [])
+      const points = (rowsByService.get(id) ?? [])
         .sort((a, b) => a.bucket.getTime() - b.bucket.getTime())
         .map(toPointDto);
       return {

@@ -199,22 +199,3 @@ export type LoginResponseDto = {
   access_token: string
   user: UserDto
 }
-
-export type CollectionCycleStatus = 'running' | 'success' | 'failed' | 'no_data'
-
-/** GET /settings/collection-health — CollectionHealthResponseDto */
-export type CollectionHealthDto = {
-  status: CollectionCycleStatus
-  isRunning: boolean
-  effectiveIntervalSeconds: number
-  effectiveIntervalMs: number
-  recommendedPollSeconds: number
-  recommendedPollMs: number
-  nextRunAt: string | null
-  lastRunAt: string | null
-  lastFinishedAt: string | null
-  lastDurationMs: number | null
-  recordsSaved: number
-  errorStage: string | null
-  errorMessage: string | null
-}

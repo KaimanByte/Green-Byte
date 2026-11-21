@@ -44,23 +44,21 @@ export class CollectionsService {
   }
 
   async getEmissionsByRegion(start?: Date, end?: Date): Promise<RegionEmissions[]> {
-    const range = this.resolveEmissionsDateRange(start, end);
-    return this.collectionsRepository.getEmissionsByRegion(range.start, range.end);
+    const validEnd = end instanceof Date && !isNaN(end.getTime()) ? end : new Date();
+    const validStart = start instanceof Date && !isNaN(start.getTime())
+      ? start
+      : new Date(validEnd.getTime() - 24 * 60 * 60 * 1000);
+
+    return this.collectionsRepository.getEmissionsByRegion(validStart, validEnd);
   }
 
   async getEmissionsByService(start?: Date, end?: Date): Promise<ServiceEmissions[]> {
-    const range = this.resolveEmissionsDateRange(start, end);
-    return this.collectionsRepository.getEmissionsByService(range.start, range.end);
-  }
-
-  private resolveEmissionsDateRange(start?: Date, end?: Date): { start: Date; end: Date } {
     const validEnd = end instanceof Date && !isNaN(end.getTime()) ? end : new Date();
-    const validStart =
-      start instanceof Date && !isNaN(start.getTime())
-        ? start
-        : new Date(validEnd.getTime() - 24 * 60 * 60 * 1000);
+    const validStart = start instanceof Date && !isNaN(start.getTime())
+      ? start
+      : new Date(validEnd.getTime() - 24 * 60 * 60 * 1000);
 
-    return { start: validStart, end: validEnd };
+    return this.collectionsRepository.getEmissionsByService(validStart, validEnd);
   }
 
   /**
@@ -102,10 +100,8 @@ export class CollectionsService {
           energyKwh,
           co2Emissions,
         });
-      } catch (error: unknown) {
-        this.logger.warn(
-          `Falha ao coletar métricas para o serviço ${service.id}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-        );
+      } catch (error) {
+        this.logger.warn(`Falha ao coletar métricas para o serviço ${service.id}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
         continue;
       }
     }

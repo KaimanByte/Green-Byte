@@ -1,13 +1,10 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
 import { UsersRepository } from '../users/users.repository';
-import { PublicUser, toPublicUser } from '../users/users.schema';
+import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
-import type { JwtPayload } from './authenticated-user';
-
-const INVALID_CREDENTIALS = 'Email ou senha inválidos.';
+import { User } from '../users/users.schema';
 
 @Injectable()
 export class AuthService {
@@ -16,24 +13,24 @@ export class AuthService {
     private readonly usersRepository: UsersRepository,
   ) {}
 
-  /**
-   * Valida credenciais. A checagem de conta desativada só acontece depois da senha
-   * correta, para não revelar quais e-mails existem.
-   */
-  async validateUser(email: string, password: string): Promise<PublicUser> {
+  async validateUser(email: string, password: string): Promise<Omit<User, 'hashPassword'>> {
     const user = await this.usersRepository.findByEmail(email);
-    if (!user || !(await bcrypt.compare(password, user.hashPassword))) {
-      throw new UnauthorizedException(INVALID_CREDENTIALS);
+    if (!user) {
+      throw new UnauthorizedException('Email ou senha inválidos.');
     }
-    if (!user.isActive) {
-      throw new UnauthorizedException('Conta desativada. Procure um administrador.');
+    
+    const isPasswordValid = await bcrypt.compare(password, user.hashPassword);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Email ou senha inválidos.');
     }
-    return toPublicUser(user);
+
+    const { hashPassword: _hashPassword, ...result } = user;
+    return result;
   }
 
   async login(loginDto: LoginDto): Promise<LoginResponseDto> {
     const user = await this.validateUser(loginDto.email, loginDto.password);
-    const payload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { sub: user.id, email: user.email };
     return { access_token: this.jwtService.sign(payload), user };
   }
 }

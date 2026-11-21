@@ -116,6 +116,10 @@ export class CollectionsRepository {
   }
 
   /**
+   * Quantidade de coletas e somas de energia/CO2e por serviço no período [start, end] (inclusivo).
+   * Serviços sem coletas no período não aparecem no resultado.
+   */
+  /**
    * Série temporal das coletas: agrupa as coletas de [from, to] em intervalos de
    * `bucketSeconds` (alinhados a `from`, via date_bin) e devolve a MÉDIA de cada métrica.
    * Intervalos sem coleta não aparecem. Ordem cronológica crescente.
@@ -194,10 +198,6 @@ export class CollectionsRepository {
       .orderBy(sql`1, 2`);
   }
 
-  /**
-   * Quantidade de coletas e somas de energia/CO2e por serviço no período [start, end] (inclusivo).
-   * Serviços sem coletas no período não aparecem no resultado.
-   */
   async getServicePeriodTotals(start: Date, end: Date): Promise<ServicePeriodTotals[]> {
     return this.dbService.db
       .select({
@@ -214,12 +214,16 @@ export class CollectionsRepository {
   async getEmissionsByRegion(start: Date, end: Date): Promise<RegionEmissions[]> {
     return this.dbService.db
       .select({
+        // Busca do schema regions (que está em inglês conforme o erro TS2339)
         regionCode: regions.regionCode,
+        
+        // ATENÇÃO: Verifique se as crases (`) estão envolvendo a função coalesce no seu editor!
         totalEnergyKwh: sql<number>`coalesce(sum(${collections.energyKwh}), 0)`.mapWith(Number),
         totalCo2Emissions: sql<number>`coalesce(sum(${collections.co2Emissions}), 0)`.mapWith(Number),
       })
       .from(collections)
       .innerJoin(services, eq(collections.serviceId, services.id))
+      // Une a coluna regionCode (do services) com regionCode (do regions)
       .innerJoin(regions, eq(services.regionCode, regions.regionCode))
       .where(
         and(gte(collections.timestamp, start), lte(collections.timestamp, end)),
@@ -233,6 +237,8 @@ export class CollectionsRepository {
     return this.dbService.db
       .select({
         serviceId: collections.serviceId,
+        
+        // ATENÇÃO: Verifique se as crases (`) estão envolvendo a função coalesce no seu editor!
         totalEnergyKwh: sql<number>`coalesce(sum(${collections.energyKwh}), 0)`.mapWith(Number),
         totalCo2Emissions: totalCo2Emissions.mapWith(Number),
       })

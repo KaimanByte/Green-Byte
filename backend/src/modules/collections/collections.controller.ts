@@ -1,4 +1,3 @@
-import { Authorize } from '../auth/decorators/authorize.decorator';
 import { Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CollectionsService } from './collections.service';
@@ -66,8 +65,6 @@ export class CollectionsController {
     description: 'Varre todos os serviços ativos, busca suas métricas na API externa, cruza com a intensidade de carbono da região e grava a coleta calculada.',
   })
   @ApiOkResponse({ type: SyncCollectionsResponseDto })
-  // sincronização é operação de monitoramento: exige login e papel admin ou operator (AU-06)
-  @Authorize('admin', 'operator')
   async syncCollections(): Promise<SyncCollectionsResponseDto> {
     return this.collectionsService.syncCollections();
   }
