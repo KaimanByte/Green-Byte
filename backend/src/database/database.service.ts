@@ -15,7 +15,7 @@ export class DatabaseService implements OnModuleDestroy {
     this.db = drizzle({ client: this.pool, schema });
   }
 
-  async onModuleDestroy() {
+  async onModuleDestroy(): Promise<void> {
     await this.pool.end();
   }
 

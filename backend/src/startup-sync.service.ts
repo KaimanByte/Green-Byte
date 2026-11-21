@@ -164,7 +164,7 @@ export class StartupSyncService implements OnApplicationBootstrap {
       ) {
         this.collectionIntervalMs = seconds * 1_000;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(
         `Não foi possível carregar o intervalo persistido de coleta; usando padrão (${this.getEffectiveIntervalSeconds()}s): ${message}`,
@@ -233,7 +233,7 @@ export class StartupSyncService implements OnApplicationBootstrap {
       recordsSaved = hasExplicitTotal ? syncResult.total : 0;
       cycleStatus = hasExplicitTotal && recordsSaved === 0 ? 'no_data' : 'success';
       succeeded = true;
-    } catch (error) {
+    } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       const stack = error instanceof Error ? error.stack : undefined;
       errorStage = currentStep;
