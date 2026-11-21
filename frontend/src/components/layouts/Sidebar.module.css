@@ -22,8 +22,8 @@
   top: var(--space-edge);
   left: var(--space-edge);
   z-index: 30;
-  width: 64px;
-  height: 64px;
+  width: var(--toggle-size);
+  height: var(--toggle-size);
   padding: 0;
   border-radius: var(--radius-pill);
   display: grid;
@@ -43,7 +43,7 @@
   /* metade do --space-edge: assim o botão (32px da borda)
      fica exatamente a 16px da borda de dentro da barra */
   --panel-inset: 16px;
-  --toggle-end: calc(var(--panel-inset) + 64px);
+  --toggle-end: calc(var(--panel-inset) + var(--toggle-size));
   /* vidro líquido: desfoque menor que o dos painéis (pra refração da borda aparecer,
      ver LiquidLens.tsx), película um pouco mais escura pra leitura, aro fino e brilho
      de bolha como nos botões .liquid */
@@ -129,10 +129,10 @@
 .open .footer { --delay: 0.34s; }
 
 .title {
-  height: 64px;
+  height: var(--toggle-size);
   margin: 0;
   /* espaço do botão (64) + respiro (22), como no Figma */
-  padding-left: calc(64px + 22px);
+  padding-left: calc(var(--toggle-size) + 22px);
   display: flex;
   align-items: center;
   font-size: 20px;
@@ -301,11 +301,91 @@
   font-weight: 600;
 }
 
+/* ---------- tela baixa (celular deitado): o menu rola em vez de cortar o login ---------- */
+@media (max-height: 480px) {
+  .panel {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+
+  .listWrap {
+    margin-top: 12px;
+  }
+}
+
+/* ---------- celular: cartão compacto, só da altura do conteúdo ---------- */
+@media (max-width: 760px) {
+  /* sem desfoque na tela inteira: por cima do WebGL é o efeito mais caro para a GPU do celular */
+  .backdrop {
+    background: rgba(5, 11, 9, 0.55);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .panel {
+    /* botão a 16px da tela e 8px da borda de dentro do cartão */
+    --panel-inset: 8px;
+    width: min(280px, calc(100vw - 2 * var(--panel-inset)));
+    height: auto;
+    max-height: calc(100dvh - 2 * var(--panel-inset));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+
+  .title {
+    padding-left: calc(var(--toggle-size) + 18px);
+    font-size: 18px;
+  }
+
+  .listWrap {
+    --item-step: 54px; /* item (44) + espaço (10) */
+    margin-top: 16px;
+  }
+
+  .indicator,
+  .item {
+    height: 44px;
+  }
+
+  .item {
+    font-size: 15px;
+  }
+
+  /* sem a altura da tela inteira, o "margin-top: auto" não empurra mais o login */
+  .login {
+    margin-top: 20px;
+  }
+
+  /* com o respiro menor do cartão (8px), o texto do rodapé alinha com os ícones dos itens
+     em vez de grudar na borda; a linha de cima continua de ponta a ponta */
+  .footer {
+    padding: 12px 16px 6px;
+  }
+
+  /* com uma folha de painel aberta, o cartão volta para dentro do botão (que vira o X de fechar) */
+  .open.sheetOpen {
+    clip-path: inset(
+      var(--panel-inset)
+      calc(100% - var(--toggle-end))
+      calc(100% - var(--toggle-end))
+      var(--panel-inset)
+      round var(--radius-pill)
+    );
+    visibility: hidden;
+    transition:
+      clip-path 0.42s var(--ease-out-soft),
+      visibility 0s linear 0.42s;
+  }
+}
+
 /* ---------- quem pediu menos movimento no sistema ---------- */
 @media (prefers-reduced-motion: reduce) {
   .backdrop,
   .panel,
   .open,
+  .open.sheetOpen,
   .title,
   .list li,
   .footer,

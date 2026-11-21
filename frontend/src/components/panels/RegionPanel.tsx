@@ -49,7 +49,7 @@ export function RegionPanel({ region, onClose, panelRef }: Props) {
   return (
     <aside
       ref={panelRef}
-      className={`glass ${styles.panel}`}
+      className={`glass ${styles.panel} ${styles.region}`}
       aria-labelledby="region-panel-title"
     >
       <button

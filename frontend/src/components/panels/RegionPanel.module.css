@@ -176,6 +176,35 @@
   color: var(--text-muted);
 }
 
+/* celular: folha logo acima da busca; o marcador escolhido continua à vista em cima
+   (só o painel de região: os outros painéis usam .panel como base e têm a própria folha) */
+@media (max-width: 760px) {
+  .panel.region {
+    --search-clearance: calc(var(--space-edge) + 48px + 12px); /* busca (48px) + respiro */
+    top: auto;
+    right: 16px;
+    bottom: var(--search-clearance);
+    left: 16px;
+    width: auto;
+    max-height: calc(100dvh - var(--search-clearance) - 2 * var(--space-edge) - var(--toggle-size));
+    padding: 32px 20px 20px;
+    overscroll-behavior: contain;
+    transform: none;
+    animation-name: region-sheet-in;
+  }
+
+  @keyframes region-sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(24px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .panel {
     animation: none;

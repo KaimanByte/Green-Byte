@@ -109,7 +109,10 @@ function Earth({ regions, selectedCode, onSelectRegion, focusRequest, introPhase
   const [surfaceMap, normalMap, cloudsMap] = useTexture(EARTH_TEXTURES, setEarthColorSpace)
 
   //parar qnd selecionar regiao
-   useFrame((_, delta) => {
+   useFrame((_, frameDelta) => {
+    // limita o passo: depois de uma pausa (aba escondida ou menu aberto no celular)
+    // o primeiro quadro não faz o globo "pular" o tempo parado
+    const delta = Math.min(frameDelta, 0.1)
     const earth = earthRef.current
     const target = targetRotationRef.current
 
@@ -227,6 +230,8 @@ function CameraFit({ isIntroDone }: { isIntroDone: boolean }) {
 type GloboSceneProps = EarthProps & {
   onIntroReady?: () => void
   onIntroDone?: () => void
+  /** para de redesenhar a cada quadro (a última imagem fica na tela) */
+  isPaused?: boolean
 }
 
 export function GloboScene({
@@ -237,10 +242,14 @@ export function GloboScene({
   introPhase = 'done',
   onIntroReady = () => {},
   onIntroDone = () => {},
+  isPaused = false,
 }: GloboSceneProps) {
   const isIntroDone = introPhase === 'done'
+  // Em celular, prioriza fluidez e bateria: a área útil já é pequena e DPR alto só aumenta
+  // bastante o custo do WebGL. Em telas maiores preservamos a nitidez até 1,5x.
+  const maxDpr = window.matchMedia('(max-width: 760px), (pointer: coarse)').matches ? 1 : 1.5
   // resolução se adapta ao computador: se os quadros caírem, desenha com menos pixels
-  const [dpr, setDpr] = useState(() => Math.min(window.devicePixelRatio, 1.5))
+  const [dpr, setDpr] = useState(() => Math.min(window.devicePixelRatio, maxDpr))
 
   return (
     <main className="App" aria-label="Terra no espaço">
@@ -248,12 +257,14 @@ export function GloboScene({
         className="space-canvas"
         camera={{ fov: 42, near: 0.1, far: 1500, position: [0, 0, 5.2] }}
         dpr={dpr}
+        // pausado: só redesenha quando algo pede (ex.: a tela mudou de tamanho)
+        frameloop={isPaused ? 'demand' : 'always'}
         // em notebook com duas placas, pede a placa de vídeo dedicada
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
       >
         <PerformanceMonitor
           flipflops={3}
-          onChange={({ factor }) => setDpr(Math.min(window.devicePixelRatio, 0.75 + 0.75 * factor))}
+          onChange={({ factor }) => setDpr(Math.min(window.devicePixelRatio, maxDpr, 0.75 + 0.75 * factor))}
           onFallback={() => setDpr(0.75)}
         />
         <CameraFit isIntroDone={isIntroDone} />

@@ -12,9 +12,11 @@ type Props = {
   onSelect: (id: string) => void
   /** e-mail de quem está logado; sem ele o botão mostra LOGIN */
   userEmail?: string | null
+  /** há um painel (folha) aberto: no celular o cartão do menu recolhe para dentro do botão */
+  isSheetOpen?: boolean
 }
 
-export function Sidebar({ isOpen, onToggle, onClose, items, activeId, onSelect, userEmail = null }: Props) 
+export function Sidebar({ isOpen, onToggle, onClose, items, activeId, onSelect, userEmail = null, isSheetOpen = false }: Props)
 {
     useEffect(() => {
         if (!isOpen) return
@@ -65,7 +67,7 @@ export function Sidebar({ isOpen, onToggle, onClose, items, activeId, onSelect, 
 
       <nav
         id="menu-lateral"
-        className={`glass ${styles.panel} ${isOpen ? styles.open : ''}`}
+        className={`glass ${styles.panel} ${isOpen ? styles.open : ''} ${isSheetOpen ? styles.sheetOpen : ''}`}
         aria-label="Menu principal"
         inert={!isOpen}
         data-liquid-lens={isOpen && isLensReady ? 'edge' : undefined}

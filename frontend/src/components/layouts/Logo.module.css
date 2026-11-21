@@ -1,7 +1,7 @@
-/* canto superior direito, alinhado ao centro do botão do menu (64px) */
+/* canto superior direito, alinhado ao centro do botão do menu */
 .logo {
   position: fixed;
-  top: calc(var(--space-edge) + 32px);
+  top: calc(var(--space-edge) + var(--toggle-size) / 2);
   right: var(--space-edge);
   /* abaixo do fundo desfocado do menu (10): fica desfocada junto com o globo */
   z-index: 5;
