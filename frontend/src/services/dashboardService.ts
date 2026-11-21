@@ -16,6 +16,7 @@ import {
 import { getSummary } from './indicatorsService'
 import { getRegions } from './regionsService'
 import { getServices } from './servicesService'
+import { getCollectionInterval } from './monitoringService'
 
 /** Conjunto de dados consumido pelo dashboard, carregado de uma só vez. */
 export type DashboardData = {
@@ -27,6 +28,8 @@ export type DashboardData = {
   latestCollections: CollectionDto[]
   /** Totais oficiais e estado dos serviços no período (GET /summary), ou `null` se essa fonte falhou. */
   summary: SummaryDto | null
+  /** Intervalo efetivo da coleta, usado para programar o próximo polling do dashboard. */
+  collectionIntervalSeconds: number | null
   /** Fontes que falharam nesta carga (nomes legíveis). Vazio quando tudo respondeu. */
   failedSources: string[]
 }
@@ -78,20 +81,23 @@ export async function getDashboardData(
     getEmissionsByRegion(period, { signal }),
     getEmissionsByService(period, { signal }),
     getSummary(period, { signal }),
+    getCollectionInterval({ signal }),
   ] as const)
 
   if (signal?.aborted) throw signal.reason ?? new DOMException('Aborted', 'AbortError')
   const firstFailure = results.find((result) => result.status === 'rejected')
   if (firstFailure && results.every((result) => result.status === 'rejected')) throw firstFailure.reason
 
-  const [regionsResult, servicesResult, emissionsResult, serviceEmissionsResult, summaryResult] = results
+  const [regionsResult, servicesResult, emissionsResult, serviceEmissionsResult, summaryResult, intervalResult] = results
   const failedSources: string[] = []
   const regions = settledOr(regionsResult, [], DASHBOARD_SOURCES.regions, failedSources)
   const services = settledOr(servicesResult, [], DASHBOARD_SOURCES.services, failedSources)
   const emissions = settledOr(emissionsResult, [], DASHBOARD_SOURCES.emissions, failedSources)
   const serviceEmissions = settledOr(serviceEmissionsResult, [], DASHBOARD_SOURCES.serviceEmissions, failedSources)
   const summary = settledOr<SummaryDto | null>(summaryResult, null, DASHBOARD_SOURCES.summary, failedSources)
+  // A indisponibilidade dessa informação não deve impedir o dashboard: ele mantém o fallback de 60 s.
+  const collectionIntervalSeconds = intervalResult.status === 'fulfilled' ? intervalResult.value.intervalSeconds : null
 
   const latestCollections = await getLatestCollections(services, signal)
-  return { regions, services, emissions, serviceEmissions, latestCollections, summary, failedSources }
+  return { regions, services, emissions, serviceEmissions, latestCollections, summary, collectionIntervalSeconds, failedSources }
 }
