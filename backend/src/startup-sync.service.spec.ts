@@ -224,4 +224,18 @@ describe('StartupSyncService', () => {
     expect(service.getHealthStatus().status).toBe('failed');
     expect(service.getHealthStatus().errorStage).toBe('regiões');
   });
+
+  it('registra falha na etapa de coleta de métricas (incluindo erro não-Error) e tolera falha ao ler settings', async () => {
+    settingsRepository.getSettings.mockRejectedValueOnce(new Error('Banco indisponível'));
+    collectionsService.syncCollections.mockRejectedValueOnce('falha-string');
+    service = createService(true);
+
+    await expect(service.onApplicationBootstrap()).resolves.toBeUndefined();
+
+    const health = service.getHealthStatus();
+    expect(health.effectiveIntervalSeconds).toBe(30);
+    expect(health.status).toBe('failed');
+    expect(health.errorStage).toBe('coleta de métricas');
+    expect(health.errorMessage).toBe('falha-string');
+  });
 });

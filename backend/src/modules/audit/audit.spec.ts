@@ -69,12 +69,14 @@ describe('AuditSanitizer', () => {
     });
   });
 
-  it('converte Date para ISO e retorna null para null/undefined', () => {
+  it('converte Date para ISO, omite undefined, trata primitivos/arrays e retorna null para null/undefined', () => {
     expect(sanitizeAuditPayload(null)).toBeNull();
     expect(sanitizeAuditPayload(undefined)).toBeNull();
-    expect(sanitizeAuditPayload({ createdAt: new Date('2026-11-20T00:00:00.000Z') })).toEqual({
+    expect(sanitizeAuditPayload({ createdAt: new Date('2026-11-20T00:00:00.000Z'), optional: undefined })).toEqual({
       createdAt: '2026-11-20T00:00:00.000Z',
     });
+    expect(sanitizeAuditPayload('texto')).toEqual({ value: 'texto' });
+    expect(sanitizeAuditPayload([{ password: '123', ok: true }])).toEqual({ value: [{ ok: true }] });
   });
 });
 
@@ -124,6 +126,10 @@ describe('AuditRepository', () => {
     expect(limit).toHaveBeenCalledWith(20);
     expect(offset).toHaveBeenCalledWith(10);
     expect(rows).toEqual([created]);
+
+    offset.mockResolvedValueOnce([]);
+    await expect(repository.findAll({ limit: 50, offset: 0 })).resolves.toEqual([]);
+    expect(where).toHaveBeenLastCalledWith(undefined);
   });
 });
 
@@ -196,6 +202,35 @@ describe('AuditService', () => {
         targetId: '1',
         beforeValues: { cpuMaxWatts: 100 },
         afterValues: { cpuMaxWatts: 150 },
+      }),
+    );
+
+    await service.recordUserUpdated(actor, 2, { email: 'a@x.com', password: '1' }, { email: 'b@x.com', token: 't' });
+    expect(create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: 'USER_UPDATED',
+        targetType: 'user',
+        targetId: '2',
+        beforeValues: { email: 'a@x.com' },
+        afterValues: { email: 'b@x.com' },
+      }),
+    );
+
+    await service.recordUserStatusChanged(actor, 2, { isActive: true }, { isActive: false });
+    expect(create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: 'USER_STATUS_CHANGED',
+        beforeValues: { isActive: true },
+        afterValues: { isActive: false },
+      }),
+    );
+
+    await service.recordUserDeleted(actor, 2, { id: 2, email: 'b@x.com', hashPassword: 'h' });
+    expect(create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: 'USER_DELETED',
+        beforeValues: { id: 2, email: 'b@x.com' },
+        afterValues: null,
       }),
     );
   });

@@ -39,10 +39,12 @@ describe('UserLifecyclePolicy', () => {
     expect(() => policy.assertCanRemove(actor, user({ isActive: false }), 1)).not.toThrow();
   });
 
-  it('troca de papel: bloqueia rebaixar a si mesmo e o último admin ativo; promover é livre', () => {
+  it('troca de papel: bloqueia rebaixar a si mesmo e o último admin ativo; promover ou manter igual é livre', () => {
     expect(() => policy.assertCanChangeRole(actor, user({ id: 1 }), 'operator', 5)).toThrow(ForbiddenException);
     expect(() => policy.assertCanChangeRole(actor, user(), 'operator', 1)).toThrow(BadRequestException);
     expect(() => policy.assertCanChangeRole(actor, user(), 'operator', 2)).not.toThrow();
     expect(() => policy.assertCanChangeRole(actor, user({ role: 'operator' }), 'admin', 0)).not.toThrow();
+    expect(() => policy.assertCanChangeRole(actor, user({ id: 1, role: 'admin' }), 'admin', 1)).not.toThrow();
+    expect(() => policy.assertCanChangeRole(actor, user({ role: 'operator' }), 'operator', 1)).not.toThrow();
   });
 });

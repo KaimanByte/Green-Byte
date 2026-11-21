@@ -1,5 +1,7 @@
 import { ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { extractCurrentUser } from '../decorators/current-user.decorator';
+import { Roles } from '../decorators/roles.decorator';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RolesGuard } from './roles.guard';
 import type { AuthenticatedUser } from '../authenticated-user';
@@ -37,8 +39,17 @@ describe('JwtAuthGuard', () => {
 
   it('401 quando não há usuário autenticado (token ausente/ inválido)', () => {
     expect(() => guard.handleRequest(null, false)).toThrow(UnauthorizedException);
+    expect(() => guard.handleRequest(null, null)).toThrow(UnauthorizedException);
     expect(() => guard.handleRequest(new Error('jwt expired'), false)).toThrow(
       'Autenticação necessária: envie um token Bearer válido.',
+    );
+  });
+
+  it('extractCurrentUser extrai usuário autenticado ou lança 401 quando ausente', () => {
+    const user = makeUser();
+    expect(extractCurrentUser(contextFor(UsersController, UsersController.prototype.findAll, user))).toBe(user);
+    expect(() => extractCurrentUser(contextFor(UsersController, UsersController.prototype.findAll))).toThrow(
+      UnauthorizedException,
     );
   });
 
@@ -98,12 +109,20 @@ describe('RolesGuard', () => {
     );
   });
 
-  it('rota sem @Roles libera qualquer usuário autenticado e ativo', () => {
+  it('rota sem @Roles ou com @Roles() vazio libera qualquer usuário autenticado e ativo', () => {
     class OpenController {
       open(): void {}
+
+      @Roles()
+      emptyRoles(): void {}
     }
     expect(
       guard.canActivate(contextFor(OpenController, OpenController.prototype.open, makeUser({ role: 'operator' }))),
+    ).toBe(true);
+    expect(
+      guard.canActivate(
+        contextFor(OpenController, OpenController.prototype.emptyRoles, makeUser({ role: 'operator' })),
+      ),
     ).toBe(true);
   });
 });

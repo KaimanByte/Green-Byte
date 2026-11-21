@@ -75,4 +75,37 @@ describe('AuthService', () => {
     });
     expect(sign).toHaveBeenCalledWith({ sub: user.id, email: user.email, role: 'admin' });
   });
+
+  it('emite JWT com papel operator para operador ativo e propaga erros de repositório ou JWT', async () => {
+    const operator: User = {
+      ...user,
+      id: 9,
+      email: 'op@greenbyte.test',
+      role: 'operator',
+      hashPassword: await bcrypt.hash('SenhaOp123!', 4),
+    };
+    findByEmail.mockResolvedValueOnce(operator);
+
+    const result = await service.login({ email: operator.email, password: 'SenhaOp123!' });
+    expect(result.user).toEqual({
+      id: 9,
+      email: operator.email,
+      role: 'operator',
+      isActive: true,
+      createdAt: operator.createdAt,
+    });
+    expect(result.user).not.toHaveProperty('hashPassword');
+    expect(sign).toHaveBeenCalledWith({ sub: 9, email: operator.email, role: 'operator' });
+
+    findByEmail.mockRejectedValueOnce(new Error('DB offline'));
+    await expect(service.login({ email: operator.email, password: 'SenhaOp123!' })).rejects.toThrow('DB offline');
+
+    findByEmail.mockResolvedValueOnce(operator);
+    sign.mockImplementationOnce(() => {
+      throw new Error('Falha ao assinar JWT');
+    });
+    await expect(service.login({ email: operator.email, password: 'SenhaOp123!' })).rejects.toThrow(
+      'Falha ao assinar JWT',
+    );
+  });
 });
