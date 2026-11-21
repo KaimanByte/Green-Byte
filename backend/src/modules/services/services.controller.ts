@@ -30,7 +30,6 @@ export class ServicesController {
     type: [ServiceResponseDto],
   })
   async findAll(): Promise<ServiceResponseDto[]> {
-    // Agora chama o método com o nome exato que está no Service
     return this.servicesService.findAllServices();
   }
 
@@ -53,7 +52,6 @@ export class ServicesController {
   })
   @ApiNotFoundResponse({ description: 'Serviço não encontrado.' })
   async findOne(@Param('id') id: string): Promise<Service> {
-    // Chama o método findById que vamos adicionar de volta no Service
     return this.servicesService.findById(id);
   }
 
