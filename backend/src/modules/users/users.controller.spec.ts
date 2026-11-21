@@ -7,27 +7,34 @@ describe('UsersController', () => {
   const user = {
     id: 3,
     email: 'usuario@greenbyte.test',
+    role: 'operator' as const,
+    active: true,
     createdAt: new Date('2026-11-01T00:00:00.000Z'),
   };
+  const actor = { id: 1, email: 'admin@greenbyte.test', role: 'admin' as const, active: true, createdAt: user.createdAt };
+
+  // sem a assinatura, `jest.Mock` aceita só `never` em mockResolvedValue/mockRejectedValue
+  type ServiceMock = jest.Mock<(...args: unknown[]) => Promise<unknown>>;
+  const serviceMock = (): ServiceMock => jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
   let controller: UsersController;
   let usersService: {
-    create: jest.Mock;
-    findAll: jest.Mock;
-    findById: jest.Mock;
-    findByEmail: jest.Mock;
-    update: jest.Mock;
-    remove: jest.Mock;
+    create: ServiceMock;
+    findAll: ServiceMock;
+    findById: ServiceMock;
+    findByEmail: ServiceMock;
+    update: ServiceMock;
+    remove: ServiceMock;
   };
 
   beforeEach(() => {
     usersService = {
-      create: jest.fn(),
-      findAll: jest.fn(),
-      findById: jest.fn(),
-      findByEmail: jest.fn(),
-      update: jest.fn(),
-      remove: jest.fn(),
+      create: serviceMock(),
+      findAll: serviceMock(),
+      findById: serviceMock(),
+      findByEmail: serviceMock(),
+      update: serviceMock(),
+      remove: serviceMock(),
     };
     controller = new UsersController(usersService as unknown as UsersService);
   });
@@ -42,19 +49,19 @@ describe('UsersController', () => {
     usersService.update.mockResolvedValue({ ...user, email: updateDto.email });
     usersService.remove.mockResolvedValue(user);
 
-    await expect(controller.create(createDto)).resolves.toEqual(user);
+    await expect(controller.create(createDto, actor)).resolves.toEqual(user);
     await expect(controller.findAll()).resolves.toEqual([user]);
     await expect(controller.findById(user.id)).resolves.toEqual(user);
     await expect(controller.findByEmail(user.email)).resolves.toEqual(user);
-    await expect(controller.update(user.id, updateDto)).resolves.toEqual({ ...user, email: updateDto.email });
-    await expect(controller.remove(user.id)).resolves.toEqual(user);
+    await expect(controller.update(user.id, updateDto, actor)).resolves.toEqual({ ...user, email: updateDto.email });
+    await expect(controller.remove(user.id, actor)).resolves.toEqual(user);
 
-    expect(usersService.create).toHaveBeenCalledWith(createDto);
+    expect(usersService.create).toHaveBeenCalledWith(createDto, actor);
     expect(usersService.findAll).toHaveBeenCalledWith();
     expect(usersService.findById).toHaveBeenCalledWith(user.id);
     expect(usersService.findByEmail).toHaveBeenCalledWith(user.email);
-    expect(usersService.update).toHaveBeenCalledWith(user.id, updateDto);
-    expect(usersService.remove).toHaveBeenCalledWith(user.id);
+    expect(usersService.update).toHaveBeenCalledWith(user.id, updateDto, actor);
+    expect(usersService.remove).toHaveBeenCalledWith(user.id, actor);
   });
 
   it('preserva o erro de usuário não encontrado retornado pela regra de negócio', async () => {

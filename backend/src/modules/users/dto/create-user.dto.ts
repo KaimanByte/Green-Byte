@@ -1,5 +1,7 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ROLES } from '../../auth/roles';
+import type { Role } from '../../auth/roles';
 
 export class CreateUserDto {
   @ApiProperty({
@@ -20,4 +22,13 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'A senha é obrigatória.' })
   @MinLength(8, { message: 'A senha precisa ter pelo menos 8 caracteres.' })
   hashPassword!: string;
+
+  @ApiPropertyOptional({
+    description: 'Papel de acesso; sem ele o usuário nasce como operador',
+    enum: ROLES,
+    example: 'operator',
+  })
+  @IsOptional()
+  @IsIn(ROLES, { message: 'O papel deve ser admin ou operator.' })
+  role?: Role;
 }

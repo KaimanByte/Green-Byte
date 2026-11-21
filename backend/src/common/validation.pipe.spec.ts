@@ -63,6 +63,15 @@ describe('ValidationPipe global', () => {
       expect(messages).toEqual(['O campo "id" não é permitido.']);
     });
 
+    it('rejeita papel diferente de admin ou operator', async () => {
+      const messages = await messagesFor(
+        { email: 'dev@empresa.com', hashPassword: 'SenhaSegura123!', role: 'superuser' },
+        CreateUserDto,
+      );
+
+      expect(messages).toEqual(['O papel deve ser admin ou operator.']);
+    });
+
     it('na atualização os campos são opcionais, mas continuam validados se enviados', async () => {
       await expect(pipe.transform({ email: 'novo@empresa.com' }, body(UpdateUserDto))).resolves.toEqual({
         email: 'novo@empresa.com',
