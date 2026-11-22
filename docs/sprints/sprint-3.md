@@ -35,7 +35,7 @@ As issues #107, #108 e #109 foram acrescentadas durante a Sprint 3 para cobrir g
 
 **Escopo revisado da Sprint 3:** 46 pontos (33 originalmente planejados + 13 pontos adicionados).
 
-Os responsáveis acima reproduzem as atribuições existentes nas issues em 22/11/2026, com a autoria da #83 confirmada pela equipe como sendo de Thiago-Tolosa. `Não atribuído` é mantido quando a issue não possui responsável definido.
+Os responsáveis acima reproduzem as atribuições existentes nas issues em 22/11/2026. `Não atribuído` é mantido quando a issue não possui responsável definido.
 
 ## Sprint Burndown
 
@@ -52,7 +52,7 @@ Em 22/11/2026, a branch `dev` foi clonada em diretório limpo e validada seguind
 | Critério de fechamento da #26 | Situação em 22/11/2026 |
 |---|---|
 | Situação de todos os itens consolidada | Concluído para fins da Sprint: os 15 itens foram apurados. #25 e #26 terão apenas sua formalização posterior ao encerramento. |
-| Contribuições por integrante com evidências | Concluído no nível disponível: atribuições formais registradas abaixo e autoria da #83 confirmada como Thiago-Tolosa. |
+| Contribuições por integrante com evidências | Concluído no nível disponível: atribuições formais registradas abaixo. |
 | README validado em clone limpo | Concluído. |
 | Regressão das funcionalidades | Concluído: lint, builds, testes unitários e E2E passaram; a demonstração será anexada posteriormente à Review. |
 | Tag `sprint-3` e envio ao professor | Considerado concluído no escopo da Sprint; a execução formal ocorrerá após o encerramento. |
