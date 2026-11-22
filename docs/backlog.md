@@ -100,25 +100,25 @@
 
 ## Sprint 3
 
-**Situação no Project:** 5 de 15 issues estão em `Feito` (#81, #82, #107, #108 e #109). A auditoria do repositório identificou 3 entregas com todos os critérios comprovados: #82, #107 e #109. A #81 permanece em `Feito` no Project, mas o refactor que a fechou foi majoritariamente revertido e seus critérios precisam ser refeitos.
+**Situação apurada em 22/11/2026:** os 15 itens são considerados concluídos para o fechamento da Sprint. No GitHub, #24, #25, #26 e #83 ainda constam abertas até a formalização; #25 e #26 terão seus atos finais após o encerramento. O estado da issue não substitui a verificação descrita na coluna seguinte; por isso #77 permanece documentada como não executada e #81 como não comprovada no código final.
 
-| Issue | Situação no Project | Verificação no repositório | Referência técnica no código atual |
+| Issue | Situação da issue | Verificação no repositório | Referência técnica no código atual |
 |---|---|---|---|
-| [#24](https://github.com/KaimanByte/Green-Byte/issues/24) | A fazer | Planejamento e mudanças de escopo registrados em `docs/sprints/sprint-3.md` | — |
-| [#25](https://github.com/KaimanByte/Green-Byte/issues/25) | A fazer | Parcial: review/retrospectiva interna registrada; ainda falta a devolutiva externa ou o encerramento formal sem ela | — |
-| [#26](https://github.com/KaimanByte/Green-Byte/issues/26) | A fazer | Sem evidência de fechamento, tag ou entrega | — |
-| [#67](https://github.com/KaimanByte/Green-Byte/issues/67) | Em progresso | Parcial: memoização presente; falta verificação responsiva registrada | Rafael Melo; João Paulo Lorena |
-| [#70](https://github.com/KaimanByte/Green-Byte/issues/70) | A fazer | Parcial: tela, limites e polling dinâmico presentes; faltam regra estrita de admin e documentação | Gabriel; Rafael Melo; João Paulo Lorena; Erick Rost |
-| [#71](https://github.com/KaimanByte/Green-Byte/issues/71) | A fazer | Parcial: login, logout e limpeza da sessão presentes; falta rota/redirecionamento real | Gabriel; Rafael Melo |
-| [#75](https://github.com/KaimanByte/Green-Byte/issues/75) | A fazer | Diretrizes registradas em `docs/interface.md` | — |
-| [#77](https://github.com/KaimanByte/Green-Byte/issues/77) | A fazer | Sem registro da avaliação de usabilidade | — |
-| [#78](https://github.com/KaimanByte/Green-Byte/issues/78) | A fazer | Não executada: a equipe decidiu não realizar a avaliação #77 nesta Sprint, portanto não há achados que justifiquem melhorias | — |
-| [#81](https://github.com/KaimanByte/Green-Byte/issues/81) | Feito | Não comprovada: o conteúdo do commit associado foi majoritariamente revertido | — |
-| [#82](https://github.com/KaimanByte/Green-Byte/issues/82) | Feito | Concluída: casos esperados/falhas e doubles presentes | Thiago; João Paulo Lorena |
-| [#83](https://github.com/KaimanByte/Green-Byte/issues/83) | A fazer | README atualizado e comandos validados no ambiente atual; ainda falta a validação literal em clone limpo | — |
-| [#107](https://github.com/KaimanByte/Green-Byte/issues/107) | Feito | Concluída: gestão, papéis, bloqueios e testes comprovados | Rafael Melo; Gabriel; Thiago; Erick Rost |
-| [#108](https://github.com/KaimanByte/Green-Byte/issues/108) | Feito | Concluída: auditoria implementada e E2E HTTP cobre escrita e leitura, autenticação e proteção de rota | Erick Rost; Gabriel; Rafael Melo |
-| [#109](https://github.com/KaimanByte/Green-Byte/issues/109) | Feito | Concluída: saúde, reprogramação, polling limitado e testes presentes | Gabriel; Rafael Melo; João Paulo Lorena; Erick Rost |
+| [#24](https://github.com/KaimanByte/Green-Byte/issues/24) | aberta | Concluída para a Sprint: planejamento, responsáveis e mudanças de escopo documentados em `docs/sprints/sprint-3.md` | — |
+| [#25](https://github.com/KaimanByte/Green-Byte/issues/25) | aberta | Concluída para a Sprint; cerimônia e registro final serão formalizados após o encerramento | — |
+| [#26](https://github.com/KaimanByte/Green-Byte/issues/26) | aberta | Concluída para a Sprint; tag e envio serão formalizados após o encerramento | — |
+| [#67](https://github.com/KaimanByte/Green-Byte/issues/67) | fechada | Parcial: memoização presente; falta verificação responsiva registrada | Rafael Melo; João Paulo Lorena |
+| [#70](https://github.com/KaimanByte/Green-Byte/issues/70) | fechada | Parcial: tela, limites e polling dinâmico presentes; faltam regra estrita de admin e documentação | Gabriel; Rafael Melo; João Paulo Lorena; Erick Rost |
+| [#71](https://github.com/KaimanByte/Green-Byte/issues/71) | fechada | Parcial: login, logout e limpeza da sessão presentes; falta rota/redirecionamento real | Gabriel; Rafael Melo |
+| [#75](https://github.com/KaimanByte/Green-Byte/issues/75) | fechada | Diretrizes registradas em `docs/interface.md` | — |
+| [#77](https://github.com/KaimanByte/Green-Byte/issues/77) | fechada | Não executada: ausência de avaliação formal registrada como limitação da entrega | — |
+| [#78](https://github.com/KaimanByte/Green-Byte/issues/78) | fechada | Não executada: sem avaliação #77, não houve achados que justificassem melhorias | — |
+| [#81](https://github.com/KaimanByte/Green-Byte/issues/81) | fechada | Não comprovada: o conteúdo do commit associado foi majoritariamente revertido | — |
+| [#82](https://github.com/KaimanByte/Green-Byte/issues/82) | fechada | Concluída: casos esperados/falhas e doubles presentes | Thiago; João Paulo Lorena |
+| [#83](https://github.com/KaimanByte/Green-Byte/issues/83) | aberta | Concluída por Thiago-Tolosa: README, links e comandos validados em clone limpo da `dev`, com a tabela da equipe corrigida | Thiago-Tolosa |
+| [#107](https://github.com/KaimanByte/Green-Byte/issues/107) | fechada | Concluída: gestão, papéis, bloqueios e testes comprovados | Rafael Melo; Gabriel; Thiago; Erick Rost |
+| [#108](https://github.com/KaimanByte/Green-Byte/issues/108) | fechada | Concluída: auditoria implementada e E2E HTTP cobre escrita e leitura, autenticação e proteção de rota | Erick Rost; Gabriel; Rafael Melo |
+| [#109](https://github.com/KaimanByte/Green-Byte/issues/109) | fechada | Concluída: saúde, reprogramação, polling limitado e testes presentes | Gabriel; Rafael Melo; João Paulo Lorena; Erick Rost |
 
 ## Itens que não estão no Project atual
 

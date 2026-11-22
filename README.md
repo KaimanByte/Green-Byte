@@ -94,7 +94,7 @@ O frontend nunca acessa o banco diretamente. Toda regra de negócio, cálculo e 
 | Nome             | Função | GitHub                                                  | LinkedIn                                                                              |
 | ---------------- | ------ | ------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | Rafael Melo      | Product Owner | [Github](https://github.com/RafaelPMR)               | [LinkedIn](https://www.linkedin.com/in/rafael-prado-de-melo-raimundo-55a150144)       |
-| Gabriel Oliveira | Scrum Master | [Github](https://github.com/GabrielOlsa)             | [LinkedIn](https://www.linkedin.com/in/gabriel-oliveira-96013138b)  
+| Gabriel Oliveira | Scrum Master | [Github](https://github.com/GabrielOlsa)             | [LinkedIn](https://www.linkedin.com/in/gabriel-oliveira-96013138b)                 |
 | Thiago Guedes    | Desenvolvedor | [Github](https://github.com/Thiago-Tolosa)           | [LinkedIn](https://www.linkedin.com/in/thiago-tolosa/)                                |
 | João Pedro       | Desenvolvedor | [Github](https://github.com/JoaoPedroLuvisariSeveriano) | [LinkedIn](https://www.linkedin.com/in/jo%C3%A3o-pedro-luvisari-severiano-bb1aa9303/) |
 | Erick Rost       | Desenvolvedor | [Github](https://github.com/erickrost)               | [LinkedIn](https://www.linkedin.com/in/erick-rost/)                                   |
