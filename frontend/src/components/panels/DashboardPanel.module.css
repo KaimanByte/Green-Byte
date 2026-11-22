@@ -448,6 +448,17 @@ aside.panel {
   color: var(--text-muted);
 }
 
+/* ---------- exportação para CSV (fim das seções de serviços e comparação) ---------- */
+.exportRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.exportRow .refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ---------- estados: erro e carregamento ---------- */
 .state {
   display: grid;

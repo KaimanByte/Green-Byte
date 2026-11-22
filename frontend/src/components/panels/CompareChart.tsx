@@ -1,7 +1,10 @@
 import { useMemo, useState, type CSSProperties, type KeyboardEvent } from 'react'
+import { useGreenData } from '../../hooks/useGreenData'
 import { MAX_COMPARE_SERIES, useCompareTimeSeries } from '../../hooks/useTimeSeries'
+import { compareSeriesCsv, csvFileName } from '../../lib/csv'
 import { formatBucketLabel } from '../../lib/format'
 import { METRIC_OPTIONS, buildSeries, getMetricOption, type MetricId, type SeriesPoint } from '../../lib/metrics'
+import { ExportCsvButton } from './ExportCsvButton'
 import base from './RegionPanel.module.css'
 import dash from './DashboardPanel.module.css'
 import styles from './CompareChart.module.css'
@@ -79,6 +82,7 @@ export function CompareChart({ ids }: Props) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const metric = getMetricOption(metricId)
   const compare = useCompareTimeSeries(ids)
+  const { periodId } = useGreenData()
   const tooMany = ids.length > MAX_COMPARE_SERIES
 
   // cores guardadas entre renderizações (estado derivado das props, padrão "ajustar estado
@@ -186,6 +190,13 @@ export function CompareChart({ ids }: Props) {
             Clique em um serviço da legenda para ocultar ou mostrar a linha. Marque ou desmarque serviços na lista
             para adicionar ou remover da comparação.
           </p>
+          <ExportCsvButton
+            label="Exportar evolução (CSV)"
+            description={`evolução de cada serviço comparado no período, com todas as métricas, uma linha por serviço e intervalo`}
+            fileName={() => csvFileName(['comparacao-evolucao', `${ids.length}-servicos`, periodId])}
+            content={() => (compare.data ? compareSeriesCsv(compare.data) : '')}
+            disabled={!compare.data}
+          />
         </>
       ) : compare.error ? (
         <div role="alert" className={`${dash.chart} ${dash.chartEmpty}`}>
