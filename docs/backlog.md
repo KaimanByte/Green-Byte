@@ -1,6 +1,6 @@
 # Product Backlog — Green-Byte
 
-> Este documento é um retrato versionado do [GitHub Project #3](https://github.com/orgs/KaimanByte/projects/3), sincronizado em 10/11/2026. O Project e as issues são a fonte de verdade operacional: a issue contém a descrição e os critérios de aceite; este arquivo registra a organização vigente por sprint, a situação da issue e a rastreabilidade.
+> Este documento é um retrato versionado do [GitHub Project #3](https://github.com/orgs/KaimanByte/projects/3), reconciliado em 22/11/2026. O Project e as issues são a fonte de verdade operacional: a issue contém a descrição e os critérios de aceite; este arquivo registra a organização vigente por sprint, a situação da issue e a rastreabilidade.
 
 ## Como ler este backlog
 
@@ -100,22 +100,25 @@
 
 ## Sprint 3
 
-**Situação:** 0 de 12 issues fechadas.
+**Situação no Project:** 5 de 15 issues estão em `Feito` (#81, #82, #107, #108 e #109). A auditoria do repositório identificou 3 entregas com todos os critérios comprovados: #82, #107 e #109. A #81 permanece em `Feito` no Project, mas o refactor que a fechou foi majoritariamente revertido e seus critérios precisam ser refeitos.
 
-| Issue | Item | Responsáveis |
-|---|---|---|
-| [#24](https://github.com/KaimanByte/Green-Byte/issues/24) | GA-13 · Planejamento da Sprint 3 | — |
-| [#25](https://github.com/KaimanByte/Green-Byte/issues/25) | GA-14 · Sprint Review e Retrospectiva da Sprint 3 | — |
-| [#26](https://github.com/KaimanByte/Green-Byte/issues/26) | GA-15 · Fechamento e entrega da Sprint 3 | — |
-| [#67](https://github.com/KaimanByte/Green-Byte/issues/67) | FE-12 · Responsividade e desempenho | — |
-| [#70](https://github.com/KaimanByte/Green-Byte/issues/70) | AU-03 · Área de configuração do monitoramento | — |
-| [#71](https://github.com/KaimanByte/Green-Byte/issues/71) | AU-04 · Tela de login e rota protegida | — |
-| [#75](https://github.com/KaimanByte/Green-Byte/issues/75) | UX-03 · Diretrizes de apresentação dos indicadores | — |
-| [#77](https://github.com/KaimanByte/Green-Byte/issues/77) | UX-05 · Executar avaliação de usabilidade | — |
-| [#78](https://github.com/KaimanByte/Green-Byte/issues/78) | UX-06 · Aplicar melhorias da avaliação | — |
-| [#81](https://github.com/KaimanByte/Green-Byte/issues/81) | QA-03 · Revisão de tipagem e código limpo | — |
-| [#82](https://github.com/KaimanByte/Green-Byte/issues/82) | QA-04 · Testes das regras de ranking, comparação e auth | — |
-| [#83](https://github.com/KaimanByte/Green-Byte/issues/83) | QA-05 · Conferir README, comandos e links | — |
+| Issue | Situação no Project | Verificação no repositório | Referência técnica no código atual |
+|---|---|---|---|
+| [#24](https://github.com/KaimanByte/Green-Byte/issues/24) | A fazer | Planejamento e mudanças de escopo registrados em `docs/sprints/sprint-3.md` | — |
+| [#25](https://github.com/KaimanByte/Green-Byte/issues/25) | A fazer | Parcial: review/retrospectiva interna registrada; ainda falta a devolutiva externa ou o encerramento formal sem ela | — |
+| [#26](https://github.com/KaimanByte/Green-Byte/issues/26) | A fazer | Sem evidência de fechamento, tag ou entrega | — |
+| [#67](https://github.com/KaimanByte/Green-Byte/issues/67) | Em progresso | Parcial: memoização presente; falta verificação responsiva registrada | Rafael Melo; João Paulo Lorena |
+| [#70](https://github.com/KaimanByte/Green-Byte/issues/70) | A fazer | Parcial: tela, limites e polling dinâmico presentes; faltam regra estrita de admin e documentação | Gabriel; Rafael Melo; João Paulo Lorena; Erick Rost |
+| [#71](https://github.com/KaimanByte/Green-Byte/issues/71) | A fazer | Parcial: login, logout e limpeza da sessão presentes; falta rota/redirecionamento real | Gabriel; Rafael Melo |
+| [#75](https://github.com/KaimanByte/Green-Byte/issues/75) | A fazer | Diretrizes registradas em `docs/interface.md` | — |
+| [#77](https://github.com/KaimanByte/Green-Byte/issues/77) | A fazer | Sem registro da avaliação de usabilidade | — |
+| [#78](https://github.com/KaimanByte/Green-Byte/issues/78) | A fazer | Não executada: a equipe decidiu não realizar a avaliação #77 nesta Sprint, portanto não há achados que justifiquem melhorias | — |
+| [#81](https://github.com/KaimanByte/Green-Byte/issues/81) | Feito | Não comprovada: o conteúdo do commit associado foi majoritariamente revertido | — |
+| [#82](https://github.com/KaimanByte/Green-Byte/issues/82) | Feito | Concluída: casos esperados/falhas e doubles presentes | Thiago; João Paulo Lorena |
+| [#83](https://github.com/KaimanByte/Green-Byte/issues/83) | A fazer | README atualizado e comandos validados no ambiente atual; ainda falta a validação literal em clone limpo | — |
+| [#107](https://github.com/KaimanByte/Green-Byte/issues/107) | Feito | Concluída: gestão, papéis, bloqueios e testes comprovados | Rafael Melo; Gabriel; Thiago; Erick Rost |
+| [#108](https://github.com/KaimanByte/Green-Byte/issues/108) | Feito | Concluída: auditoria implementada e E2E HTTP cobre escrita e leitura, autenticação e proteção de rota | Erick Rost; Gabriel; Rafael Melo |
+| [#109](https://github.com/KaimanByte/Green-Byte/issues/109) | Feito | Concluída: saúde, reprogramação, polling limitado e testes presentes | Gabriel; Rafael Melo; João Paulo Lorena; Erick Rost |
 
 ## Itens que não estão no Project atual
 
