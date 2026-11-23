@@ -2,6 +2,7 @@ import { useState, type FormEvent, type RefObject } from 'react'
 import { LogIn, LogOut } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { ApiError, getErrorMessage } from '../../services/api'
+import { ROLE_LABELS } from '../../lib/admin'
 import base from './RegionPanel.module.css'
 import styles from './LoginPanel.module.css'
 
@@ -14,7 +15,10 @@ type Props = {
 function getLoginErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     // 401: credenciais erradas (o backend não diz qual das duas, de propósito)
-    if (error.status === 401) return 'E-mail ou senha inválidos.'
+    // exceção: com a senha certa numa conta desativada, o backend avisa o motivo
+    if (error.status === 401) {
+      return error.details.find((detail) => detail.startsWith('Conta desativada')) ?? 'E-mail ou senha inválidos.'
+    }
     // 400: corpo recusado pela validação; as mensagens do DTO já vêm em português
     if (error.status === 400) return error.details.join(' ') || 'Confira o e-mail e a senha informados.'
   }
@@ -57,7 +61,6 @@ export function LoginPanel({ onClose, panelRef }: Props) {
 
         <header className={base.header}>
           <h2 id="login-panel-title" className={base.title}>Conta</h2>
-          <p className={base.subtitle}>Área de configuração</p>
         </header>
 
         <div className={base.divider} />
@@ -65,7 +68,10 @@ export function LoginPanel({ onClose, panelRef }: Props) {
         <div className={styles.form}>
           <div className={styles.field}>
             <span className={base.label}>Conectado como</span>
-            <p className={styles.account} role="status">{user.email}</p>
+            <p className={styles.account} role="status">
+              {user.email}
+              {user.role && ` · ${ROLE_LABELS[user.role]}`}
+            </p>
           </div>
 
           <button type="button" className={`liquid liquid--tint ${styles.submit}`} onClick={logout}>
@@ -86,7 +92,6 @@ export function LoginPanel({ onClose, panelRef }: Props) {
 
       <header className={base.header}>
         <h2 id="login-panel-title" className={base.title}>Login</h2>
-        <p className={base.subtitle}>Área de configuração</p>
       </header>
 
       <div className={base.divider} />
@@ -124,4 +129,4 @@ export function LoginPanel({ onClose, panelRef }: Props) {
       </form>
     </aside>
   )
-}
+}

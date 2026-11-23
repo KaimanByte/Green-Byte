@@ -8,7 +8,8 @@ import { ServicesService } from '../services/services.service';
 import { RegionsService } from '../regions/regions.service';
 import { ExternalHttpClient } from '../integrations/external-http.client';
 import { MetricsApiClient } from '../integrations/metrics-api.client';
-import { EnergyCalculator } from './energy.calculator';
+import { DEFAULT_ENERGY_MODEL, EnergyCalculator } from './energy.calculator';
+import { SettingsService } from '../settings/settings.service';
 
 // Faz o mock global da API nativa 'fetch' utilizada pelo node
 const fetchMock = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -48,6 +49,8 @@ describe('CollectionsService', () => {
         { provide: CollectionsRepository, useValue: mockCollectionsRepository },
         { provide: ServicesService, useValue: mockServicesService },
         { provide: RegionsService, useValue: mockRegionsService },
+        // parâmetros da máquina no padrão do modelo
+        { provide: SettingsService, useValue: { getEnergyModel: async () => DEFAULT_ENERGY_MODEL } },
       ],
     }).compile();
 

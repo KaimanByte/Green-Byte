@@ -27,6 +27,8 @@
 
   /* distância dos elementos até a borda da tela */
   --space-edge: 32px;
+  /* botão redondo do menu (a logo se alinha ao centro dele) */
+  --toggle-size: 64px;
 
   /* movimento (estilo Apple): molas em vez de curvas lineares */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);      /* botões: quique leve */
@@ -42,6 +44,16 @@
 
   /* anel de foco do teclado: suave, no verde da marca */
   --focus-ring: rgba(125, 255, 196, 0.7);
+}
+
+/* celular: tudo mais perto da borda e botão do menu um pouco menor */
+@media (max-width: 760px) {
+  :root {
+    --space-edge: 16px;
+    --toggle-size: 52px;
+    /* folha de painel: vai do rodapé até logo abaixo do botão do menu, que continua à vista */
+    --sheet-max-height: calc(100dvh - 2 * var(--space-edge) - var(--toggle-size) - 12px);
+  }
 }
 
 /* navegadores com linear(): mola de verdade (física de mola amostrada) */

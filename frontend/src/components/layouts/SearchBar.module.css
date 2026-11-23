@@ -187,6 +187,11 @@
   .hint {
     display: none;
   }
+
+  /* 16px: abaixo disso o Safari do iPhone dá zoom na página ao focar o campo */
+  .input {
+    font-size: 16px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -40,9 +40,9 @@ Todas as entregas seguem os prazos acordados no calendário da disciplina. Para 
 
 | Sprint | Entrega       | Status | Foco                                                                                  | Relatório | Apresentação |
 | ------ | ------------- | ------ | ------------------------------------------------------------------------------------- | --------- | ------------ |
-| 1      | 📅 20/10/2026 | ✅     | Fundação: ambiente containerizado, APIs auxiliares, persistência inicial e protótipo  | [Sprint Review](./docs/sprintReview1)         | [Apresentação](https://youtu.be/GThHoh05cKw)            |
-| 2      | 📅 10/11/2026 | —      | Núcleo do produto: cálculo de energia e CO₂e, monitoramento dinâmico e dashboard      | —         | —            |
-| 3      | 📅 23/11/2026 | —      | Fechamento do MVP: ranking, comparação, mapa, autenticação e avaliação de usabilidade | —         | —            |
+| 1      | 📅 20/10/2026 | ✅     | Fundação: ambiente containerizado, APIs auxiliares, persistência inicial e protótipo  | [Sprint Review](./docs/sprints/sprint-1-review.md) | [Apresentação](https://youtu.be/GThHoh05cKw) |
+| 2      | 📅 10/11/2026 | ✅     | Núcleo do produto: cálculo de energia e CO₂e, monitoramento dinâmico e dashboard      | [Sprint Review](./docs/sprints/sprint-2-review.md) | [Apresentação](https://youtu.be/kV9ovx7NV9Q) |
+| 3      | 📅 23/11/2026 | 🚧     | Fechamento do MVP: administração, qualidade, documentação e avaliação de usabilidade | [Planejamento](./docs/sprints/sprint-3.md) | — |
 
 **Legenda:**
 
@@ -63,6 +63,9 @@ Todas as entregas seguem os prazos acordados no calendário da disciplina. Para 
 
 - **Fórmulas de Cálculo:** [Acesse aqui](./docs/calculos.md)
   Modelo de cálculo de energia e CO₂e, constantes, premissas e decisão de escopo (energia e CO₂e no MVP; água fora do modelo).
+
+- **Protótipo de Interface (Figma):** [Acesse aqui](https://www.figma.com/design/UGCKmaZiect64Zh70T6pDQ/Greenbyte?node-id=0-1&p=f&t=au1eMTGdW9o8Wnld-0)
+  Referência visual e de fluxo de navegação do Green-Byte.
 
 ## Stack
 
@@ -91,8 +94,8 @@ O frontend nunca acessa o banco diretamente. Toda regra de negócio, cálculo e 
 | Nome             | Função | GitHub                                                  | LinkedIn                                                                              |
 | ---------------- | ------ | ------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | Rafael Melo      | Product Owner | [Github](https://github.com/RafaelPMR)               | [LinkedIn](https://www.linkedin.com/in/rafael-prado-de-melo-raimundo-55a150144)       |
-| Gabriel Oliveira | Scrum Master | [Github](https://github.com/GabrielOlsa)             | [LinkedIn](https://www.linkedin.com/in/gabriel-oliveira-96013138b)  
-| Thiago Guedes    | Desenvolvedor | [Github](https://github.com/Thiago-Tolosa)           | [LinkedIn](https://www.linkedin.com/in/thiago-guedes-4965b0390)                       |
+| Gabriel Oliveira | Scrum Master | [Github](https://github.com/GabrielOlsa)             | [LinkedIn](https://www.linkedin.com/in/gabriel-oliveira-96013138b)                 |
+| Thiago Guedes    | Desenvolvedor | [Github](https://github.com/Thiago-Tolosa)           | [LinkedIn](https://www.linkedin.com/in/thiago-tolosa/)                                |
 | João Pedro       | Desenvolvedor | [Github](https://github.com/JoaoPedroLuvisariSeveriano) | [LinkedIn](https://www.linkedin.com/in/jo%C3%A3o-pedro-luvisari-severiano-bb1aa9303/) |
 | Erick Rost       | Desenvolvedor | [Github](https://github.com/erickrost)               | [LinkedIn](https://www.linkedin.com/in/erick-rost/)                                   |
 | João Lorena  | Desenvolvedor | [Github](https://github.com/JoaoLorena0)               | [LinkedIn](https://www.linkedin.com/in/jo%C3%A3o-lorena-056b95271/)          |
@@ -181,30 +184,27 @@ Conforme o mapeamento de portas definido no `docker-compose.yml`:
 | `PORT` | Porta da API. | `3001` |
 | `FRONTEND_URL` | URL permitida para o frontend. | `http://localhost:3000` |
 | `NODE_ENV` | Ambiente de execução. | `development` |
-| `COLLECTION_INTERVAL_SECONDS` | Intervalo entre ciclos automáticos de descoberta e coleta, em segundos. Aceita inteiros de 1 a 2147483. | `30` |
+| `COLLECTION_INTERVAL_SECONDS` | Intervalo **inicial** entre ciclos automáticos, em segundos. Depois da primeira configuração salva, o valor do banco prevalece. | `30` |
 
 > Troque `JWT_SECRET` e `ADM_PASSWORD` antes de qualquer uso fora do ambiente local. O arquivo `.env` não é versionado.
 
 ### Agendamento da coleta periódica
 
-O backend executa um ciclo completo de sincronização assim que a aplicação inicia. Depois da conclusão desse ciclo inicial, a descoberta de regiões/serviços e a coleta de métricas são executadas periodicamente conforme `COLLECTION_INTERVAL_SECONDS`.
+O backend executa um ciclo completo de sincronização assim que a aplicação inicia. Depois da conclusão desse ciclo inicial, a descoberta de regiões/serviços e a coleta de métricas são executadas periodicamente conforme o intervalo efetivo.
 
 - Unidade: segundos.
-- Padrão: `30` segundos, caso a variável não seja informada.
-- Valor aceito: número inteiro entre `1` e `2147483`. Valores inválidos impedem a inicialização do serviço e geram uma mensagem explícita.
+- Padrão inicial: `30` segundos, caso a variável não seja informada.
+- No painel **Administração > Tempo de coleta**, usuários autenticados com papel permitido podem ajustar o valor persistido entre `5` e `86.400` segundos, sem reiniciar o backend.
+- O dashboard acompanha o intervalo efetivo; quando ele é maior que 60 segundos, atualiza no máximo a cada 60 segundos.
 - Concorrência: se o intervalo vencer enquanto outro ciclo ainda estiver em execução, o novo disparo é ignorado; ciclos não são executados em paralelo.
 - Observabilidade: cada ciclo registra início, término, duração e, em caso de falha, a etapa que apresentou o erro.
 
-Para alterar o intervalo, edite `COLLECTION_INTERVAL_SECONDS` no `.env`. Exemplo para executar a cada 2 minutos:
+`COLLECTION_INTERVAL_SECONDS` é adequado para definir o valor inicial de um ambiente novo. Para alterar um ambiente já configurado, entre na administração e salve o novo intervalo; o histórico já gravado não é recalculado.
+
+Exemplo de valor inicial de 2 minutos em um ambiente novo:
 
 ```env
 COLLECTION_INTERVAL_SECONDS=120
-```
-
-Após alterar o `.env`, recrie o container do backend para aplicar a configuração:
-
-```bash
-docker compose up -d --build --force-recreate backend
 ```
 
 ## Banco de Dados
@@ -245,7 +245,6 @@ npm ci
 npm run lint        # análise estática (oxlint)
 npm test            # testes unitários (Jest)
 npm run build
-npm run test:e2e    # testes end-to-end
 ```
 
 Frontend:
@@ -256,6 +255,39 @@ npm ci
 npm run dev         # servidor de desenvolvimento (Vite)
 npm run lint
 npm run build
+```
+
+### Teste end-to-end HTTP
+
+O E2E valida um backend já iniciado, com PostgreSQL, migrations e usuário administrador reais. Ele verifica proteção de rota, login, autorização administrativa, alteração temporária de configuração e leitura da auditoria. O parâmetro alterado é restaurado ao final; a trilha de auditoria permanece como evidência.
+
+Use apenas um ambiente local ou descartável:
+
+```bash
+docker compose up --build -d
+cd backend
+E2E_BASE_URL=http://localhost:3001 \
+E2E_ADMIN_EMAIL=admin@greenbyte.com \
+E2E_ADMIN_PASSWORD=admin_password \
+npm run test:e2e
+```
+
+No PowerShell:
+
+```powershell
+$env:E2E_BASE_URL = 'http://localhost:3001'
+$env:E2E_ADMIN_EMAIL = 'admin@greenbyte.com'
+$env:E2E_ADMIN_PASSWORD = 'admin_password'
+npm.cmd run test:e2e
+```
+
+No Prompt de Comando:
+
+```bat
+set E2E_BASE_URL=http://localhost:3001
+set E2E_ADMIN_EMAIL=admin@greenbyte.com
+set E2E_ADMIN_PASSWORD=admin_password
+npm run test:e2e
 ```
 
 ## Fluxo de trabalho

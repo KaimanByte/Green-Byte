@@ -1,20 +1,28 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { GloboScene, type FocusRequest } from './components/scenes/GloboScene'
 import { Sidebar } from './components/layouts/Sidebar'
 import { Logo } from './components/layouts/Logo'
 import { SearchBar } from './components/layouts/SearchBar'
 import { CollectionDate } from './components/layouts/CollectionDate'
-import { LOGIN_ID, PANEL_IDS, SERVICES_ID, menuItems } from './components/layouts/menuItems'
-import { LoginPanel } from './components/panels/LoginPanel'
+import { ADMIN_ID, LOGIN_ID, PANEL_IDS, SERVICES_ID, adminMenuItems, menuItems } from './components/layouts/menuItems'
 import { useGlobeRegions } from './hooks/useGlobeRegions'
 import { useAuth } from './hooks/useAuth'
-import { RegionPanel } from './components/panels/RegionPanel'
+import { COMPACT_LAYOUT_QUERY, useMediaQuery } from './hooks/useMediaQuery'
 import { Connector } from './components/panels/Connector'
-import { DashboardPanel } from './components/panels/DashboardPanel'
-import { ServicesPanel } from './components/panels/ServicesPanel'
 import { IntroOverlay } from './components/layouts/IntroOverlay'
 import { INTRO_HOLD_MS, type IntroPhase } from './lib/intro'
 
+// Painéis só são necessários depois de uma interação. Separá-los reduz o JavaScript inicial
+// do globo e evita baixar gráficos e telas administrativas para quem apenas consulta o mapa.
+const AdminPanel = lazy(() => import('./components/panels/admin/AdminPanel').then(({ AdminPanel }) => ({ default: AdminPanel })))
+const DashboardPanel = lazy(() => import('./components/panels/DashboardPanel').then(({ DashboardPanel }) => ({ default: DashboardPanel })))
+const LoginPanel = lazy(() => import('./components/panels/LoginPanel').then(({ LoginPanel }) => ({ default: LoginPanel })))
+const RegionPanel = lazy(() => import('./components/panels/RegionPanel').then(({ RegionPanel }) => ({ default: RegionPanel })))
+const ServicesPanel = lazy(() => import('./components/panels/ServicesPanel').then(({ ServicesPanel }) => ({ default: ServicesPanel })))
+
+function PanelLoading() {
+  return <div className="panel-loading" role="status">Carregando painel…</div>
+}
 
 // quem pediu menos movimento no sistema não vê a intro
 const prefersReducedMotion = () =>
@@ -22,7 +30,7 @@ const prefersReducedMotion = () =>
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [activeItem, setActiveItem] = useState(menuItems[0].id)
+  const [selectedItem, setActiveItem] = useState(menuItems[0].id)
   const [selectedRegionCode, setSelectedRegionCode] = useState<string | null>(null)
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null)
   const panelRef = useRef<HTMLElement>(null)
@@ -30,9 +38,17 @@ function App() {
   const [introPhase, setIntroPhase] = useState<IntroPhase>(() => (prefersReducedMotion() ? 'done' : 'hold'))
   const [isLoginOpen, setIsLoginOpen] = useState(false)
   const loginRef = useRef<HTMLElement>(null)
+  // celular: o painel vira uma folha por cima de tudo, então abrir o menu mostra só o menu;
+  // a folha aparece quando um item é escolhido (no desktop o painel abre junto, ao lado)
+  const isCompact = useMediaQuery(COMPACT_LAYOUT_QUERY)
+  const [isPanelDeferred, setIsPanelDeferred] = useState(false)
 
   // usuário logado aparece no menu, no lugar do botão LOGIN
   const { user } = useAuth()
+
+  // a administração só existe no menu com login; ao sair, o item ativo volta ao primeiro
+  const visibleItems = useMemo(() => (user ? [...menuItems, ...adminMenuItems] : menuItems), [user])
+  const activeItem = visibleItems.some((item) => item.id === selectedItem) ? selectedItem : menuItems[0].id
 
   // regiões reais do backend (GET /regions + GET /services)
   const regions = useGlobeRegions()
@@ -58,7 +74,8 @@ function App() {
 
   // dashboard/serviços aparecem ao lado do menu, ligados ao item por uma linha
   const showLogin = isMenuOpen && isLoginOpen
-  const openPanelId = isMenuOpen && !isLoginOpen && PANEL_IDS.includes(activeItem) ? activeItem : null
+  const openPanelId =
+    isMenuOpen && !isLoginOpen && !(isCompact && isPanelDeferred) && PANEL_IDS.includes(activeItem) ? activeItem : null
 
   // trocar de painel com outro já aberto: o novo entra na hora, sem esperar a linha
   // se desenhar de novo (padrão do React pra lembrar o valor do render anterior)
@@ -98,6 +115,7 @@ function App() {
 const toggleMenu = useCallback(() => {
   setIsMenuOpen((open) => !open)
   setIsLoginOpen(false)
+  setIsPanelDeferred(true)
 }, [])
 const closeMenu = useCallback(() => {
   setIsMenuOpen(false)
@@ -111,6 +129,7 @@ const selectItem = useCallback((id: string) => {
     return
   }
   setIsLoginOpen(false)
+  setIsPanelDeferred(false)
   setActiveItem(id)
   // os painéis abrem ao lado do menu, então o menu continua aberto
   setIsMenuOpen(PANEL_IDS.includes(id))
@@ -125,6 +144,9 @@ const selectItem = useCallback((id: string) => {
       introPhase={introPhase}
       onIntroReady={markSceneReady}
       onIntroDone={finishIntro}
+      // celular com o menu aberto: o globo fica atrás do fundo escurecido, então para de
+      // redesenhar a cada quadro (economiza GPU e bateria; a imagem parada continua na tela)
+      isPaused={isCompact && isMenuOpen}
     />
   )
 
@@ -146,35 +168,44 @@ const selectItem = useCallback((id: string) => {
         <SearchBar regions={regions} onSelect={searchRegion} />
         <CollectionDate isHidden={selectedRegion !== null} />
 
-        {selectedRegion && (
-          <RegionPanel
-            key={selectedRegion.code}
-            region={selectedRegion}
-            onClose={closeRegion}
-            panelRef={panelRef}
-          />
-        )}
+        <Suspense fallback={<PanelLoading />}>
+          {selectedRegion && (
+            <RegionPanel
+              key={selectedRegion.code}
+              region={selectedRegion}
+              onClose={closeRegion}
+              panelRef={panelRef}
+            />
+          )}
+        </Suspense>
         <Connector
           anchorSelector={selectedRegionCode ? `[data-region="${selectedRegionCode}"]` : null}
           panelRef={panelRef}
         />
 
         <div className={isPanelSwap ? 'panel-swap' : undefined} style={{ display: 'contents' }}>
-          {openPanelId === SERVICES_ID ? (
-            <ServicesPanel key={openPanelId} onClose={closeMenu} panelRef={dashboardRef} />
-          ) : openPanelId ? (
-            <DashboardPanel key={openPanelId} onClose={closeMenu} panelRef={dashboardRef} />
-          ) : null}
+          <Suspense fallback={<PanelLoading />}>
+            {openPanelId === SERVICES_ID ? (
+              <ServicesPanel key={openPanelId} onClose={closeMenu} panelRef={dashboardRef} />
+            ) : openPanelId === ADMIN_ID ? (
+              <AdminPanel key={openPanelId} onClose={closeMenu} panelRef={dashboardRef} />
+            ) : openPanelId ? (
+              <DashboardPanel key={openPanelId} onClose={closeMenu} panelRef={dashboardRef} />
+            ) : null}
+          </Suspense>
         </div>
+        {/* no celular o menu recolhe quando a folha abre: não há item para a linha ligar */}
         <Connector
-          anchorSelector={openPanelId ? `[data-menu-item="${openPanelId}"]` : null}
+          anchorSelector={openPanelId && !isCompact ? `[data-menu-item="${openPanelId}"]` : null}
           panelRef={dashboardRef}
           overlay
         />
 
-        {showLogin && <LoginPanel onClose={closeMenu} panelRef={loginRef} />}
+        <Suspense fallback={<PanelLoading />}>
+          {showLogin && <LoginPanel onClose={closeMenu} panelRef={loginRef} />}
+        </Suspense>
         <Connector
-          anchorSelector={showLogin ? `[data-menu-item="${LOGIN_ID}"]` : null}
+          anchorSelector={showLogin && !isCompact ? `[data-menu-item="${LOGIN_ID}"]` : null}
           panelRef={loginRef}
           overlay
         />
@@ -182,10 +213,11 @@ const selectItem = useCallback((id: string) => {
           isOpen={isMenuOpen}
           onToggle={toggleMenu}
           onClose={closeMenu}
-          items={menuItems}
+          items={visibleItems}
           activeId={activeItem}
           onSelect={selectItem}
           userEmail={user?.email ?? null}
+          isSheetOpen={openPanelId !== null || showLogin}
         />
       </div>
     </>

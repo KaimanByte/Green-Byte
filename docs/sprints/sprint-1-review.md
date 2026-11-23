@@ -52,7 +52,7 @@ Foram realizadas as **integrações com as APIs externas (Agregador e Carbon Int
 ---
 
 ## Sprint Burndown
-<img src="./Burndown_Sprint1.jpeg" alt="Burndown Chart" width="700"/>
+<img src="./sprint-1-burndown.jpeg" alt="Burndown Chart" width="700"/>
 
 ---
 

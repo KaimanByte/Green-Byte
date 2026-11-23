@@ -3,13 +3,8 @@ import { GreenDataContext, type GreenDataContextValue } from '../contexts/GreenD
 import { useFetch } from '../hooks/useFetch'
 import { getDashboardData, type DashboardData } from '../services/dashboardService'
 import { DEFAULT_PERIOD_ID, getPeriodRange, type PeriodId } from '../lib/periods'
+import { dashboardRefreshIntervalMs, subscribeToCollectionIntervalChanged } from '../lib/collectionRefresh'
 import type { EmissionsPeriod } from '../types/api'
-
-/**
- * O backend coleta a cada 30 s (cron do StartupSyncService); GET /services também
- * consulta a API externa. Atualizar a cada 60 s mantém o painel vivo sem pesar na API.
- */
-const AUTO_REFRESH_MS = 60_000
 
 type DashboardResult = DashboardData & { period: EmissionsPeriod }
 
@@ -19,6 +14,7 @@ type DashboardResult = DashboardData & { period: EmissionsPeriod }
  */
 export function GreenDataProvider({ children }: { children: ReactNode }) {
   const [periodId, setPeriodIdState] = useState<PeriodId>(DEFAULT_PERIOD_ID)
+  const [collectionIntervalSeconds, setCollectionIntervalSeconds] = useState<number | null>(null)
 
   // a janela é calculada a cada busca (inclusive no refetch), sempre terminando "agora"
   const fetcher = useCallback(
@@ -31,6 +27,21 @@ export function GreenDataProvider({ children }: { children: ReactNode }) {
   )
 
   const { data, loading, error, refetch, updatedAt } = useFetch(fetcher)
+
+  // Cada resposta que traz o intervalo confirma o valor efetivo no backend. O ajuste é feito
+  // durante a renderização (e não num efeito) para não causar uma renderização extra; se a
+  // fonte falhar (null), o último intervalo conhecido continua valendo.
+  const fetchedIntervalSeconds = data?.collectionIntervalSeconds ?? null
+  const [lastFetchedIntervalSeconds, setLastFetchedIntervalSeconds] = useState<number | null>(null)
+  if (fetchedIntervalSeconds !== null && fetchedIntervalSeconds !== lastFetchedIntervalSeconds) {
+    setLastFetchedIntervalSeconds(fetchedIntervalSeconds)
+    setCollectionIntervalSeconds(fetchedIntervalSeconds)
+  }
+
+  const refreshIntervalMs = dashboardRefreshIntervalMs(collectionIntervalSeconds)
+
+  // Uma alteração salva no painel administrativo reprograma o polling desta aba imediatamente.
+  useEffect(() => subscribeToCollectionIntervalChanged(setCollectionIntervalSeconds), [])
 
   // trocar o período mostra "carregando" na hora (o refetch e a troca do fetcher caem no mesmo render)
   const setPeriodId = useCallback(
@@ -46,7 +57,7 @@ export function GreenDataProvider({ children }: { children: ReactNode }) {
     let timer = 0
     const schedule = () => {
       window.clearInterval(timer)
-      if (document.visibilityState === 'visible') timer = window.setInterval(refetch, AUTO_REFRESH_MS)
+      if (document.visibilityState === 'visible') timer = window.setInterval(refetch, refreshIntervalMs)
     }
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') refetch()
@@ -59,7 +70,7 @@ export function GreenDataProvider({ children }: { children: ReactNode }) {
       window.clearInterval(timer)
       document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [refetch])
+  }, [refetch, refreshIntervalMs])
 
   const value = useMemo<GreenDataContextValue>(() => {
     const latestCollections = data?.latestCollections ?? []

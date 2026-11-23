@@ -35,7 +35,7 @@ Os nomes abaixo foram expandidos a partir da lista da equipe no README. Os respo
 | Integração com serviços | Descoberta de serviços pelo agregador e coleta de métricas por serviço. | Erick Rost | #34, #35 — Feito |
 | Persistência | Escolha/configuração do ORM e PostgreSQL; entidades, migrações iniciais e repositories de serviços/coletas. | João Pedro; Thiago Guedes | #38, #39, #40 — Feito |
 | API do backend | Endpoint `GET /services` e documentação Swagger dos endpoints implementados. | Erick Rost; João Pedro; Thiago Guedes | #51, #54 — Feito |
-| Frontend e UX inicial | Camada de acesso à API/provider; listagem de serviços na tela inicial; identificação de usuários/tarefas e protótipo/fluxo de navegação. | João Pedro; João Lorena; Gabriel Oliveira | #56, #57, #73, #74 — Feito |
+| Frontend e UX inicial | Camada de acesso à API/provider; listagem de serviços na tela inicial; identificação de usuários/tarefas e [protótipo/fluxo de navegação no Figma](https://www.figma.com/design/UGCKmaZiect64Zh70T6pDQ/Greenbyte?node-id=0-1&p=f&t=au1eMTGdW9o8Wnld-0). | João Pedro; João Lorena; Gabriel Oliveira | #56, #57, #73, #74 — Feito |
 | Qualidade | Configuração do Jest e script para executar testes. | João Pedro | #79 — Feito |
 | Pendências de gestão e fechamento | Elaborar/validar este plano; validar e aplicar a DoD; registrar Sprint Review e retrospectiva; concluir fechamento e publicar a tag `sprint-1`. | Sem responsável indicado no snapshot consultado | #15, #16, #19, #20 — Em progresso |
 
@@ -66,7 +66,7 @@ A rubrica oficial mantém as pontuações originais. A seleção abaixo acompanh
 | **TP02** — Injeção e desacoplamento (4) | Providers e dependências do backend; integração e persistência nas issues #34 e #40. | Conferir providers e substituição por doubles nos testes. |
 | **TP04** — Testes unitários (4) | Configuração/script Jest: #79. | Issue Feita no Project; a rubrica exige testes significativos, então conferir casos cobertos e execução da suíte. |
 | **IHC01** — Usuários e tarefas (3) | #73 — Identificar usuários e tarefas. | Feito no Project; confirmar que perfis e tarefas estão registrados em artefato acessível no GitHub. |
-| **IHC02** — Fluxos e protótipos (3) | #74 — Protótipo e navegação. | Feito no Project; confirmar que o protótipo/fluxo está anexado à issue ou versionado e acessível. |
+| **IHC02** — Fluxos e protótipos (3) | #74 — [Protótipo e navegação no Figma](https://www.figma.com/design/UGCKmaZiect64Zh70T6pDQ/Greenbyte?node-id=0-1&p=f&t=au1eMTGdW9o8Wnld-0). | Feito no Project; o protótipo está acessível pelo link. Confirmar a aderência do fluxo à versão entregue. |
 
 > **Importante:** os códigos GA-01, GA-02 etc. usados como identificadores das tarefas no backlog **não** são automaticamente os critérios GA01, GA02 etc. da rubrica. Por exemplo, a tarefa GA-04 do quadro trata do plano de entregas, enquanto o critério GA04 do professor avalia acompanhamento e rastreabilidade. A associação acima foi feita pelo conteúdo, não pela semelhança do código.
 
@@ -93,7 +93,7 @@ Esta relação usa os responsáveis atribuídos às issues da Sprint 1 e os nome
 - [ ] Validar a Definition of Done e aplicá-la aos itens declarados como Feito em **#16**.
 - [ ] Registrar a demonstração, o retorno, a retrospectiva e as ações de melhoria em **#19**.
 - [ ] Revisar os critérios de aceite ainda desmarcados, registrar instruções reproduzíveis de execução/verificação e publicar a tag `sprint-1` em **#20**.
-- [ ] Completar evidências acessíveis de protótipo/usuários e vincular contribuições individuais a commits, PRs ou artefatos, especialmente para GA09 e IHC01/IHC02.
+- [ ] Completar as evidências de usuários e vincular contribuições individuais a commits, PRs ou artefatos, especialmente para GA09 e IHC01. O protótipo/fluxo de IHC02 está acessível no Figma.
 
 ---
 

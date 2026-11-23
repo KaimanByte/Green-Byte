@@ -17,9 +17,10 @@ import { ServicesModule } from '../services/services.module';
 import { RegionsModule } from '../regions/regions.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
 import { EnergyCalculator } from './energy.calculator';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
-  imports: [DatabaseModule, ServicesModule, RegionsModule, IntegrationsModule],
+  imports: [DatabaseModule, ServicesModule, RegionsModule, IntegrationsModule, SettingsModule],
   controllers: [
     CollectionsController,
     ServiceHistoryController,

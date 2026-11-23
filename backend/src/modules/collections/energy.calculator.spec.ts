@@ -53,3 +53,27 @@ describe('EnergyCalculator', () => {
     expect(calculator.calculate(usage, 60, 0).co2Emissions).toBe(0);
   });
 });
+
+describe('EnergyCalculator com parâmetros da máquina configurados', () => {
+  const calculator = new EnergyCalculator();
+  const usage: ResourceUsage = { cpuPercent: 50, memoryGb: 2, diskGb: 10, networkGb: 1 };
+
+  it('usa o modelo informado no lugar das constantes padrão', () => {
+    const model = { cpuMaxWatts: 200, ramWattsPerGb: 1, diskWattsPerGb: 0.1, networkWattsPerGb: 0.5 };
+
+    // 100 W (CPU) + 2 W (RAM) + 1 W (disco) + 0,5 W (rede)
+    expect(calculator.powerWatts(usage, model)).toBeCloseTo(103.5, 10);
+    expect(calculator.calculate(usage, 3600, 100, model).energyKwh).toBeCloseTo(0.1035, 10);
+  });
+
+  it('sem modelo informado, o resultado é o do modelo padrão', () => {
+    expect(calculator.calculate(usage, 60, 85)).toEqual(
+      calculator.calculate(usage, 60, 85, {
+        cpuMaxWatts: ENERGY_MODEL.CPU_MAX_POWER_W,
+        ramWattsPerGb: ENERGY_MODEL.RAM_POWER_PER_GB_W,
+        diskWattsPerGb: ENERGY_MODEL.DISK_POWER_PER_GB_W,
+        networkWattsPerGb: ENERGY_MODEL.NETWORK_POWER_PER_GB_W,
+      }),
+    );
+  });
+});

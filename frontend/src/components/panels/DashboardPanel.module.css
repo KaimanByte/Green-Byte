@@ -244,7 +244,9 @@ aside.panel {
     bottom: 16px;
     left: 16px;
     width: auto;
-    max-height: 60dvh;
+    max-height: var(--sheet-max-height);
+    padding: 32px 18px 20px;
+    overscroll-behavior: contain;
     transform: none;
     animation-name: sheet-in;
   }
@@ -446,6 +448,17 @@ aside.panel {
   color: var(--text-muted);
 }
 
+/* ---------- exportação para CSV (fim das seções de serviços e comparação) ---------- */
+.exportRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.exportRow .refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ---------- estados: erro e carregamento ---------- */
 .state {
   display: grid;
@@ -525,6 +538,43 @@ aside.panel {
 
 .kpi dd {
   overflow-wrap: anywhere;
+}
+
+/* número e unidade viram blocos: se não couberem juntos, a unidade desce inteira
+   ("kWh" não vira "kW / h"). Só o primeiro dd (valor); selo e barra ficam como estão */
+.kpi dd:first-of-type {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  overflow-wrap: break-word;
+}
+
+/* painel estreito (folha do celular): número menor e inteiro numa linha; a unidade é que desce */
+@container (max-width: 420px) {
+  .kpis {
+    gap: 12px;
+  }
+
+  .kpis .kpiValue {
+    font-size: 24px;
+    white-space: nowrap;
+  }
+
+  /* legenda do gráfico: o texto do meio quebra centralizado, sem encostar nos horários */
+  .chartAxis {
+    gap: 10px;
+  }
+
+  .chartAxis span:nth-child(2) {
+    text-align: center;
+  }
+
+  /* título da seção em cima, seletor de métrica embaixo, cada um com a largura toda */
+  .sectionHeader {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 8px;
+  }
 }
 
 @container (min-width: 540px) {

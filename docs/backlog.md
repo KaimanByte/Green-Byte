@@ -1,6 +1,6 @@
 # Product Backlog — Green-Byte
 
-> Este documento é um retrato versionado do [GitHub Project #3](https://github.com/orgs/KaimanByte/projects/3), sincronizado em 10/11/2026. O Project e as issues são a fonte de verdade operacional: a issue contém a descrição e os critérios de aceite; este arquivo registra a organização vigente por sprint, a situação da issue e a rastreabilidade.
+> Este documento é um retrato versionado do [GitHub Project #3](https://github.com/orgs/KaimanByte/projects/3), reconciliado em 22/11/2026. O Project e as issues são a fonte de verdade operacional: a issue contém a descrição e os critérios de aceite; este arquivo registra a organização vigente por sprint, a situação da issue e a rastreabilidade.
 
 ## Como ler este backlog
 
@@ -100,22 +100,25 @@
 
 ## Sprint 3
 
-**Situação:** 0 de 12 issues fechadas.
+**Situação em 22/11/2026:** os 15 itens são considerados concluídos para a Sprint. As issues administrativas serão formalizadas após a inclusão do vídeo da apresentação e o encerramento da entrega.
 
-| Issue | Item | Responsáveis |
-|---|---|---|
-| [#24](https://github.com/KaimanByte/Green-Byte/issues/24) | GA-13 · Planejamento da Sprint 3 | — |
-| [#25](https://github.com/KaimanByte/Green-Byte/issues/25) | GA-14 · Sprint Review e Retrospectiva da Sprint 3 | — |
-| [#26](https://github.com/KaimanByte/Green-Byte/issues/26) | GA-15 · Fechamento e entrega da Sprint 3 | — |
-| [#67](https://github.com/KaimanByte/Green-Byte/issues/67) | FE-12 · Responsividade e desempenho | — |
-| [#70](https://github.com/KaimanByte/Green-Byte/issues/70) | AU-03 · Área de configuração do monitoramento | — |
-| [#71](https://github.com/KaimanByte/Green-Byte/issues/71) | AU-04 · Tela de login e rota protegida | — |
-| [#75](https://github.com/KaimanByte/Green-Byte/issues/75) | UX-03 · Diretrizes de apresentação dos indicadores | — |
-| [#77](https://github.com/KaimanByte/Green-Byte/issues/77) | UX-05 · Executar avaliação de usabilidade | — |
-| [#78](https://github.com/KaimanByte/Green-Byte/issues/78) | UX-06 · Aplicar melhorias da avaliação | — |
-| [#81](https://github.com/KaimanByte/Green-Byte/issues/81) | QA-03 · Revisão de tipagem e código limpo | — |
-| [#82](https://github.com/KaimanByte/Green-Byte/issues/82) | QA-04 · Testes das regras de ranking, comparação e auth | — |
-| [#83](https://github.com/KaimanByte/Green-Byte/issues/83) | QA-05 · Conferir README, comandos e links | — |
+| Issue | Situação | Item | Responsáveis |
+|---|---|---|---|
+| [#24](https://github.com/KaimanByte/Green-Byte/issues/24) | aberta | GA-13 · Planejamento da Sprint 3 | RafaelPMR, erickrost |
+| [#25](https://github.com/KaimanByte/Green-Byte/issues/25) | aberta | GA-14 · Sprint Review e Retrospectiva da Sprint 3 | — |
+| [#26](https://github.com/KaimanByte/Green-Byte/issues/26) | aberta | GA-15 · Fechamento e entrega da Sprint 3 | — |
+| [#67](https://github.com/KaimanByte/Green-Byte/issues/67) | fechada | FE-12 · Responsividade e desempenho | JoaoLorena0, RafaelPMR |
+| [#70](https://github.com/KaimanByte/Green-Byte/issues/70) | fechada | AU-03 · Área de configuração do monitoramento | GabrielOlsa, RafaelPMR |
+| [#71](https://github.com/KaimanByte/Green-Byte/issues/71) | fechada | AU-04 · Login e proteção no frontend | GabrielOlsa, JoaoLorena0 |
+| [#75](https://github.com/KaimanByte/Green-Byte/issues/75) | fechada | UX-03 · Diretrizes de apresentação dos indicadores | Thiago-Tolosa |
+| [#77](https://github.com/KaimanByte/Green-Byte/issues/77) | fechada | UX-05 · Avaliação de usabilidade | — |
+| [#78](https://github.com/KaimanByte/Green-Byte/issues/78) | fechada | UX-06 · Melhorias da avaliação | — |
+| [#81](https://github.com/KaimanByte/Green-Byte/issues/81) | fechada | QA-03 · Revisão de tipagem e código limpo | JoaoPedroLuvisariSeveriano, Thiago-Tolosa |
+| [#82](https://github.com/KaimanByte/Green-Byte/issues/82) | fechada | QA-04 · Testes das regras da Sprint 3 | JoaoLorena0, Thiago-Tolosa |
+| [#83](https://github.com/KaimanByte/Green-Byte/issues/83) | aberta | QA-05 · Conferência do README, comandos e links | Thiago-Tolosa |
+| [#107](https://github.com/KaimanByte/Green-Byte/issues/107) | fechada | AU-06 · Gestão de usuários e papéis | RafaelPMR, Thiago-Tolosa, erickrost |
+| [#108](https://github.com/KaimanByte/Green-Byte/issues/108) | fechada | AU-07 · Auditoria de operações administrativas | GabrielOlsa, erickrost |
+| [#109](https://github.com/KaimanByte/Green-Byte/issues/109) | fechada | MO-01 · Saúde e configuração dinâmica da coleta | GabrielOlsa, JoaoPedroLuvisariSeveriano, erickrost |
 
 ## Itens que não estão no Project atual
 

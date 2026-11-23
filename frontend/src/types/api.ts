@@ -190,6 +190,75 @@ export type TimeSeriesCompareDto = {
 export type UserDto = {
   id: number
   email: string
+  /** papel de acesso; ausente só em sessões salvas antes dos papéis existirem */
+  role?: UserRole
+  active?: boolean
+  createdAt: string
+}
+
+/** Papéis de acesso (backend: modules/auth/roles.ts). */
+export type UserRole = 'admin' | 'operator'
+
+/** Valores editáveis da configuração do monitoramento. */
+export type SettingsValues = {
+  /** s */
+  collectionIntervalSeconds: number
+  /** W a 100% de CPU */
+  cpuMaxWatts: number
+  /** W por GB */
+  ramWattsPerGb: number
+  diskWattsPerGb: number
+  networkWattsPerGb: number
+}
+
+export type SettingsField = keyof SettingsValues
+
+/** GET /settings e PATCH /settings — SettingsResponseDto */
+export type SettingsDto = SettingsValues & {
+  updatedAt: string
+  defaults: SettingsValues
+  limits: Record<SettingsField, { min: number; max: number }>
+}
+
+/** Último ciclo de sincronização (backend: SyncCycleStatus). */
+export type SyncCycleDto = {
+  trigger: 'inicialização' | 'periódico'
+  startedAt: string
+  finishedAt: string
+  durationMs: number
+  succeeded: boolean
+  failedStep: string | null
+  errorMessage: string | null
+  collectionsSaved: number
+}
+
+/** GET /monitoring/collection-status */
+export type CollectionStatusDto = {
+  intervalSeconds: number
+  isRunning: boolean
+  nextRunAt: string | null
+  lastCycle: SyncCycleDto | null
+}
+
+/** GET /monitoring/collection-interval — contrato público para o ritmo de atualização do dashboard. */
+export type CollectionIntervalDto = {
+  intervalSeconds: number
+}
+
+export type AuditChangeDto = {
+  field: string
+  from: string | number | boolean | null
+  to: string | number | boolean | null
+}
+
+/** Item de GET /audit-logs — AuditLogDto */
+export type AuditLogDto = {
+  id: number
+  actorId: number | null
+  actorEmail: string
+  action: 'settings.update' | 'user.create' | 'user.update' | 'user.delete' | (string & {})
+  target: string | null
+  changes: AuditChangeDto[]
   createdAt: string
 }
 

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DatabaseService } from '../../database/database.service';
-import { settings, Settings, UpdateSettings } from './settings.schema';
+import { settings, NewSettings, Settings, UpdateSettings } from './settings.schema';
 
 const SETTINGS_ID = 1;
 
@@ -9,7 +9,11 @@ const SETTINGS_ID = 1;
 export class SettingsRepository {
   constructor(private readonly dbService: DatabaseService) {}
 
-  async getSettings(): Promise<Settings> {
+  /**
+   * Devolve a configuração; na primeira leitura cria a linha com os padrões do schema
+   * mais os valores iniciais informados (ex.: intervalo vindo do .env).
+   */
+  async getSettings(initial: Omit<NewSettings, 'id' | 'updatedAt'> = {}): Promise<Settings> {
     const result = await this.dbService.db
       .select()
       .from(settings)
@@ -21,10 +25,20 @@ export class SettingsRepository {
 
     const newRecord = await this.dbService.db
       .insert(settings)
-      .values({ id: SETTINGS_ID })
+      .values({ id: SETTINGS_ID, ...initial })
+      // duas leituras simultâneas no primeiro acesso: a segunda não quebra por chave duplicada
+      .onConflictDoNothing()
       .returning();
 
-    return newRecord[0];
+    if (newRecord[0]) {
+      return newRecord[0];
+    }
+
+    const existing = await this.dbService.db
+      .select()
+      .from(settings)
+      .where(eq(settings.id, SETTINGS_ID));
+    return existing[0];
   }
 
   async updateSettings(data: UpdateSettings): Promise<Settings> {

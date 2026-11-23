@@ -1,7 +1,10 @@
 import { useCompare } from '../../hooks/useCompare'
+import { useGreenData } from '../../hooks/useGreenData'
+import { compareTotalsCsv, csvFileName } from '../../lib/csv'
 import { formatCo2, precise } from '../../lib/format'
 import { SERVICE_STATE_LABELS } from '../../lib/serviceState'
 import { CompareChart } from './CompareChart'
+import { ExportCsvButton } from './ExportCsvButton'
 import base from './RegionPanel.module.css'
 import dash from './DashboardPanel.module.css'
 import styles from './ServicesPanel.module.css'
@@ -17,6 +20,7 @@ type Props = {
  */
 export function CompareView({ ids, onClear }: Props) {
   const compare = useCompare(ids)
+  const { periodId } = useGreenData()
   const items = compare.data?.items ?? []
   const maxCo2 = items.reduce((max, item) => Math.max(max, Number(item.co2Emissions) || 0), 0)
   const maxEnergy = items.reduce((max, item) => Math.max(max, Number(item.energyKwh) || 0), 0)
@@ -88,6 +92,15 @@ export function CompareView({ ids, onClear }: Props) {
             })}
           </tbody>
         </table>
+      )}
+
+      {compare.data && (
+        <ExportCsvButton
+          label="Exportar totais (CSV)"
+          description={`totais de CO₂e, energia e coletas dos ${ids.length} serviços no período`}
+          fileName={() => csvFileName(['comparacao-totais', `${ids.length}-servicos`, periodId])}
+          content={() => (compare.data ? compareTotalsCsv(compare.data) : '')}
+        />
       )}
 
       <CompareChart ids={ids} />

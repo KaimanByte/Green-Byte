@@ -15,10 +15,16 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '../auth/roles';
 
 @ApiTags('Usuários')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+// gerenciar usuários é exclusivo de administradores
+@Roles('admin')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -39,8 +45,8 @@ export class UsersController {
   @ApiConflictResponse({
     description: 'Já existe um usuário com este email.',
   })
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  create(@Body() createUserDto: CreateUserDto, @CurrentUser() actor: AuthenticatedUser) {
+    return this.usersService.create(createUserDto, actor);
   }
 
   @Get()
@@ -99,7 +105,8 @@ export class UsersController {
   @Patch(':id')
   @ApiOperation({
     summary: 'Atualiza um usuário',
-    description: 'Atualiza os dados de um usuário específico com base no ID fornecido.',
+    description:
+      'Altera e-mail, senha, papel ou situação (ativa/desativada). Ninguém rebaixa ou desativa a própria conta, e o sistema mantém ao menos um administrador ativo.',
   })
   @ApiParam({
     name: 'id',
@@ -119,8 +126,12 @@ export class UsersController {
   @ApiConflictResponse({
     description: 'Já existe um usuário com este email.',
   })
-  async update(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUserDto: UpdateUserDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.usersService.update(id, updateUserDto, actor);
   }
 
   @Delete(':id')
@@ -139,7 +150,7 @@ export class UsersController {
   @ApiNotFoundResponse({
     description: 'Usuário não encontrado.',
   })
-  async remove(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.remove(id);
+  async remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() actor: AuthenticatedUser) {
+    return this.usersService.remove(id, actor);
   }
 }

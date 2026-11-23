@@ -98,6 +98,34 @@ describe('RankingCompareCalculator', () => {
       co2Emissions: 0,
     });
   });
+
+  it('usa fallback para name e regionCode ausentes, lida com listas vazias, apenas removed e período sem coletas', () => {
+    expect(calculator.buildItem({ id: 'raw-svc', status: 'active' }, totals('raw-svc', 1, 2, 3))).toEqual({
+      serviceId: 'raw-svc',
+      name: 'raw-svc',
+      regionCode: '',
+      state: 'active',
+      collectionsCount: 1,
+      energyKwh: 2,
+      co2Emissions: 3,
+    });
+
+    expect(calculator.rank('energia', [], [])).toEqual([]);
+    expect(calculator.rank('co2e', [{ id: 'gone', status: 'removed' }], [])).toEqual([]);
+
+    const noTotals = calculator.rank(
+      'energia',
+      [
+        { id: 'svc-z', status: 'registered' },
+        { id: 'svc-a', status: 'registered' },
+      ],
+      [],
+    );
+    expect(noTotals.map((r) => ({ id: r.serviceId, rank: r.rank, state: r.state, energy: r.energyKwh }))).toEqual([
+      { id: 'svc-a', rank: 1, state: 'no_metrics', energy: 0 },
+      { id: 'svc-z', rank: 2, state: 'no_metrics', energy: 0 },
+    ]);
+  });
 });
 
 describe('RankingCompareService', () => {
@@ -162,6 +190,42 @@ describe('RankingCompareService', () => {
   it('compareServices lança 400 quando recebe menos de 2 IDs distintos', async () => {
     await expect(service.compareServices(['svc-1'])).rejects.toBeInstanceOf(BadRequestException);
     await expect(service.compareServices(['svc-1', 'svc-1'])).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('aplica período padrão de 24h quando from/to são omitidos e rejeita intervalo invertido/inválido', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-10T12:00:00.000Z'));
+    try {
+      const rankingRes = await service.getRanking('energia');
+      expect(rankingRes.period).toEqual({
+        from: '2026-10-09T12:00:00.000Z',
+        to: '2026-10-10T12:00:00.000Z',
+      });
+
+      const compareRes = await service.compareServices(['svc-1', 'svc-2']);
+      expect(compareRes.period).toEqual({
+        from: '2026-10-09T12:00:00.000Z',
+        to: '2026-10-10T12:00:00.000Z',
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+
+    await expect(service.getRanking('co2e', new Date(TO), new Date(FROM))).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    await expect(
+      service.compareServices(['svc-1', 'svc-2'], new Date(TO), new Date(FROM)),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('propaga falha lançada pelos repositórios no ranking e na comparação', async () => {
+    findAll.mockRejectedValueOnce(new Error('Falha no catálogo'));
+    await expect(service.getRanking('co2e', new Date(FROM), new Date(TO))).rejects.toThrow('Falha no catálogo');
+
+    getServicePeriodTotals.mockRejectedValueOnce(new Error('Falha ao agregar coletas'));
+    await expect(
+      service.compareServices(['svc-1', 'svc-2'], new Date(FROM), new Date(TO)),
+    ).rejects.toThrow('Falha ao agregar coletas');
   });
 });
 

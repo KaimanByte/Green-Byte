@@ -1,0 +1,1 @@
+CREATE INDEX "collections_timestamp_idx" ON "collections" USING btree ("timestamp");

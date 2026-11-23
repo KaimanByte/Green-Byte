@@ -302,7 +302,13 @@ export function ServicesPanel({ onClose, panelRef }: Props) {
                     </dl>
                     <p className={styles.detailNote}>CPU, memória e disco referem-se à última coleta, não ao período.</p>
 
-                    <EvolutionChart serviceId={item.serviceId} subject={item.name} compact headingLevel="h4" />
+                    <EvolutionChart
+                      serviceId={item.serviceId}
+                      subject={item.name}
+                      compact
+                      headingLevel="h4"
+                      csvExport={{ name: item.name, regionCode: item.regionCode }}
+                    />
                   </div>
                 )}
               </li>

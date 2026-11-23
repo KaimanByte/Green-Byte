@@ -3,12 +3,15 @@ import type { SchedulerRegistry } from '@nestjs/schedule';
 import type { CollectionsService } from './modules/collections/collections.service';
 import type { RegionsService } from './modules/regions/regions.service';
 import type { ServicesService } from './modules/services/services.service';
+import type { SettingsService } from './modules/settings/settings.service';
+import { readCollectionIntervalFromEnv } from './common/collection-interval';
 import { StartupSyncService } from './startup-sync.service';
 
 type AsyncFn = () => Promise<void>;
 
 type SchedulerRegistryMock = {
   addInterval: jest.Mock<(name: string, interval: NodeJS.Timeout) => void>;
+  deleteInterval: jest.Mock<(name: string) => void>;
 };
 
 describe('StartupSyncService', () => {
@@ -17,6 +20,10 @@ describe('StartupSyncService', () => {
   let servicesService: { syncServices: jest.Mock<AsyncFn> };
   let collectionsService: { syncCollections: jest.Mock<AsyncFn> };
   let schedulerRegistry: SchedulerRegistryMock;
+  let settingsService: {
+    getSettings: jest.Mock<() => Promise<{ collectionIntervalSeconds: number }>>;
+    onIntervalChange: jest.Mock<(listener: (seconds: number) => void) => void>;
+  };
   const originalInterval = process.env.COLLECTION_INTERVAL_SECONDS;
 
   beforeEach(() => {
@@ -28,6 +35,15 @@ describe('StartupSyncService', () => {
     collectionsService = { syncCollections: jest.fn<AsyncFn>() };
     schedulerRegistry = {
       addInterval: jest.fn<(name: string, interval: NodeJS.Timeout) => void>(),
+      // como o SchedulerRegistry de verdade: remover o intervalo também para o temporizador
+      deleteInterval: jest.fn<(name: string) => void>(() => {
+        clearInterval(schedulerRegistry.addInterval.mock.calls.at(-1)?.[1]);
+      }),
+    };
+    // primeira leitura: a configuração nasce com o intervalo do .env
+    settingsService = {
+      getSettings: jest.fn(async () => ({ collectionIntervalSeconds: readCollectionIntervalFromEnv() })),
+      onIntervalChange: jest.fn<(listener: (seconds: number) => void) => void>(),
     };
   });
 
@@ -47,6 +63,7 @@ describe('StartupSyncService', () => {
       servicesService as unknown as ServicesService,
       collectionsService as unknown as CollectionsService,
       schedulerRegistry as unknown as SchedulerRegistry,
+      settingsService as unknown as SettingsService,
     );
   }
 
@@ -128,5 +145,63 @@ describe('StartupSyncService', () => {
     expect(servicesService.syncServices).not.toHaveBeenCalled();
     expect(collectionsService.syncCollections).not.toHaveBeenCalled();
     expect(schedulerRegistry.addInterval).toHaveBeenCalledTimes(1);
+  });
+
+  it('usa o intervalo salvo no banco no lugar do valor do .env', async () => {
+    process.env.COLLECTION_INTERVAL_SECONDS = '120';
+    settingsService.getSettings.mockResolvedValue({ collectionIntervalSeconds: 45 });
+    service = createService();
+
+    await service.onApplicationBootstrap();
+    await jest.advanceTimersByTimeAsync(45_000);
+
+    expect(regionsService.syncRegions).toHaveBeenCalledTimes(2);
+    expect(service.getStatus().intervalSeconds).toBe(45);
+  });
+
+  it('segue com o intervalo do .env quando a configuração não pode ser lida', async () => {
+    settingsService.getSettings.mockRejectedValue(new Error('banco fora do ar'));
+    service = createService();
+
+    await service.onApplicationBootstrap();
+
+    expect(service.getStatus().intervalSeconds).toBe(30);
+    expect(schedulerRegistry.addInterval).toHaveBeenCalledTimes(1);
+  });
+
+  it('reprograma a coleta na hora quando o intervalo é alterado', async () => {
+    service = createService();
+    await service.onApplicationBootstrap();
+    const changeInterval = settingsService.onIntervalChange.mock.calls[0][0];
+
+    changeInterval(10);
+
+    expect(schedulerRegistry.deleteInterval).toHaveBeenCalledWith('green-byte-periodic-sync');
+    expect(schedulerRegistry.addInterval).toHaveBeenCalledTimes(2);
+    expect(service.getStatus().intervalSeconds).toBe(10);
+
+    await jest.advanceTimersByTimeAsync(10_000);
+    expect(regionsService.syncRegions).toHaveBeenCalledTimes(2);
+    // o temporizador antigo (30 s) foi removido: não dispara um ciclo a mais
+    await jest.advanceTimersByTimeAsync(20_000);
+    expect(regionsService.syncRegions).toHaveBeenCalledTimes(4);
+  });
+
+  it('expõe o resultado do último ciclo, inclusive a etapa que falhou', async () => {
+    servicesService.syncServices.mockRejectedValueOnce(new Error('API fora do ar'));
+    service = createService();
+
+    await service.onApplicationBootstrap();
+
+    const status = service.getStatus();
+    expect(status.isRunning).toBe(false);
+    expect(status.nextRunAt).toBeInstanceOf(Date);
+    expect(status.lastCycle).toMatchObject({
+      trigger: 'inicialização',
+      succeeded: false,
+      failedStep: 'descoberta de serviços',
+      errorMessage: 'API fora do ar',
+      collectionsSaved: 0,
+    });
   });
 });

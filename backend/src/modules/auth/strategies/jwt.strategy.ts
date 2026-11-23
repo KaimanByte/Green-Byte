@@ -19,6 +19,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user) {
       throw new UnauthorizedException('Acesso não autorizado. Usuário inexistente.');
     }
+    // conta desativada depois do login: o token ainda válido deixa de funcionar
+    if (!user.active) {
+      throw new UnauthorizedException('Acesso não autorizado. Conta desativada.');
+    }
     const { hashPassword: _, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }

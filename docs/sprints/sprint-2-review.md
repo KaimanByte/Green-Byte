@@ -49,7 +49,7 @@ Também foram incorporadas entregas inicialmente previstas para a Sprint 3, como
 
 ## Sprint Burndown
 
-<img src="./Burndown_Sprint2.png" alt="Burndown da Sprint 2" width="900"/>
+<img src="./sprint-2-burndown.png" alt="Burndown da Sprint 2" width="900"/>
 
 O gráfico utiliza as datas de fechamento registradas nas issues do GitHub. A linha ideal considera uma redução uniforme dos 83 pontos entre 21/10 e 10/11. A linha real permaneceu em 83 pontos até 04/11, caiu para 79 pontos em 05/11, chegou a 58 em 07/11, a 55 em 08/11 e encerrou 10/11 com 4 pontos ainda registrados como abertos.
 

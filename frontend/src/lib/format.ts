@@ -31,10 +31,10 @@ export function formatBucketLabel(date: Date, spanMs: number): string {
   return spanMs > 26 * 3_600_000 ? formatDateTime(date) : formatTime(date)
 }
 
-/** "há 2 min", "há 3 h" — para indicar o quão recente é um dado. */
+/** "há 12 s", "há 2 min", "há 3 h" — para indicar o quão recente é um dado. */
 export function formatRelative(date: Date, now: Date = new Date()): string {
   const seconds = Math.max(0, Math.round((now.getTime() - date.getTime()) / 1000))
-  if (seconds < 60) return 'agora há pouco'
+  if (seconds < 60) return `há ${seconds} s`
   const minutes = Math.round(seconds / 60)
   if (minutes < 60) return `há ${minutes} min`
   const hours = Math.round(minutes / 60)
