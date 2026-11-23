@@ -24,7 +24,3 @@
 - Atualizar as issues ao longo da sprint, evitando concentrar os fechamentos nos últimos dias.
 - Manter pull requests menores e vinculados às tarefas correspondentes.
 - Registrar as evidências de conclusão junto às issues no momento da entrega.
-
-## Fechamento
-
-O vídeo da apresentação será adicionado após a conclusão da edição. Em seguida, serão formalizados o encerramento da sprint, a tag da entrega e os registros finais nas issues administrativas.

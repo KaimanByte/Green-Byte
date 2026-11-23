@@ -42,7 +42,7 @@ Todas as entregas seguem os prazos acordados no calendário da disciplina. Para 
 | ------ | ------------- | ------ | ------------------------------------------------------------------------------------- | --------- | ------------ |
 | 1      | 📅 20/10/2026 | ✅     | Fundação: ambiente containerizado, APIs auxiliares, persistência inicial e protótipo  | [Sprint Review](./docs/sprints/sprint-1-review.md) | [Apresentação](https://youtu.be/GThHoh05cKw) |
 | 2      | 📅 10/11/2026 | ✅     | Núcleo do produto: cálculo de energia e CO₂e, monitoramento dinâmico e dashboard      | [Sprint Review](./docs/sprints/sprint-2-review.md) | [Apresentação](https://youtu.be/kV9ovx7NV9Q) |
-| 3      | 📅 23/11/2026 | 🚧     | Fechamento do MVP: administração, qualidade, documentação e avaliação de usabilidade | [Planejamento](./docs/sprints/sprint-3.md) | — |
+| 3      | 📅 23/11/2026 | 🚧     | Fechamento do MVP: administração, qualidade, documentação e avaliação de usabilidade | [Planejamento](./docs/sprints/sprint-3.md) | [Apresentação](https://youtu.be/N0xXI7HD1uw) |
 
 **Legenda:**
 
