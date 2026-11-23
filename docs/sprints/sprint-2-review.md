@@ -2,8 +2,6 @@
 
 **Período:** 21/10/2026 a 10/11/2026
 
-**Apresentação da entrega:** [YouTube](https://www.youtube.com/watch?v=kV9ovx7NV9Q)
-
 ## 🎯 Objetivo da Sprint
 
 Entregar o núcleo funcional do Green-Byte, evoluindo a fundação construída na Sprint 1 para uma aplicação capaz de coletar, persistir, calcular e apresentar indicadores ambientais de maneira integrada. O foco da Sprint 2 foi consolidar as regras de cálculo de energia e emissão de CO₂e, o histórico de coletas, os estados dos serviços, a tolerância a falhas, os endpoints analíticos e a integração dessas informações ao dashboard.

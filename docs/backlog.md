@@ -100,25 +100,25 @@
 
 ## Sprint 3
 
-**Situação apurada em 22/11/2026:** os 15 itens são considerados concluídos para o fechamento da Sprint. No GitHub, #24, #25, #26 e #83 ainda constam abertas até a formalização; #25 e #26 terão seus atos finais após o encerramento. O estado da issue não substitui a verificação descrita na coluna seguinte; por isso #77 permanece documentada como não executada e #81 como não comprovada no código final.
+**Situação em 22/11/2026:** os 15 itens são considerados concluídos para a Sprint. As issues administrativas serão formalizadas após a inclusão do vídeo da apresentação e o encerramento da entrega.
 
-| Issue | Situação da issue | Verificação no repositório | Referência técnica no código atual |
+| Issue | Situação | Item | Responsáveis |
 |---|---|---|---|
-| [#24](https://github.com/KaimanByte/Green-Byte/issues/24) | aberta | Concluída para a Sprint: planejamento, responsáveis e mudanças de escopo documentados em `docs/sprints/sprint-3.md` | — |
-| [#25](https://github.com/KaimanByte/Green-Byte/issues/25) | aberta | Concluída para a Sprint; cerimônia e registro final serão formalizados após o encerramento | — |
-| [#26](https://github.com/KaimanByte/Green-Byte/issues/26) | aberta | Concluída para a Sprint; tag e envio serão formalizados após o encerramento | — |
-| [#67](https://github.com/KaimanByte/Green-Byte/issues/67) | fechada | Parcial: memoização presente; falta verificação responsiva registrada | Rafael Melo; João Paulo Lorena |
-| [#70](https://github.com/KaimanByte/Green-Byte/issues/70) | fechada | Parcial: tela, limites e polling dinâmico presentes; faltam regra estrita de admin e documentação | Gabriel; Rafael Melo; João Paulo Lorena; Erick Rost |
-| [#71](https://github.com/KaimanByte/Green-Byte/issues/71) | fechada | Parcial: login, logout e limpeza da sessão presentes; falta rota/redirecionamento real | Gabriel; Rafael Melo |
-| [#75](https://github.com/KaimanByte/Green-Byte/issues/75) | fechada | Diretrizes registradas em `docs/interface.md` | — |
-| [#77](https://github.com/KaimanByte/Green-Byte/issues/77) | fechada | Não executada: ausência de avaliação formal registrada como limitação da entrega | — |
-| [#78](https://github.com/KaimanByte/Green-Byte/issues/78) | fechada | Não executada: sem avaliação #77, não houve achados que justificassem melhorias | — |
-| [#81](https://github.com/KaimanByte/Green-Byte/issues/81) | fechada | Não comprovada: o conteúdo do commit associado foi majoritariamente revertido | — |
-| [#82](https://github.com/KaimanByte/Green-Byte/issues/82) | fechada | Concluída: casos esperados/falhas e doubles presentes | Thiago; João Paulo Lorena |
-| [#83](https://github.com/KaimanByte/Green-Byte/issues/83) | aberta | Concluída por Thiago-Tolosa: README, links e comandos validados em clone limpo da `dev`, com a tabela da equipe corrigida | Thiago-Tolosa |
-| [#107](https://github.com/KaimanByte/Green-Byte/issues/107) | fechada | Concluída: gestão, papéis, bloqueios e testes comprovados | Rafael Melo; Gabriel; Thiago; Erick Rost |
-| [#108](https://github.com/KaimanByte/Green-Byte/issues/108) | fechada | Concluída: auditoria implementada e E2E HTTP cobre escrita e leitura, autenticação e proteção de rota | Erick Rost; Gabriel; Rafael Melo |
-| [#109](https://github.com/KaimanByte/Green-Byte/issues/109) | fechada | Concluída: saúde, reprogramação, polling limitado e testes presentes | Gabriel; Rafael Melo; João Paulo Lorena; Erick Rost |
+| [#24](https://github.com/KaimanByte/Green-Byte/issues/24) | aberta | GA-13 · Planejamento da Sprint 3 | RafaelPMR, erickrost |
+| [#25](https://github.com/KaimanByte/Green-Byte/issues/25) | aberta | GA-14 · Sprint Review e Retrospectiva da Sprint 3 | — |
+| [#26](https://github.com/KaimanByte/Green-Byte/issues/26) | aberta | GA-15 · Fechamento e entrega da Sprint 3 | — |
+| [#67](https://github.com/KaimanByte/Green-Byte/issues/67) | fechada | FE-12 · Responsividade e desempenho | JoaoLorena0, RafaelPMR |
+| [#70](https://github.com/KaimanByte/Green-Byte/issues/70) | fechada | AU-03 · Área de configuração do monitoramento | GabrielOlsa, RafaelPMR |
+| [#71](https://github.com/KaimanByte/Green-Byte/issues/71) | fechada | AU-04 · Login e proteção no frontend | GabrielOlsa, JoaoLorena0 |
+| [#75](https://github.com/KaimanByte/Green-Byte/issues/75) | fechada | UX-03 · Diretrizes de apresentação dos indicadores | Thiago-Tolosa |
+| [#77](https://github.com/KaimanByte/Green-Byte/issues/77) | fechada | UX-05 · Avaliação de usabilidade | — |
+| [#78](https://github.com/KaimanByte/Green-Byte/issues/78) | fechada | UX-06 · Melhorias da avaliação | — |
+| [#81](https://github.com/KaimanByte/Green-Byte/issues/81) | fechada | QA-03 · Revisão de tipagem e código limpo | JoaoPedroLuvisariSeveriano, Thiago-Tolosa |
+| [#82](https://github.com/KaimanByte/Green-Byte/issues/82) | fechada | QA-04 · Testes das regras da Sprint 3 | JoaoLorena0, Thiago-Tolosa |
+| [#83](https://github.com/KaimanByte/Green-Byte/issues/83) | aberta | QA-05 · Conferência do README, comandos e links | Thiago-Tolosa |
+| [#107](https://github.com/KaimanByte/Green-Byte/issues/107) | fechada | AU-06 · Gestão de usuários e papéis | RafaelPMR, Thiago-Tolosa, erickrost |
+| [#108](https://github.com/KaimanByte/Green-Byte/issues/108) | fechada | AU-07 · Auditoria de operações administrativas | GabrielOlsa, erickrost |
+| [#109](https://github.com/KaimanByte/Green-Byte/issues/109) | fechada | MO-01 · Saúde e configuração dinâmica da coleta | GabrielOlsa, JoaoPedroLuvisariSeveriano, erickrost |
 
 ## Itens que não estão no Project atual
 
