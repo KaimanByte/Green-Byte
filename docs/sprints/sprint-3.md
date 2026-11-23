@@ -62,6 +62,5 @@ O principal ponto de melhoria continua sendo a atualização frequente das issue
 
 ## Ações para a entrega final
 
-- Adicionar o vídeo da apresentação quando a edição estiver concluída.
 - Registrar a Sprint Review e a retrospectiva nas respectivas issues.
 - Criar a tag da versão entregue e concluir o fechamento administrativo da sprint.

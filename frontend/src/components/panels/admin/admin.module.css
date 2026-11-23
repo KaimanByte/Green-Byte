@@ -1050,7 +1050,9 @@ summary.cardTitle:focus-visible,
 /* ---------- janela modal ---------- */
 .modal {
   width: min(460px, calc(100vw - 32px));
-  max-height: calc(100dvh - 48px);
+  /* teclado aberto: a janela se centraliza no espaço acima dele */
+  bottom: var(--keyboard-inset);
+  max-height: calc(100dvh - 48px - var(--keyboard-inset));
   padding: 28px;
   border: 0;
   border-radius: 24px;
