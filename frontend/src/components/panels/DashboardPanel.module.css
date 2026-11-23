@@ -241,7 +241,8 @@ aside.panel {
     z-index: 25;
     top: auto;
     right: 16px;
-    bottom: 16px;
+    /* teclado aberto: a folha sobe acima dele */
+    bottom: calc(16px + var(--keyboard-inset));
     left: 16px;
     width: auto;
     max-height: var(--sheet-max-height);

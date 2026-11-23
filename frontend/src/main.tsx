@@ -9,6 +9,10 @@ import './index.css'
 import App from './App.tsx'
 import { GreenDataProvider } from './providers/GreenDataProvider'
 import { AuthProvider } from './providers/AuthProvider'
+import { installKeyboardInset } from './lib/keyboardInset'
+
+// celular: com o teclado aberto, só os campos sobem (ver lib/keyboardInset.ts)
+installKeyboardInset()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
