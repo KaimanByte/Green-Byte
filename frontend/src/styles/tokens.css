@@ -29,6 +29,8 @@
   --space-edge: 32px;
   /* botão redondo do menu (a logo se alinha ao centro dele) */
   --toggle-size: 64px;
+  /* largura do menu lateral aberto; os painéis ao lado começam logo depois dele */
+  --menu-width: 280px;
   /* altura do teclado virtual aberto (celular); escrita por lib/keyboardInset.ts */
   --keyboard-inset: 0px;
 
@@ -46,6 +48,13 @@
 
   /* anel de foco do teclado: suave, no verde da marca */
   --focus-ring: rgba(125, 255, 196, 0.7);
+}
+
+/* celular e tablet: menu 20% mais estreito, para sobrar tela para o globo e os painéis */
+@media (max-width: 1100px) {
+  :root {
+    --menu-width: 224px;
+  }
 }
 
 /* celular: tudo mais perto da borda e botão do menu um pouco menor */

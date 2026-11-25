@@ -11,6 +11,7 @@ import { COMPACT_LAYOUT_QUERY, useMediaQuery } from './hooks/useMediaQuery'
 import { Connector } from './components/panels/Connector'
 import { IntroOverlay } from './components/layouts/IntroOverlay'
 import { INTRO_HOLD_MS, type IntroPhase } from './lib/intro'
+import { dismissKeyboard } from './lib/keyboardInset'
 
 // Painéis só são necessários depois de uma interação. Separá-los reduz o JavaScript inicial
 // do globo e evita baixar gráficos e telas administrativas para quem apenas consulta o mapa.
@@ -94,6 +95,7 @@ function App() {
   // (clicar de novo no mesmo fecha e o zoom volta)
   const selectRegion = useCallback(
     (code: string) => {
+      dismissKeyboard()
       if (selectedRegionCode === code) {
         setSelectedRegionCode(null)
         return
@@ -104,7 +106,10 @@ function App() {
     [selectedRegionCode],
   )
 
-  const closeRegion = useCallback(() => setSelectedRegionCode(null), [])
+  const closeRegion = useCallback(() => {
+    dismissKeyboard()
+    setSelectedRegionCode(null)
+  }, [])
 
   // escolhido na busca: abre o painel, gira o globo até o datacenter e dá zoom
   const searchRegion = useCallback((code: string) => {
@@ -112,14 +117,17 @@ function App() {
     setFocusRequest({ code, id: Date.now() })
   }, [])
 
-  // fechar o menu sempre fecha o login junto
+  // fechar o menu sempre fecha o login junto. Abrir ou fechar menu, região ou painel também fecha
+  // o teclado: no iPhone tocar num botão não tira o foco do campo e o teclado ficaria aberto
 const toggleMenu = useCallback(() => {
+  dismissKeyboard()
   setIsMenuOpen((open) => !open)
   setIsLoginOpen(false)
   setIsPanelDeferred(true)
   setServiceFocus(null)
 }, [])
 const closeMenu = useCallback(() => {
+  dismissKeyboard()
   setIsMenuOpen(false)
   setIsLoginOpen(false)
   setServiceFocus(null)
@@ -128,6 +136,7 @@ const closeMenu = useCallback(() => {
 // serviço clicado no painel da região: fecha a região e abre Serviços com ele expandido.
 // O `id` muda a cada clique para recriar o painel mesmo se Serviços já estiver aberto.
 const openService = useCallback((serviceId: string) => {
+  dismissKeyboard()
   setSelectedRegionCode(null)
   setServiceFocus({ serviceId, id: Date.now() })
   setIsLoginOpen(false)
@@ -137,6 +146,7 @@ const openService = useCallback((serviceId: string) => {
 }, [])
 
 const selectItem = useCallback((id: string) => {
+  dismissKeyboard()
   // login abre ao lado do menu, no lugar do painel aberto
   if (id === LOGIN_ID) {
     setIsLoginOpen(true)
