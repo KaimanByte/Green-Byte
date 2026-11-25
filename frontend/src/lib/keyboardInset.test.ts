@@ -11,6 +11,13 @@ describe('computeKeyboardInset', () => {
     expect(computeKeyboardInset(800, 500, 120)).toBe(180)
   })
 
+  it('com teclado aberto, continua compensando mesmo quando o Safari rola bastante a tela', () => {
+    // teclado de 300px e o Safari rolou 260px: sobram 40px a subir (antes isso virava 0 e a busca sumia)
+    expect(computeKeyboardInset(800, 500, 260)).toBe(40)
+    // rolou exatamente a altura do teclado: o fim da janela já está visível, nada a subir
+    expect(computeKeyboardInset(800, 500, 300)).toBe(0)
+  })
+
   it('ignora diferenças pequenas (barra do navegador) e o zoom de pinça', () => {
     expect(computeKeyboardInset(800, 800 - (MIN_KEYBOARD_HEIGHT - 1), 0)).toBe(0)
     expect(computeKeyboardInset(800, 400, 0, 2)).toBe(0)

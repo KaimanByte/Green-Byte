@@ -141,6 +141,11 @@ export function SearchBar({ regions, onSelect }: Props) {
         <input
           ref={inputRef}
           type="text"
+          // é uma busca: sem corretor nem maiúscula automática e com a tecla "Buscar" no teclado
+          // (autoComplete e spellCheck desligados ficam mais abaixo)
+          autoCorrect="off"
+          autoCapitalize="off"
+          enterKeyHint="search"
           role="combobox"
           className={styles.input}
           placeholder="Buscar datacenter, região ou serviço"
