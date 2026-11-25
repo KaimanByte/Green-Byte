@@ -269,7 +269,10 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
           {rankingItems.length > 0 ? (
             rankingItems.map((item) => {
               const regionDetails = regions.find((r) => r.regionCode === item.regionCode)
+              // estado = última coleta; valores = o que foi medido no período (um serviço que caiu
+              // agora continua mostrando o que consumiu, com o selo do estado ao lado)
               const isActive = item.state === 'active'
+              const hasData = item.collectionsCount > 0
               const co2 = formatCo2(Number(item.co2Emissions) || 0)
               const serviceLevel = regionDetails ? getCarbonLevel(regionDetails.carbonIntensity) : null
               const primary = rankingMetric === 'energia'
@@ -285,7 +288,7 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
                   <div className={styles.rankBody}>
                     <div className={styles.rankRow}>
                       <span className={styles.rankName}>{item.name || item.serviceId}</span>
-                      {isActive ? (
+                      {hasData ? (
                         <span className={styles.rankValue}>
                           {primary.value} <small>{primary.unit}</small>
                         </span>
@@ -299,12 +302,17 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
                       <span className={styles.rankRegion} data-level={serviceLevel?.id}>
                         {serviceLevel && <CarbonLevelIcon icon={serviceLevel.icon} />}{' '}
                         {item.regionCode || 'Região desconhecida'}
+                        {hasData && !isActive && (
+                          <span className={styles.stateTag} data-state={item.state}>
+                            {SERVICE_STATE_LABELS[item.state]}
+                          </span>
+                        )}
                       </span>
                       <span className={styles.rankRegion}>
-                        {isActive ? `${secondary} · ${item.collectionsCount} coletas` : 'sem dados no período'}
+                        {hasData ? `${secondary} · ${item.collectionsCount} coletas` : 'sem dados no período'}
                       </span>
                     </div>
-                    {isActive && (
+                    {hasData && (
                       <span className={`${base.bar} ${styles.rankBar}`}>
                         <span
                           className={base.barFill}

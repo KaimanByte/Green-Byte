@@ -130,7 +130,7 @@ describe('compareTotalsCsv', () => {
 
     const offset = utcOffsetLabel(new Date(2026, 10, 20, 19))
     expect(header).toBe(
-      `Serviço;ID;Região;Estado no período;Coletas;CO₂e no período (gCO₂e);Energia no período (kWh);Início do período (${offset});Fim do período (${offset})`,
+      `Serviço;ID;Região;Estado atual (última coleta);Coletas;CO₂e no período (gCO₂e);Energia no período (kWh);Início do período (${offset});Fim do período (${offset})`,
     )
     expect(active).toBe('Fraud Detector;svc-1;us-east;ativo;133;36,3;0,0961;2026-11-20 19:00;2026-11-21 19:00')
     expect(inactive).toBe('Legacy;svc-2;eu-west;indisponível;0;;;2026-11-20 19:00;2026-11-21 19:00')

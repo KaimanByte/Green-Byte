@@ -33,14 +33,39 @@ describe('EnvironmentIndicatorsCalculator', () => {
     const result = calculator.calculate(period, services, [
       totals('a', 3, 1.5, 100),
       totals('b', 1, 0.5, 20),
-      totals('c', 2, 9, 900), // indisponível: não entra na soma
+      totals('c', 2, 9, 900), // indisponível agora, mas o que já mediu no período continua na soma
     ]);
 
-    expect(result.totalEnergyKwh).toBeCloseTo(2, 10);
-    expect(result.totalCo2Emissions).toBeCloseTo(120, 10);
+    expect(result.totalEnergyKwh).toBeCloseTo(11, 10);
+    expect(result.totalCo2Emissions).toBeCloseTo(1020, 10);
     expect(result.activeServices).toBe(2);
     expect(result.unavailableServices).toBe(1);
     expect(result.servicesWithoutMetrics).toBe(1);
+  });
+
+  it('o estado vem da última coleta, mesmo com coletas antigas no período', () => {
+    const services: ServiceSnapshot[] = [
+      { id: 'ok', status: 'registered', lastCollectionState: 'active' },
+      { id: 'caiu', status: 'registered', lastCollectionState: 'unavailable' },
+      { id: 'vazio', status: 'registered', lastCollectionState: 'no_metrics' },
+    ];
+
+    const result = calculator.calculate(period, services, [
+      totals('ok', 10, 1, 10),
+      totals('caiu', 10, 2, 20), // tinha coletas no período, mas a última tentativa falhou
+      totals('vazio', 10, 3, 30),
+    ]);
+
+    expect(result.activeServices).toBe(1);
+    expect(result.unavailableServices).toBe(1);
+    expect(result.servicesWithoutMetrics).toBe(1);
+    // a falha atual não apaga o consumo medido no período
+    expect(result.totalEnergyKwh).toBeCloseTo(6, 10);
+  });
+
+  it('serviço que nunca teve tentativa de coleta segue a regra do período', () => {
+    expect(calculator.classify({ id: 'novo', status: 'registered', lastCollectionState: null })).toBe('no_metrics');
+    expect(calculator.classify({ id: 'novo', status: 'registered' }, totals('novo', 1, 1, 1))).toBe('active');
   });
 
   it('inclui o período considerado na resposta', () => {
@@ -135,8 +160,8 @@ describe('EnvironmentIndicatorsService', () => {
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(NOW);
     findAll = jest.fn<() => Promise<Service[]>>().mockResolvedValue([
-      { id: 'a', name: 'A', regionCode: 'r', status: 'active' },
-      { id: 'b', name: 'B', regionCode: 'r', status: 'registered' },
+      { id: 'a', name: 'A', regionCode: 'r', status: 'active', lastCollectionState: null, lastCollectionAttemptAt: null, lastCollectionError: null },
+      { id: 'b', name: 'B', regionCode: 'r', status: 'registered', lastCollectionState: null, lastCollectionAttemptAt: null, lastCollectionError: null },
     ]);
     getTotals = jest
       .fn<(from: Date, to: Date) => Promise<ServicePeriodTotals[]>>()

@@ -8,6 +8,8 @@ export interface ServiceSnapshot {
   regionCode?: string;
   /** Status persistido em `services.status` (ex.: registered, active, unavailable, removed). */
   status: string;
+  /** Resultado da última tentativa de coleta (`services.last_collection_state`); null se nunca tentou. */
+  lastCollectionState?: string | null;
 }
 
 export type RankingMetric = 'energia' | 'co2e';

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CollectionsRepository, RegionEmissions, ServiceEmissions } from './collections.repository';
 import { NewCollection } from './collections.schema';
 import { CollectionHistoryQuery } from './collection-history.query';
@@ -6,8 +6,22 @@ import { CollectionResponseDto, SyncCollectionsResponseDto } from './dto/collect
 import { EnergyCalculator } from './energy.calculator';
 import { ServicesService } from '../services/services.service';
 import { RegionsService } from '../regions/regions.service';
-import { MetricsApiClient } from '../integrations/metrics-api.client';
+import { InvalidMetricsException, MetricsApiClient } from '../integrations/metrics-api.client';
 import { SettingsService } from '../settings/settings.service';
+import type { CollectionResult } from '../services/services.repository';
+import type { CollectionState } from '../services/services.schema';
+
+/**
+ * Estado de um serviço cuja coleta falhou:
+ * - sem métricas: a API respondeu, mas sem números utilizáveis (métricas ausentes ou inválidas,
+ *   cálculo inválido, ou a região do serviço não está cadastrada para calcular o CO₂e);
+ * - indisponível: não deu para obter as métricas (API fora do ar, erro HTTP, tempo esgotado).
+ */
+export function collectionFailureState(error: unknown): Exclude<CollectionState, 'active'> {
+  return error instanceof InvalidMetricsException || error instanceof NotFoundException
+    ? 'no_metrics'
+    : 'unavailable';
+}
 
 @Injectable()
 export class CollectionsService {
@@ -77,6 +91,9 @@ export class CollectionsService {
     // parâmetros da máquina lidos uma vez por ciclo: todas as coletas do ciclo usam o mesmo modelo
     const energyModel = await this.settingsService.getEnergyModel();
     const newCollections: NewCollection[] = [];
+    // como foi a coleta de cada serviço neste ciclo: é o que o painel mostra como estado atual
+    const results: CollectionResult[] = [];
+    const attemptedAt = new Date();
 
     for (const service of services) {
       try {
@@ -96,6 +113,10 @@ export class CollectionsService {
           energyModel,
         );
 
+        if (!Number.isFinite(energyKwh) || !Number.isFinite(co2Emissions) || energyKwh < 0 || co2Emissions < 0) {
+          throw new InvalidMetricsException(`Cálculo de ${service.id} resultou em valor inválido.`);
+        }
+
         // a rede entra no cálculo de energia, mas não tem coluna própria no banco
         newCollections.push({
           serviceId: service.id,
@@ -105,13 +126,16 @@ export class CollectionsService {
           energyKwh,
           co2Emissions,
         });
+        results.push({ serviceId: service.id, state: 'active', attemptedAt, error: null });
       } catch (error) {
-        this.logger.warn(`Falha ao coletar métricas para o serviço ${service.id}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-        continue;
+        const message = error instanceof Error ? error.message : 'Erro desconhecido';
+        this.logger.warn(`Falha ao coletar métricas para o serviço ${service.id}: ${message}`);
+        results.push({ serviceId: service.id, state: collectionFailureState(error), attemptedAt, error: message });
       }
     }
 
     const saved = await this.collectionsRepository.insertMany(newCollections);
+    await this.servicesService.recordCollectionResults(results);
 
     return {
       total: saved.length,

@@ -142,9 +142,11 @@ describe('StartupSyncService', () => {
 
     await expect(service.onApplicationBootstrap()).resolves.toBeUndefined();
 
-    expect(servicesService.syncServices).not.toHaveBeenCalled();
-    expect(collectionsService.syncCollections).not.toHaveBeenCalled();
+    // as etapas seguintes rodam com o que já está no banco: a coleta registra o estado de cada serviço
+    expect(servicesService.syncServices).toHaveBeenCalledTimes(1);
+    expect(collectionsService.syncCollections).toHaveBeenCalledTimes(1);
     expect(schedulerRegistry.addInterval).toHaveBeenCalledTimes(1);
+    expect(service.getStatus().lastCycle).toMatchObject({ succeeded: false, failedStep: 'regiões' });
   });
 
   it('usa o intervalo salvo no banco no lugar do valor do .env', async () => {

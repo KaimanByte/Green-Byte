@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CollectionsService } from './collections.service';
 import { CollectionsRepository } from './collections.repository';
@@ -34,6 +34,7 @@ describe('CollectionsService', () => {
 
     const mockServicesService = {
       findAllServices: jest.fn(),
+      recordCollectionResults: jest.fn(async () => undefined),
     };
 
     const mockRegionsService = {
@@ -154,6 +155,64 @@ describe('CollectionsService', () => {
       expect(saved.serviceId).toBe('svc-ok');
       expect(saved.energyKwh).toBeCloseTo(0.1, 12);
       expect(saved.co2Emissions).toBeCloseTo(38, 9);
+
+      // o estado de cada serviço neste ciclo fica registrado: quem respondeu e quem caiu
+      const [results] = (servicesService.recordCollectionResults as jest.Mock).mock.calls[0] as [
+        { serviceId: string; state: string; error: string | null }[],
+      ];
+      expect(results.map(({ serviceId, state }) => [serviceId, state])).toEqual([
+        ['svc-ok', 'active'],
+        ['svc-down', 'unavailable'],
+      ]);
+      expect(results[1].error).toContain('500');
+    });
+
+    it('métricas inválidas contam como "sem métricas"; região desconhecida também', async () => {
+      (servicesService.findAllServices as jest.Mock<() => Promise<unknown>>).mockResolvedValue([
+        { id: 'svc-invalido', regionCode: 'us-east' },
+        { id: 'svc-sem-regiao', regionCode: 'xx' },
+      ]);
+      (regionsService.findRegionByCode as jest.Mock<(code: string) => Promise<unknown>>).mockImplementation(
+        async (code: string) => {
+          if (code === 'xx') throw new NotFoundException(`Região '${code}' não encontrada.`);
+          return { regionCode: code, carbonIntensity: 380 };
+        },
+      );
+      fetchMock.mockImplementation(async (url) => ({
+        ok: true,
+        json: async () =>
+          String(url).endsWith('/metrics/svc-invalido')
+            ? { collection_interval_seconds: 30, metrics: { cpu_percent: 'muito' } }
+            : { collection_interval_seconds: 30, metrics: { cpu_percent: 10, memory_gb: 1, disk_gb: 1, network_gb: 0 } },
+      }));
+      collectionsRepository.insertMany.mockImplementation(async (data) => data as Collection[]);
+
+      await service.syncCollections();
+
+      const [results] = (servicesService.recordCollectionResults as jest.Mock).mock.calls[0] as [
+        { serviceId: string; state: string }[],
+      ];
+      expect(results.map(({ serviceId, state }) => [serviceId, state])).toEqual([
+        ['svc-invalido', 'no_metrics'],
+        ['svc-sem-regiao', 'no_metrics'],
+      ]);
+    });
+
+    it('API de métricas fora do ar: todos os serviços ficam indisponíveis', async () => {
+      (servicesService.findAllServices as jest.Mock<() => Promise<unknown>>).mockResolvedValue([
+        { id: 'a', regionCode: 'us-east' },
+        { id: 'b', regionCode: 'us-east' },
+      ]);
+      fetchMock.mockRejectedValue(new Error('connect ECONNREFUSED'));
+      collectionsRepository.insertMany.mockImplementation(async (data) => data as Collection[]);
+
+      const result = await service.syncCollections();
+
+      expect(result.total).toBe(0);
+      const [results] = (servicesService.recordCollectionResults as jest.Mock).mock.calls[0] as [
+        { state: string }[],
+      ];
+      expect(results.map((r) => r.state)).toEqual(['unavailable', 'unavailable']);
     });
 
     it('deve retornar zero coleções e não dar throw caso nenhum serviço exista', async () => {

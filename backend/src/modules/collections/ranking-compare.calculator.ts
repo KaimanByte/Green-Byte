@@ -19,11 +19,12 @@ const STATE_PRIORITY: Record<ServiceIndicatorState, number> = {
  *
  * REGRA NO RANKING E COMPARAÇÃO:
  * - Serviços `removed` são excluídos do ranking.
- * - Serviços `unavailable` ou `no_metrics` têm `energyKwh = 0`, `co2Emissions = 0` e
- *   `collectionsCount = 0` (não entram com dados parciais, conforme docs/calculos.md §2.5).
- * - Ordem do ranking: `active` primeiro em ordem decrescente da métrica solicitada,
- *   depois `no_metrics`, depois `unavailable`. Empates são resolvidos por `serviceId`
- *   crescente (determinístico). `rank` vai de 1 a N.
+ * - `state` é o estado atual (última tentativa de coleta). Os valores são os totais medidos no
+ *   período, qualquer que seja o estado: um serviço indisponível agora mantém o que já consumiu.
+ *   Sem coletas válidas no período, energia, CO₂e e coletas valem 0.
+ * - Ordem do ranking: decrescente pela métrica solicitada; empates por estado (`active`,
+ *   `no_metrics`, `unavailable`) e depois por `serviceId` crescente (determinístico).
+ *   `rank` vai de 1 a N.
  */
 @Injectable()
 export class RankingCompareCalculator {
@@ -35,16 +36,16 @@ export class RankingCompareCalculator {
       return null;
     }
 
-    const active = state === 'active' && totals !== undefined;
+    const usable = this.indicatorsCalculator.usableTotals(service, totals);
 
     return {
       serviceId: service.id,
       name: service.name ?? service.id,
       regionCode: service.regionCode ?? '',
       state,
-      collectionsCount: active ? totals.collectionsCount : 0,
-      energyKwh: active ? totals.totalEnergyKwh : 0,
-      co2Emissions: active ? totals.totalCo2Emissions : 0,
+      collectionsCount: usable ? usable.collectionsCount : 0,
+      energyKwh: usable ? usable.totalEnergyKwh : 0,
+      co2Emissions: usable ? usable.totalCo2Emissions : 0,
     };
   }
 
@@ -64,14 +65,14 @@ export class RankingCompareCalculator {
     }
 
     items.sort((a, b) => {
-      const stateDiff = STATE_PRIORITY[a.state] - STATE_PRIORITY[b.state];
-      if (stateDiff !== 0) {
-        return stateDiff;
-      }
       const valueA = metric === 'energia' ? a.energyKwh : a.co2Emissions;
       const valueB = metric === 'energia' ? b.energyKwh : b.co2Emissions;
       if (valueB !== valueA) {
         return valueB - valueA;
+      }
+      const stateDiff = STATE_PRIORITY[a.state] - STATE_PRIORITY[b.state];
+      if (stateDiff !== 0) {
+        return stateDiff;
       }
       return a.serviceId.localeCompare(b.serviceId);
     });
