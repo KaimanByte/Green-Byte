@@ -2,8 +2,8 @@
 
 /* aside.panel: ganha do .panel do RegionPanel sem depender da ordem do CSS */
 aside.panel {
-  /* começa logo depois da barra lateral (16 + 280), com um respiro curto pra linha */
-  --panel-left: calc(16px + 280px + 40px);
+  /* começa logo depois da barra lateral (16 + largura do menu), com um respiro curto pra linha */
+  --panel-left: calc(16px + var(--menu-width) + 40px);
 
   /* acima do fundo desfocado do menu (10), abaixo da barra lateral (20) */
   z-index: 15;
@@ -392,6 +392,12 @@ aside.panel {
 /* horários da primeira e da última amostra, embaixo da área da linha */
 .chartTimeAxis {
   grid-area: time;
+  gap: 8px;
+}
+
+/* data e hora numa linha só ("24 de nov., 16:45"), mesmo em painéis estreitos */
+.chartTimeAxis > span {
+  white-space: nowrap;
 }
 
 .chartBody > .chartPlot {

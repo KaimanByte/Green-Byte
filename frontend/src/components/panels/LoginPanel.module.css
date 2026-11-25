@@ -1,5 +1,5 @@
 aside.panel {
-  --panel-left: calc(16px + 280px + 40px);
+  --panel-left: calc(16px + var(--menu-width) + 40px);
   z-index: 15;
   top: auto;
   bottom: 96px;                          

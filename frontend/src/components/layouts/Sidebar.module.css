@@ -64,7 +64,7 @@
   z-index: 20;
   top: var(--panel-inset);
   left: var(--panel-inset);
-  width: min(280px, calc(100vw - 2 * var(--panel-inset)));
+  width: min(var(--menu-width), calc(100vw - 2 * var(--panel-inset)));
   height: calc(100dvh - 2 * var(--panel-inset));
   padding: var(--panel-inset);
   border-radius: var(--radius-sidebar);
@@ -326,7 +326,7 @@
   .panel {
     /* botão a 16px da tela e 8px da borda de dentro do cartão */
     --panel-inset: 8px;
-    width: min(280px, calc(100vw - 2 * var(--panel-inset)));
+    width: min(var(--menu-width), calc(100vw - 2 * var(--panel-inset)));
     height: auto;
     max-height: calc(100dvh - 2 * var(--panel-inset));
     overflow-y: auto;

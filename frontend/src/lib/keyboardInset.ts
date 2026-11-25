@@ -47,6 +47,16 @@ export function isTextEntry(element: Element | null): boolean {
   )
 }
 
+/**
+ * Fecha o teclado virtual tirando o foco do campo de texto ativo.
+ * Necessário no iPhone: tocar num botão (menu, marcador, fechar) não tira o foco do campo,
+ * porque o Safari não foca botões no toque, e o teclado continuaria aberto por cima da tela.
+ */
+export function dismissKeyboard(doc: Document = document): void {
+  const active = doc.activeElement
+  if (isTextEntry(active)) (active as HTMLElement).blur()
+}
+
 type VirtualKeyboard = EventTarget & { overlaysContent: boolean; boundingRect: DOMRect }
 
 /**
