@@ -156,6 +156,8 @@ export type TimeSeriesDto = {
   serviceId: string | null
   period: PeriodDto
   bucketSeconds: number
+  /** origem dos intervalos: cada um começa em bucketOrigin + n × bucketSeconds (ausente em backends antigos) */
+  bucketOrigin?: string
   aggregation: 'avg'
   units: { energyKwh: 'kWh'; co2Emissions: 'gCO2e'; cpuPercent: '%'; memoryGb: 'GB'; diskGb: 'GB' }
   total: number
@@ -179,6 +181,8 @@ export type TimeSeriesCompareDto = {
   period: PeriodDto
   /** igual para todas as séries */
   bucketSeconds: number
+  /** origem dos intervalos: cada um começa em bucketOrigin + n × bucketSeconds (ausente em backends antigos) */
+  bucketOrigin?: string
   aggregation: 'avg'
   units: TimeSeriesDto['units']
   total: number

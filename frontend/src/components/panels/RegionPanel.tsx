@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react'
+import { ChevronRight } from 'lucide-react'
 import { getCarbonLevel, type Region } from '../../data/regions'
 import { CarbonLevelIcon } from './CarbonLevelIcon'
 import styles from './RegionPanel.module.css'
@@ -8,9 +9,11 @@ type Props = {
   region: Region
   onClose: () => void
   panelRef: RefObject<HTMLElement | null>
+  /** leva para a seção Serviços com este serviço aberto */
+  onOpenService: (serviceId: string) => void
 }
 
-export function RegionPanel({ region, onClose, panelRef }: Props) {
+export function RegionPanel({ region, onClose, panelRef, onOpenService }: Props) {
   const { regions, services, loading, error } = useGreenData();
 
   // Função ultra-robusta que remove hífens, underscores, espaços e coloca em minúsculas (ex: 'ca-central' e 'cacentral' viram exatamente a mesma coisa)
@@ -111,9 +114,19 @@ export function RegionPanel({ region, onClose, panelRef }: Props) {
             Não foi possível carregar os serviços: {error}
           </p>
         ) : hostedServices.length > 0 ? (
-          <ul className={styles.services}>
+          <ul className={`${styles.services} ${styles.serviceLinks}`}>
             {hostedServices.map((service) => (
-              <li key={service.id || service.name}>{service.name || service.id}</li>
+              <li key={service.id || service.name}>
+                <button
+                  type="button"
+                  className={styles.serviceLink}
+                  onClick={() => onOpenService(service.id)}
+                  aria-label={`Abrir ${service.name || service.id} em Serviços`}
+                >
+                  <span>{service.name || service.id}</span>
+                  <ChevronRight size={16} strokeWidth={1.75} aria-hidden="true" />
+                </button>
+              </li>
             ))}
           </ul>
         ) : (

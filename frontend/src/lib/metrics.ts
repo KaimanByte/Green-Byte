@@ -36,8 +36,17 @@ export type SeriesPoint = {
 }
 
 /**
- * Monta a série completa do período: um ponto por intervalo, alinhado ao `from` da resposta
- * (o backend alinha os intervalos pelo mesmo `from`). Intervalos que não vieram na resposta
+ * Horários das pontas do eixo do tempo: à direita a última amostra; à esquerda ela menos o
+ * período pedido (24 h, 7 dias…). O gráfico sempre desenha o período inteiro, vazio ou não.
+ */
+export function periodEdges(lastSampleAt: Date, periodMs: number): { start: Date; end: Date } {
+  return { start: new Date(lastSampleAt.getTime() - periodMs), end: lastSampleAt }
+}
+
+/**
+ * Monta a série completa do período: um ponto por intervalo, na mesma grade do backend
+ * (intervalos começam em `origin` + n × bucketSeconds; sem `origin`, no próprio `from`).
+ * O primeiro intervalo é o que contém `from`. Intervalos que não vieram na resposta
  * ficam com `value: null` — nunca são preenchidos com zero ou com valor inventado.
  */
 export function buildSeries(
@@ -46,12 +55,14 @@ export function buildSeries(
   from: Date,
   to: Date,
   bucketSeconds: number,
+  origin: Date = from,
 ): SeriesPoint[] {
   const stepMs = bucketSeconds * 1000
   const byTime = new Map(points.map((point) => [new Date(point.timestamp).getTime(), point]))
   const series: SeriesPoint[] = []
+  const first = origin.getTime() + Math.floor((from.getTime() - origin.getTime()) / stepMs) * stepMs
 
-  for (let time = from.getTime(); time <= to.getTime(); time += stepMs) {
+  for (let time = first; time <= to.getTime(); time += stepMs) {
     const point = byTime.get(time)
     const value = point ? Number(point[metric]) : NaN
     series.push({

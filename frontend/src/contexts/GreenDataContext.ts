@@ -29,6 +29,8 @@ export type GreenDataContextValue = {
   refetch: () => void
   /** Momento da última sincronização bem-sucedida com o backend. */
   lastSync: Date | null
+  /** Intervalo da atualização automática, em segundos: o da coleta, limitado a 60 s. */
+  refreshIntervalSeconds: number
   /** Período selecionado no filtro (aplica-se a `emissions` e `serviceEmissions`). */
   periodId: PeriodId
   setPeriodId: (id: PeriodId) => void

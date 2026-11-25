@@ -11,8 +11,9 @@ import { useGreenData } from '../../hooks/useGreenData'
 import { useRanking } from '../../hooks/useRanking'
 import type { RankingMetric } from '../../types/api'
 import { SERVICE_STATE_LABELS } from '../../lib/serviceState'
-import { formatCo2, formatRelative, formatTime, integer, precise } from '../../lib/format'
+import { formatCo2, integer, precise } from '../../lib/format'
 import { getPeriodOption } from '../../lib/periods'
+import { SyncStatus } from './SyncStatus'
 import { DASHBOARD_SOURCES } from '../../services/dashboardService'
 
 type Props = {
@@ -34,7 +35,6 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
     refetch,
     periodId,
     setPeriodId,
-    lastCollectionAt,
     summary,
   } = useGreenData()
   const periodOption = getPeriodOption(periodId)
@@ -174,12 +174,7 @@ export function DashboardPanel({ onClose, panelRef }: Props) {
             {loading ? 'Atualizando…' : 'Atualizar'}
           </button>
         </div>
-        <p className={styles.meta} aria-live="polite">
-          {lastCollectionAt
-            ? `Última coleta ${formatRelative(lastCollectionAt)} (${formatTime(lastCollectionAt)})`
-            : 'Nenhuma coleta registrada ainda'}
-          {lastSync && ` · sincronizado às ${formatTime(lastSync)} · atualiza a cada 60 s`}
-        </p>
+        <SyncStatus />
       </header>
 
       <div className={base.divider} />

@@ -1,9 +1,9 @@
-import { useMemo, useState, type RefObject } from 'react'
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { ChevronDown, GitCompareArrows, RefreshCw } from 'lucide-react'
 import { getCarbonLevel } from '../../data/regions'
 import { useGreenData } from '../../hooks/useGreenData'
 import { useRanking } from '../../hooks/useRanking'
-import { decimal, formatCo2, formatDateTime, formatRelative, precise } from '../../lib/format'
+import { decimal, formatCo2, precise } from '../../lib/format'
 import { getPeriodOption } from '../../lib/periods'
 import { SERVICE_STATE_LABELS } from '../../lib/serviceState'
 import { CarbonLevelIcon } from './CarbonLevelIcon'
@@ -11,6 +11,8 @@ import { CompareView } from './CompareView'
 import { EvolutionChart } from './EvolutionChart'
 import { PeriodFilter } from './PeriodFilter'
 import { PanelSkeleton } from './PanelSkeleton'
+import { SyncStatus } from './SyncStatus'
+import { RelativeTime } from './RelativeTime'
 import base from './RegionPanel.module.css'
 import dash from './DashboardPanel.module.css'
 import styles from './ServicesPanel.module.css'
@@ -18,6 +20,8 @@ import styles from './ServicesPanel.module.css'
 type Props = {
   onClose: () => void
   panelRef: RefObject<HTMLElement | null>
+  /** serviço que já abre expandido (ex.: escolhido no painel da região) */
+  initialExpandedId?: string | null
 }
 
 type SortKey = 'co2' | 'energy' | 'name'
@@ -32,7 +36,7 @@ const SORT_OPTIONS: { id: SortKey; label: string }[] = [
  * Seção "Serviços": todos os serviços do ranking oficial (GET /ranking), com estado,
  * consumo no período, última coleta e comparação entre serviços (GET /compare).
  */
-export function ServicesPanel({ onClose, panelRef }: Props) {
+export function ServicesPanel({ onClose, panelRef, initialExpandedId = null }: Props) {
   const {
     regions,
     services,
@@ -48,12 +52,24 @@ export function ServicesPanel({ onClose, panelRef }: Props) {
   } = useGreenData()
   const periodOption = getPeriodOption(periodId)
   const [sortKey, setSortKey] = useState<SortKey>('co2')
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(initialExpandedId)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [isComparing, setIsComparing] = useState(false)
 
   // a ordem por CO₂e/energia vem do próprio backend; "nome" reordena o ranking de CO₂e
   const ranking = useRanking(sortKey === 'energy' ? 'energia' : 'co2e')
+
+  // aberto a partir de um serviço: rola até ele assim que a lista aparece (uma vez só)
+  const hasScrolledToInitial = useRef(initialExpandedId === null)
+  const hasInitialRow = (ranking.data?.items ?? []).some((item) => item.serviceId === initialExpandedId)
+  useEffect(() => {
+    if (hasScrolledToInitial.current || !hasInitialRow || !initialExpandedId) return
+    hasScrolledToInitial.current = true
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    document
+      .querySelector(`[data-service-row="${CSS.escape(initialExpandedId)}"]`)
+      ?.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' })
+  }, [hasInitialRow, initialExpandedId])
 
   const rows = useMemo(() => {
     const list = (ranking.data?.items ?? []).map((item) => ({
@@ -147,6 +163,7 @@ export function ServicesPanel({ onClose, panelRef }: Props) {
             {loading ? 'Atualizando…' : 'Atualizar'}
           </button>
         </div>
+        <SyncStatus />
       </header>
 
       <div className={base.divider} />
@@ -217,7 +234,11 @@ export function ServicesPanel({ onClose, panelRef }: Props) {
             const place = region?.city || region?.region || service?.location.city || service?.location.region
 
             return (
-              <li key={item.serviceId} className={`${styles.item} ${isExpanded ? styles.itemExpanded : ''}`}>
+              <li
+                key={item.serviceId}
+                className={`${styles.item} ${isExpanded ? styles.itemExpanded : ''}`}
+                data-service-row={item.serviceId}
+              >
                 <div className={styles.rowWrap}>
                   <input
                     type="checkbox"
@@ -295,9 +316,7 @@ export function ServicesPanel({ onClose, panelRef }: Props) {
                       </div>
                       <div>
                         <dt className={base.label}>Última coleta</dt>
-                        <dd title={latestDate ? formatDateTime(latestDate) : undefined}>
-                          {latestDate ? formatRelative(latestDate) : 'nenhuma'}
-                        </dd>
+                        <dd>{latestDate ? <RelativeTime date={latestDate} /> : 'nenhuma'}</dd>
                       </div>
                     </dl>
                     <p className={styles.detailNote}>CPU, memória e disco referem-se à última coleta, não ao período.</p>

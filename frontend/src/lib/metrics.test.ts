@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { TimeSeriesPointDto } from '../types/api'
-import { buildSeries, getMetricOption } from './metrics'
+import { buildSeries, getMetricOption, periodEdges } from './metrics'
 
 const point = (timestamp: string, overrides: Partial<TimeSeriesPointDto> = {}): TimeSeriesPointDto => ({
   timestamp,
@@ -48,6 +48,25 @@ describe('buildSeries', () => {
 
     expect(series).toEqual([{ timestamp: from, value: null, collectionsCount: 4 }])
   })
+
+  it('com origem, a grade começa no intervalo redondo que contém o from', () => {
+    // janela começando 00:07 com intervalos de 15 min contados da meia-noite: 00:00, 00:15, 00:30
+    const origin = new Date('2026-11-01T00:00:00.000Z')
+    const series = buildSeries(
+      [point('2026-11-01T00:00:00.000Z', { cpuPercent: 10 }), point('2026-11-01T00:30:00.000Z', { cpuPercent: 30 })],
+      'cpuPercent',
+      new Date('2026-11-01T00:07:00.000Z'),
+      new Date('2026-11-01T00:37:00.000Z'),
+      900,
+      origin,
+    )
+
+    expect(series.map((p) => [p.timestamp.toISOString().slice(11, 16), p.value])).toEqual([
+      ['00:00', 10],
+      ['00:15', null],
+      ['00:30', 30],
+    ])
+  })
 })
 
 describe('getMetricOption', () => {
@@ -57,5 +76,12 @@ describe('getMetricOption', () => {
       title: 'Energia média por coleta',
       unit: 'kWh',
     })
+  })
+})
+
+describe('periodEdges', () => {
+  it('a ponta esquerda é a última amostra menos o período (24 h = um dia antes)', () => {
+    const last = new Date('2026-11-25T05:15:00.000Z')
+    expect(periodEdges(last, 24 * 3_600_000)).toEqual({ start: new Date('2026-11-24T05:15:00.000Z'), end: last })
   })
 })

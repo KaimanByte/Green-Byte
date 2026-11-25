@@ -170,6 +170,50 @@
   font-size: 14px;
 }
 
+/* lista do painel da região: o item inteiro é um botão */
+.serviceLinks li {
+  padding: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.serviceLinks li:hover {
+  background: var(--surface-2);
+  border-color: var(--divider);
+}
+
+/* cada serviço leva para a seção Serviços com ele aberto */
+.serviceLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.serviceLink svg {
+  flex: none;
+  color: var(--text-muted);
+  transition: transform 0.2s var(--ease-spring), color 0.2s;
+}
+
+.serviceLink:hover svg {
+  color: var(--text-primary);
+  transform: translateX(2px);
+}
+
+.serviceLink:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 .source {
   margin: 20px 0 0;
   font-size: 11px;

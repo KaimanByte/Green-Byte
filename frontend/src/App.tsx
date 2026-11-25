@@ -42,6 +42,7 @@ function App() {
   // a folha aparece quando um item é escolhido (no desktop o painel abre junto, ao lado)
   const isCompact = useMediaQuery(COMPACT_LAYOUT_QUERY)
   const [isPanelDeferred, setIsPanelDeferred] = useState(false)
+  const [serviceFocus, setServiceFocus] = useState<{ serviceId: string; id: number } | null>(null)
 
   // usuário logado aparece no menu, no lugar do botão LOGIN
   const { user } = useAuth()
@@ -116,10 +117,23 @@ const toggleMenu = useCallback(() => {
   setIsMenuOpen((open) => !open)
   setIsLoginOpen(false)
   setIsPanelDeferred(true)
+  setServiceFocus(null)
 }, [])
 const closeMenu = useCallback(() => {
   setIsMenuOpen(false)
   setIsLoginOpen(false)
+  setServiceFocus(null)
+}, [])
+
+// serviço clicado no painel da região: fecha a região e abre Serviços com ele expandido.
+// O `id` muda a cada clique para recriar o painel mesmo se Serviços já estiver aberto.
+const openService = useCallback((serviceId: string) => {
+  setSelectedRegionCode(null)
+  setServiceFocus({ serviceId, id: Date.now() })
+  setIsLoginOpen(false)
+  setIsPanelDeferred(false)
+  setActiveItem(SERVICES_ID)
+  setIsMenuOpen(true)
 }, [])
 
 const selectItem = useCallback((id: string) => {
@@ -128,6 +142,8 @@ const selectItem = useCallback((id: string) => {
     setIsLoginOpen(true)
     return
   }
+  // escolhido pelo menu: Serviços abre sem nenhum serviço pré-expandido
+  setServiceFocus(null)
   setIsLoginOpen(false)
   setIsPanelDeferred(false)
   setActiveItem(id)
@@ -175,6 +191,7 @@ const selectItem = useCallback((id: string) => {
               region={selectedRegion}
               onClose={closeRegion}
               panelRef={panelRef}
+              onOpenService={openService}
             />
           )}
         </Suspense>
@@ -186,7 +203,12 @@ const selectItem = useCallback((id: string) => {
         <div className={isPanelSwap ? 'panel-swap' : undefined} style={{ display: 'contents' }}>
           <Suspense fallback={<PanelLoading />}>
             {openPanelId === SERVICES_ID ? (
-              <ServicesPanel key={openPanelId} onClose={closeMenu} panelRef={dashboardRef} />
+              <ServicesPanel
+                key={serviceFocus ? `${openPanelId}-${serviceFocus.id}` : openPanelId}
+                onClose={closeMenu}
+                panelRef={dashboardRef}
+                initialExpandedId={serviceFocus?.serviceId ?? null}
+              />
             ) : openPanelId === ADMIN_ID ? (
               <AdminPanel key={openPanelId} onClose={closeMenu} panelRef={dashboardRef} />
             ) : openPanelId ? (
@@ -214,7 +236,8 @@ const selectItem = useCallback((id: string) => {
           onToggle={toggleMenu}
           onClose={closeMenu}
           items={visibleItems}
-          activeId={activeItem}
+          // no celular abrir o menu não reabre o último painel: sem painel aberto, nenhum item fica destacado
+          activeId={isCompact && openPanelId === null ? '' : activeItem}
           onSelect={selectItem}
           userEmail={user?.email ?? null}
           isSheetOpen={openPanelId !== null || showLogin}

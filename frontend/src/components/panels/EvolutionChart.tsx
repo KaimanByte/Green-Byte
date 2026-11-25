@@ -38,8 +38,16 @@ export function EvolutionChart({
 
   const points = useMemo(() => {
     if (!series.data) return null
-    const { period, bucketSeconds } = series.data
-    return buildSeries(series.data.points, metricId, new Date(period.from), new Date(period.to), bucketSeconds)
+    const { period, bucketSeconds, bucketOrigin } = series.data
+    const from = new Date(period.from)
+    return buildSeries(
+      series.data.points,
+      metricId,
+      from,
+      new Date(period.to),
+      bucketSeconds,
+      bucketOrigin ? new Date(bucketOrigin) : from,
+    )
   }, [series.data, metricId])
 
   const bucketMinutes = series.data ? series.data.bucketSeconds / 60 : null
@@ -75,6 +83,12 @@ export function EvolutionChart({
         <EmissionsChart
           points={points}
           format={metric.format}
+          unit={metric.unit}
+          periodMs={
+            series.data
+              ? new Date(series.data.period.to).getTime() - new Date(series.data.period.from).getTime()
+              : 0
+          }
           compact={compact}
           label={`${metric.title}, ${subject}, a cada ${bucketText}`}
         />

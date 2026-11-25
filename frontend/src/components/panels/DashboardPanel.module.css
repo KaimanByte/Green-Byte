@@ -378,6 +378,68 @@ aside.panel {
   position: relative;
 }
 
+/* gráfico com eixo vertical: unidade em cima do eixo, valores à esquerda da área da linha */
+.chartBody {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'unit .'
+    'axis plot'
+    '. time';
+  column-gap: 8px;
+}
+
+/* horários da primeira e da última amostra, embaixo da área da linha */
+.chartTimeAxis {
+  grid-area: time;
+}
+
+.chartBody > .chartPlot {
+  grid-area: plot;
+}
+
+.yAxisUnit {
+  grid-area: unit;
+  margin-bottom: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.yAxis {
+  grid-area: axis;
+  position: relative;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.yAxisSizer {
+  display: block;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+.yTick {
+  position: absolute;
+  right: 0;
+  white-space: nowrap;
+  transform: translateY(-50%);
+}
+
+/* linhas de grade na altura de cada valor do eixo */
+.chartGrid {
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
 .chart:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;

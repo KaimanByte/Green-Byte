@@ -22,6 +22,13 @@ O **Green Byte** é a solução desenvolvida pela nossa equipe. O sistema:
 - Calcula energia e CO₂e com o modelo padronizado do desafio e guarda o histórico no banco de dados.
 - Apresenta tudo em um dashboard, com indicadores consolidados, histórico, ranking, comparação entre serviços e mapa.
 
+### 🌐 Acesse a aplicação
+
+- **Aplicação publicada:** <https://green-byte-six.vercel.app/>
+- **API (Swagger):** <https://green-byte.onrender.com/api/docs>
+
+> **Aviso:** os dados exibidos dependem das APIs auxiliares do desafio (Greener Metrics Aggregator e Greener Carbon Intensity), que são mantidas por terceiros. Se essas APIs forem desativadas no futuro, a versão publicada deixará de receber novas coletas e os painéis passarão a mostrar ausência de dados recentes ou serviços indisponíveis.
+
 > O modelo é uma **estimativa padronizada** para comparar serviços, regiões e tendências. Ele não mede o consumo elétrico real de servidores ou datacenters.
 
 ### Como o cálculo funciona
@@ -42,7 +49,7 @@ Todas as entregas seguem os prazos acordados no calendário da disciplina. Para 
 | ------ | ------------- | ------ | ------------------------------------------------------------------------------------- | --------- | ------------ |
 | 1      | 📅 20/10/2026 | ✅     | Fundação: ambiente containerizado, APIs auxiliares, persistência inicial e protótipo  | [Sprint Review](./docs/sprints/sprint-1-review.md) | [Apresentação](https://youtu.be/GThHoh05cKw) |
 | 2      | 📅 10/11/2026 | ✅     | Núcleo do produto: cálculo de energia e CO₂e, monitoramento dinâmico e dashboard      | [Sprint Review](./docs/sprints/sprint-2-review.md) | [Apresentação](https://youtu.be/kV9ovx7NV9Q) |
-| 3      | 📅 23/11/2026 | 🚧     | Fechamento do MVP: administração, qualidade, documentação e avaliação de usabilidade | [Planejamento](./docs/sprints/sprint-3.md) | [Apresentação](https://youtu.be/N0xXI7HD1uw) |
+| 3      | 📅 23/11/2026 | ✅     | Fechamento do MVP: administração, qualidade, documentação e avaliação de usabilidade | [Sprint Review](./docs/sprints/sprint-3-review.md) | [Apresentação](https://youtu.be/N0xXI7HD1uw) |
 
 **Legenda:**
 
@@ -52,6 +59,9 @@ Todas as entregas seguem os prazos acordados no calendário da disciplina. Para 
 
 ## Recursos do Produto
 
+- **Plano de Entregas:** [Acesse aqui](./docs/plano-de-entregas.md)
+  Critérios da rubrica por sprint, entregas, evidências, participação dos integrantes e pendências.
+
 - **Backlog do Produto:** [Acesse aqui](./docs/backlog.md)
   Épicos, itens por sprint com prioridade e estimativa, critérios de aceite e matriz de rastreabilidade (requisito → item).
 
@@ -60,6 +70,12 @@ Todas as entregas seguem os prazos acordados no calendário da disciplina. Para 
 
 - **APIs Externas:** [Acesse aqui](./docs/api-externas.md)
   Contratos das APIs Greener Metrics Aggregator e Greener Carbon Intensity, com exemplos de resposta e erros mapeados.
+
+- **Índice da documentação:** [Acesse aqui](./docs/README.md)
+  Links para todos os documentos do projeto e das sprints.
+
+- **API REST do backend:** [Acesse aqui](./docs/api.md)
+  Endpoints, métodos HTTP, parâmetros, respostas, códigos de erro e autenticação.
 
 - **Fórmulas de Cálculo:** [Acesse aqui](./docs/calculos.md)
   Modelo de cálculo de energia e CO₂e, constantes, premissas e decisão de escopo (energia e CO₂e no MVP; água fora do modelo).

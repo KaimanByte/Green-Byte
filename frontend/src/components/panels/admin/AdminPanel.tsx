@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
-import { CircleAlert, CircleCheck, History, Server, Timer, Users, type LucideIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CircleAlert, CircleCheck, History, Server, Timer, Users, type LucideIcon } from 'lucide-react'
 import { useAuth } from '../../../hooks/useAuth'
 import { useFetch } from '../../../hooks/useFetch'
 import { useGreenData } from '../../../hooks/useGreenData'
@@ -83,12 +83,53 @@ export function AdminPanel({ onClose, panelRef }: Props) {
     [notify, refetch],
   )
 
-  // setas esquerda/direita trocam de aba (padrão de abas acessíveis)
+  // setas esquerda/direita do teclado trocam de aba (padrão de abas acessíveis)
   const moveTab = (direction: 1 | -1) => {
     const index = tabs.findIndex((tab) => tab.id === activeTab)
     const next = tabs[(index + direction + tabs.length) % tabs.length]
     setSelectedTab(next.id)
     document.getElementById(`admin-tab-${next.id}`)?.focus()
+  }
+
+  /* ---------- abas com rolagem lateral (telas estreitas) ---------- */
+  const tabsRef = useRef<HTMLDivElement>(null)
+  const [tabsOverflow, setTabsOverflow] = useState({ before: false, after: false })
+
+  // mostra cada seta só quando ainda há abas escondidas daquele lado
+  const updateTabsOverflow = useCallback(() => {
+    const list = tabsRef.current
+    if (!list) return
+    const before = list.scrollLeft > 1
+    const after = list.scrollLeft + list.clientWidth < list.scrollWidth - 1
+    setTabsOverflow((current) => (current.before === before && current.after === after ? current : { before, after }))
+  }, [])
+
+  useEffect(() => {
+    const list = tabsRef.current
+    if (!list) return
+    updateTabsOverflow()
+    const observer = new ResizeObserver(updateTabsOverflow)
+    observer.observe(list)
+    return () => observer.disconnect()
+  }, [updateTabsOverflow, tabs.length])
+
+  // a aba ativa fica sempre centralizada na faixa de abas
+  useEffect(() => {
+    const list = tabsRef.current
+    const tab = document.getElementById(`admin-tab-${activeTab}`)
+    if (!list || !tab) return
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    list.scrollTo({
+      left: tab.offsetLeft - (list.clientWidth - tab.offsetWidth) / 2,
+      behavior: reduceMotion ? 'auto' : 'smooth',
+    })
+  }, [activeTab])
+
+  // as setas na tela selecionam a aba vizinha (sem dar a volta nas pontas)
+  const stepTab = (direction: 1 | -1) => {
+    const index = tabs.findIndex((tab) => tab.id === activeTab)
+    const next = tabs[Math.min(Math.max(index + direction, 0), tabs.length - 1)]
+    setSelectedTab(next.id)
   }
 
   return (
@@ -110,31 +151,61 @@ export function AdminPanel({ onClose, panelRef }: Props) {
         )}
       </header>
 
-      <div className={styles.tabs} role="tablist" aria-label="Seções da administração">
-        {tabs.map((tab) => {
-          const Icon = tab.icon
-          const isActive = tab.id === activeTab
-          return (
-            <button
-              key={tab.id}
-              id={`admin-tab-${tab.id}`}
-              type="button"
-              role="tab"
-              className={styles.tab}
-              aria-selected={isActive}
-              aria-controls="admin-tabpanel"
-              tabIndex={isActive ? 0 : -1}
-              onClick={() => setSelectedTab(tab.id)}
-              onKeyDown={(event) => {
-                if (event.key === 'ArrowRight') moveTab(1)
-                if (event.key === 'ArrowLeft') moveTab(-1)
-              }}
-            >
-              <Icon size={15} strokeWidth={1.75} aria-hidden="true" />
-              {tab.label}
-            </button>
-          )
-        })}
+      <div className={styles.tabsBar} data-before={tabsOverflow.before} data-after={tabsOverflow.after}>
+        {/* as setas ficam sempre montadas e só desaparecem por opacidade: montar e desmontar
+            elementos com backdrop-filter faz o navegador recompor a faixa e ela pisca */}
+        <button
+          type="button"
+          className={styles.tabArrow}
+          data-side="before"
+          data-visible={tabsOverflow.before}
+          tabIndex={-1}
+          aria-label="Aba anterior"
+          aria-hidden={!tabsOverflow.before}
+          disabled={!tabsOverflow.before}
+          onClick={() => stepTab(-1)}
+        >
+          <ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
+        </button>
+        <div ref={tabsRef} className={styles.tabs} role="tablist" aria-label="Seções da administração" onScroll={updateTabsOverflow}>
+          {tabs.map((tab) => {
+            const Icon = tab.icon
+            const isActive = tab.id === activeTab
+            return (
+              <button
+                key={tab.id}
+                id={`admin-tab-${tab.id}`}
+                type="button"
+                role="tab"
+                className={styles.tab}
+                aria-selected={isActive}
+                aria-controls="admin-tabpanel"
+                tabIndex={isActive ? 0 : -1}
+                onClick={() => setSelectedTab(tab.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'ArrowRight') moveTab(1)
+                  if (event.key === 'ArrowLeft') moveTab(-1)
+                }}
+              >
+                <Icon size={15} strokeWidth={1.75} aria-hidden="true" />
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
+        <button
+          type="button"
+          className={styles.tabArrow}
+          data-side="after"
+          data-visible={tabsOverflow.after}
+          tabIndex={-1}
+          aria-label="Próxima aba"
+          aria-hidden={!tabsOverflow.after}
+          disabled={!tabsOverflow.after}
+          onClick={() => stepTab(1)}
+        >
+          <ChevronRight size={16} strokeWidth={2} aria-hidden="true" />
+        </button>
       </div>
 
       <div id="admin-tabpanel" role="tabpanel" aria-labelledby={`admin-tab-${activeTab}`} className={styles.tabPanel}>

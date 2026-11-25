@@ -37,6 +37,22 @@ export function formatCsvDate(value: Date | string): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
+/**
+ * Fuso das datas do CSV ("UTC-03:00"): elas saem no horário local de quem exportou, então o
+ * cabeçalho diz qual é, para o arquivo continuar fazendo sentido quando aberto em outro lugar.
+ */
+export function utcOffsetLabel(date: Pick<Date, 'getTimezoneOffset'> = new Date()): string {
+  const offset = -date.getTimezoneOffset() // getTimezoneOffset é positivo a oeste de Greenwich
+  const sign = offset < 0 ? '-' : '+'
+  const abs = Math.abs(offset)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `UTC${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`
+}
+
+/** Rótulo de coluna de data com o fuso: "Início do intervalo (UTC-03:00)". */
+const withOffset = (label: string, reference?: Date | string) =>
+  `${label} (${utcOffsetLabel(reference ? new Date(reference) : new Date())})`
+
 /** Trecho seguro para nome de arquivo: "Fraud Detector" -> "fraud-detector". */
 export function slugify(text: string): string {
   return (
@@ -71,10 +87,11 @@ export function downloadCsv(fileName: string, content: string): void {
 
 // ---------- conteúdos exportados ----------
 
-const SERIES_HEADER = [
+/** Cabeçalho das séries; o fuso vem da data do primeiro intervalo exportado. */
+const seriesHeader = (reference?: string) => [
   'Serviço',
   'Região',
-  'Início do intervalo',
+  withOffset('Início do intervalo', reference),
   'Coletas',
   'CO₂e médio por coleta (gCO₂e)',
   'Energia média por coleta (kWh)',
@@ -103,7 +120,7 @@ function seriesRow(name: string, regionCode: string, point: TimeSeriesPointDto):
  */
 export function serviceSeriesCsv(name: string, regionCode: string, points: TimeSeriesPointDto[]): string {
   return toCsv(
-    SERIES_HEADER,
+    seriesHeader(points[0]?.timestamp),
     points.map((point) => seriesRow(name, regionCode, point)),
   )
 }
@@ -114,7 +131,7 @@ export function serviceSeriesCsv(name: string, regionCode: string, points: TimeS
  */
 export function compareSeriesCsv(data: TimeSeriesCompareDto): string {
   return toCsv(
-    SERIES_HEADER,
+    seriesHeader(data.period.from),
     data.series.flatMap((series) => series.points.map((point) => seriesRow(series.name, series.regionCode, point))),
   )
 }
@@ -127,7 +144,17 @@ export function compareTotalsCsv(data: CompareDto): string {
   const from = formatCsvDate(data.period.from)
   const to = formatCsvDate(data.period.to)
   return toCsv(
-    ['Serviço', 'ID', 'Região', 'Estado no período', 'Coletas', 'CO₂e no período (gCO₂e)', 'Energia no período (kWh)', 'Início do período', 'Fim do período'],
+    [
+      'Serviço',
+      'ID',
+      'Região',
+      'Estado no período',
+      'Coletas',
+      'CO₂e no período (gCO₂e)',
+      'Energia no período (kWh)',
+      withOffset('Início do período', data.period.from),
+      withOffset('Fim do período', data.period.to),
+    ],
     data.items.map((item) => {
       const isActive = item.state === 'active'
       return [

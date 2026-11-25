@@ -57,10 +57,3 @@ A Sprint 3 consolidou a etapa final do projeto. A equipe ampliou a área adminis
 Como ponto positivo, a integração entre frontend e backend permitiu que as configurações administrativas passassem a refletir no funcionamento do monitoramento. A revisão final também ajudou a reunir as instruções de execução e as referências do projeto.
 
 O principal ponto de melhoria continua sendo a atualização frequente das issues. Parte das alterações de status ficou concentrada no final da sprint, o que reduz a precisão do burndown e dificulta acompanhar a evolução real durante o período.
-
----
-
-## Ações para a entrega final
-
-- Registrar a Sprint Review e a retrospectiva nas respectivas issues.
-- Criar a tag da versão entregue e concluir o fechamento administrativo da sprint.
