@@ -121,7 +121,9 @@ export class CollectionsRepository {
    */
   /**
    * Série temporal das coletas: agrupa as coletas de [from, to] em intervalos de
-   * `bucketSeconds` (alinhados a `from`, via date_bin) e devolve a MÉDIA de cada métrica.
+   * `bucketSeconds` e devolve a MÉDIA de cada métrica. Os intervalos são alinhados a `origin`
+   * (ex.: meia-noite local, para cair em horários redondos) ou, sem ela, a `from`, via date_bin.
+   * Só o rótulo dos intervalos muda com a origem: as coletas consideradas são sempre as de [from, to].
    * Intervalos sem coleta não aparecem. Ordem cronológica crescente.
    */
   async getTimeSeries(
@@ -129,13 +131,14 @@ export class CollectionsRepository {
     to: Date,
     bucketSeconds: number,
     serviceId?: string,
+    origin?: Date,
   ): Promise<TimeSeriesRow[]> {
     const conditions: SQL[] = [gte(collections.timestamp, from), lte(collections.timestamp, to)];
     if (serviceId) {
       conditions.push(eq(collections.serviceId, serviceId));
     }
 
-    const bucket = sql<Date>`date_bin(make_interval(secs => ${bucketSeconds}), ${collections.timestamp}, ${from.toISOString()}::timestamptz)`;
+    const bucket = sql<Date>`date_bin(make_interval(secs => ${bucketSeconds}), ${collections.timestamp}, ${(origin ?? from).toISOString()}::timestamptz)`;
 
     return this.dbService.db
       .select({
@@ -158,20 +161,21 @@ export class CollectionsRepository {
 
   /**
    * Séries temporais separadas por serviço: mesma agregação de `getTimeSeries`
-   * (média por intervalo, intervalos alinhados em `from`), mas agrupando também por serviço,
-   * para que nenhum ponto misture coletas de serviços diferentes.
+   * (média por intervalo, intervalos alinhados em `origin` ou em `from`), mas agrupando também
+   * por serviço, para que nenhum ponto misture coletas de serviços diferentes.
    */
   async getTimeSeriesByService(
     from: Date,
     to: Date,
     bucketSeconds: number,
     serviceIds: string[],
+    origin?: Date,
   ): Promise<ServiceTimeSeriesRow[]> {
     if (serviceIds.length === 0) {
       return [];
     }
 
-    const bucket = sql<Date>`date_bin(make_interval(secs => ${bucketSeconds}), ${collections.timestamp}, ${from.toISOString()}::timestamptz)`;
+    const bucket = sql<Date>`date_bin(make_interval(secs => ${bucketSeconds}), ${collections.timestamp}, ${(origin ?? from).toISOString()}::timestamptz)`;
 
     return this.dbService.db
       .select({

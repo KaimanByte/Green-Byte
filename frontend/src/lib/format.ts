@@ -26,9 +26,12 @@ export const formatTime = (date: Date) =>
 export const formatDateTime = (date: Date) =>
   date.toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 
-/** Hora para janelas curtas; dia + hora para janelas de vários dias. */
+/**
+ * Hora para janelas curtas; dia + hora a partir de meio dia de janela. Numa janela de 24 h
+ * o começo e o fim têm a mesma hora em dias diferentes ("02:00" e "02:00"), então o dia é necessário.
+ */
 export function formatBucketLabel(date: Date, spanMs: number): string {
-  return spanMs > 26 * 3_600_000 ? formatDateTime(date) : formatTime(date)
+  return spanMs >= 12 * 3_600_000 ? formatDateTime(date) : formatTime(date)
 }
 
 /** "há 12 s", "há 2 min", "há 3 h" — para indicar o quão recente é um dado. */

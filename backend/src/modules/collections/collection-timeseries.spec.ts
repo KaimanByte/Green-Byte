@@ -76,7 +76,7 @@ describe('CollectionTimeSeriesService', () => {
 
     const result = await service.getTimeSeries(new Date(FROM), new Date(TO), 'svc-1', 720);
 
-    expect(getTimeSeries).toHaveBeenCalledWith(new Date(FROM), new Date(TO), 720, 'svc-1');
+    expect(getTimeSeries).toHaveBeenCalledWith(new Date(FROM), new Date(TO), 720, 'svc-1', new Date(FROM));
     expect(result).toMatchObject({
       serviceId: 'svc-1',
       period: { from: FROM, to: TO },
@@ -97,8 +97,22 @@ describe('CollectionTimeSeriesService', () => {
     const result = await service.getTimeSeries(new Date(FROM), new Date(TO));
 
     expect(findById).not.toHaveBeenCalled();
-    expect(getTimeSeries).toHaveBeenCalledWith(new Date(FROM), new Date(TO), 720, undefined);
+    expect(getTimeSeries).toHaveBeenCalledWith(new Date(FROM), new Date(TO), 720, undefined, new Date(FROM));
     expect(result.serviceId).toBeNull();
+  });
+
+  it('alinha os intervalos na origem pedida, sem mudar o período consultado', async () => {
+    const origin = new Date('2026-10-01T03:00:00Z');
+    const result = await service.getTimeSeries(new Date(FROM), new Date(TO), undefined, 900, origin);
+
+    expect(getTimeSeries).toHaveBeenCalledWith(new Date(FROM), new Date(TO), 900, undefined, origin);
+    expect(result.period).toEqual({ from: FROM, to: TO });
+    expect(result.bucketOrigin).toBe('2026-10-01T03:00:00.000Z');
+  });
+
+  it('sem origem, os intervalos começam no próprio from', async () => {
+    const result = await service.getTimeSeries(new Date(FROM), new Date(TO));
+    expect(result.bucketOrigin).toBe(new Date(FROM).toISOString());
   });
 
   it('sem coletas devolve série vazia (total 0)', async () => {
@@ -129,10 +143,10 @@ describe('CollectionTimeSeriesController', () => {
     const controller = new CollectionTimeSeriesController({ getTimeSeries } as unknown as CollectionTimeSeriesService);
 
     await controller.getTimeSeries(FROM, TO, ' svc-1 ', '900');
-    expect(getTimeSeries).toHaveBeenCalledWith(new Date(FROM), new Date(TO), 'svc-1', 900);
+    expect(getTimeSeries).toHaveBeenCalledWith(new Date(FROM), new Date(TO), 'svc-1', 900, undefined);
 
     await controller.getTimeSeries(undefined, undefined, '', undefined);
-    expect(getTimeSeries).toHaveBeenLastCalledWith(undefined, undefined, undefined, undefined);
+    expect(getTimeSeries).toHaveBeenLastCalledWith(undefined, undefined, undefined, undefined, undefined);
   });
 
   it('bucketSeconds inválido → 400 antes de consultar', async () => {
@@ -182,7 +196,7 @@ describe('CollectionTimeSeriesService.compareTimeSeries', () => {
 
     const result = await service.compareTimeSeries(['billing-api', 'auth-api'], new Date(FROM), new Date(TO), 900);
 
-    expect(getTimeSeriesByService).toHaveBeenCalledWith(new Date(FROM), new Date(TO), 900, ['billing-api', 'auth-api']);
+    expect(getTimeSeriesByService).toHaveBeenCalledWith(new Date(FROM), new Date(TO), 900, ['billing-api', 'auth-api'], new Date(FROM));
     expect(result).toMatchObject({ bucketSeconds: 900, aggregation: 'avg', total: 2 });
     expect(result.units.co2Emissions).toBe('gCO2e');
     expect(result.series.map((s) => [s.serviceId, s.name, s.total])).toEqual([
@@ -254,7 +268,7 @@ describe('CollectionTimeSeriesController.compareTimeSeries', () => {
     const controller = new CollectionTimeSeriesController({ compareTimeSeries } as unknown as CollectionTimeSeriesService);
 
     await controller.compareTimeSeries(' billing-api, auth-api ,billing-api', FROM, TO, '900');
-    expect(compareTimeSeries).toHaveBeenCalledWith(['billing-api', 'auth-api'], new Date(FROM), new Date(TO), 900);
+    expect(compareTimeSeries).toHaveBeenCalledWith(['billing-api', 'auth-api'], new Date(FROM), new Date(TO), 900, undefined);
 
     await controller.compareTimeSeries(['billing-api', 'auth-api,payment-api']);
     expect(compareTimeSeries).toHaveBeenLastCalledWith(
@@ -262,6 +276,27 @@ describe('CollectionTimeSeriesController.compareTimeSeries', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
+    );
+  });
+
+  it('repassa a origem dos intervalos e rejeita origem inválida', async () => {
+    const compareTimeSeries = jest
+      .fn<CollectionTimeSeriesService['compareTimeSeries']>()
+      .mockResolvedValue({} as Awaited<ReturnType<CollectionTimeSeriesService['compareTimeSeries']>>);
+    const controller = new CollectionTimeSeriesController({ compareTimeSeries } as unknown as CollectionTimeSeriesService);
+
+    await controller.compareTimeSeries('billing-api,auth-api', FROM, TO, '900', '2026-10-01T03:00:00Z');
+    expect(compareTimeSeries).toHaveBeenLastCalledWith(
+      ['billing-api', 'auth-api'],
+      new Date(FROM),
+      new Date(TO),
+      900,
+      new Date('2026-10-01T03:00:00Z'),
+    );
+
+    await expect(controller.compareTimeSeries('billing-api,auth-api', FROM, TO, '900', 'ontem')).rejects.toThrow(
+      BadRequestException,
     );
   });
 

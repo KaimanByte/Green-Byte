@@ -1,3 +1,10 @@
+/* desvio vertical do nome (cotovelo), em px; registrado para poder ser animado */
+@property --label-shift {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+
 .marker {
   --marker-scale: 1;
   /* deslocamento pra afastar marcadores que se sobrepõem (vem do GloboScene) */
@@ -11,8 +18,11 @@
   display: grid;
   place-items: center;
   transform: translate(var(--offset-x), var(--offset-y)) scale(var(--marker-scale));
-  /* só a opacidade anima: a escala muda a cada quadro e não pode "atrasar" */
-  transition: opacity 0.2s;
+  /* a escala muda a cada quadro e não pode "atrasar"; o cotovelo (--label-shift) desliza
+     até o valor novo em vez de pular, e o nome e os fios acompanham por herança */
+  transition:
+    opacity 0.2s,
+    --label-shift 0.45s var(--ease-out-soft);
 }
 
 .marker:hover {
@@ -44,7 +54,10 @@
   align-items: center;
   gap: 8px;
   padding-right: 6px;
-  transform: translateY(-50%);
+  /* --label-shift: desvio vertical do cotovelo, calculado pelo MarkerLabelLayout */
+  transform: translateY(calc(-50% + var(--label-shift)));
+  /* recolher: o nome desliza um pouco para dentro do marcador enquanto some */
+  translate: var(--label-retract-x, 0px) 0;
   font-family: var(--font-body);
   font-size: 12px;
   font-weight: 500;
@@ -54,7 +67,9 @@
   color: var(--text-primary);
   /* sombra escura: mantém o texto legível sobre qualquer parte da Terra */
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
-  transition: opacity 0.2s;
+  transition:
+    opacity 0.22s var(--ease-out-soft),
+    translate 0.22s var(--ease-out-soft);
 }
 
 /* o fio: começa fraco no texto e fica forte perto do marcador */
@@ -63,10 +78,13 @@
   width: 28px;
   height: 1px;
   background: linear-gradient(90deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.7));
+  /* encolhe em direção ao marcador ao recolher e cresce a partir dele ao estender */
+  transform-origin: right center;
+  transition: transform 0.22s var(--ease-out-soft);
 }
 
-/* rótulo à direita (ex.: Ashburn, pra não bater no Toronto) */
-.labelRight {
+/* rótulo à direita: escolhido pelo lado preferido ou quando à esquerda ele sairia da tela */
+.marker[data-label-side='right'] .label {
   right: auto;
   left: 100%;
   flex-direction: row-reverse;
@@ -74,8 +92,42 @@
   padding-left: 6px;
 }
 
-.labelRight::after {
+.marker[data-label-side='right'] .label::after {
   background: linear-gradient(90deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.15));
+  transform-origin: left center;
+}
+
+/* cotovelo: o fio sai reto para cima ou para baixo do marcador e vira 90° até o nome.
+   Este é o trecho vertical, na ponta do fio horizontal que fica junto do marcador. Ele existe
+   sempre, com altura 0 sem desvio, para crescer e encolher junto com o --label-shift animado. */
+.label::before {
+  content: '';
+  position: absolute;
+  right: 6px;
+  width: 1px;
+  /* do centro do nome até a altura do marcador: para baixo se o nome subiu, para cima se desceu */
+  top: calc(50% + min(0px, var(--label-shift) * -1));
+  height: max(var(--label-shift), var(--label-shift) * -1);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.marker[data-label-side='right'] .label::before {
+  right: auto;
+  left: 6px;
+}
+
+/* troca de lado, 1ª etapa: o nome some deslizando para o marcador e o fio encolhe até ele */
+.marker[data-label-retracting='true'] .label {
+  --label-retract-x: 10px;
+  opacity: 0;
+}
+
+.marker[data-label-retracting='true'][data-label-side='right'] .label {
+  --label-retract-x: -10px;
+}
+
+.marker[data-label-retracting='true'] .label::after {
+  transform: scaleX(0);
 }
 
 /* selecionado: o nome já está no painel, e a linha do painel sai pela direita */
@@ -90,5 +142,16 @@
 @keyframes anchor-in {
   from {
     opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marker {
+    transition: opacity 0.2s;
+  }
+
+  .label,
+  .label::after {
+    transition: none;
   }
 }

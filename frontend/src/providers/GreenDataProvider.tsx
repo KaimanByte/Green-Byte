@@ -3,7 +3,11 @@ import { GreenDataContext, type GreenDataContextValue } from '../contexts/GreenD
 import { useFetch } from '../hooks/useFetch'
 import { getDashboardData, type DashboardData } from '../services/dashboardService'
 import { DEFAULT_PERIOD_ID, getPeriodRange, type PeriodId } from '../lib/periods'
-import { dashboardRefreshIntervalMs, subscribeToCollectionIntervalChanged } from '../lib/collectionRefresh'
+import {
+  dashboardRefreshIntervalMs,
+  nextRefreshDelayMs,
+  subscribeToCollectionIntervalChanged,
+} from '../lib/collectionRefresh'
 import type { EmissionsPeriod } from '../types/api'
 
 type DashboardResult = DashboardData & { period: EmissionsPeriod }
@@ -52,39 +56,50 @@ export function GreenDataProvider({ children }: { children: ReactNode }) {
     [refetch],
   )
 
-  // atualização periódica só com a aba visível; volta a atualizar ao reabrir a aba
+  // horário da coleta mais recente gravada no banco (entre todos os serviços)
+  const latestCollections = data?.latestCollections
+  const lastCollectionMs = useMemo(
+    () =>
+      (latestCollections ?? []).reduce((max, collection) => {
+        const time = new Date(collection.timestamp).getTime()
+        return Number.isFinite(time) ? Math.max(max, time) : max
+      }, 0),
+    [latestCollections],
+  )
+
+  // Atualização automática no ritmo do backend: depois de cada busca (com ou sem sucesso), a
+  // próxima é marcada para logo depois da próxima coleta prevista, e não um intervalo fixo a
+  // partir de agora. Só com a aba visível; ao reabrir a aba busca na hora.
   useEffect(() => {
+    if (loading) return // a busca em andamento reagenda ao terminar
+
     let timer = 0
     const schedule = () => {
-      window.clearInterval(timer)
-      if (document.visibilityState === 'visible') timer = window.setInterval(refetch, refreshIntervalMs)
+      window.clearTimeout(timer)
+      if (document.visibilityState !== 'visible') return
+      const lastCollectionAt = lastCollectionMs > 0 ? new Date(lastCollectionMs) : null
+      timer = window.setTimeout(refetch, nextRefreshDelayMs(lastCollectionAt, collectionIntervalSeconds))
     }
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') refetch()
-      schedule()
+      else window.clearTimeout(timer)
     }
 
     schedule()
     document.addEventListener('visibilitychange', handleVisibility)
     return () => {
-      window.clearInterval(timer)
+      window.clearTimeout(timer)
       document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [refetch, refreshIntervalMs])
+  }, [loading, refetch, lastCollectionMs, collectionIntervalSeconds])
 
   const value = useMemo<GreenDataContextValue>(() => {
-    const latestCollections = data?.latestCollections ?? []
-    const lastCollectionMs = latestCollections.reduce((max, collection) => {
-      const time = new Date(collection.timestamp).getTime()
-      return Number.isFinite(time) ? Math.max(max, time) : max
-    }, 0)
-
     return {
       regions: data?.regions ?? [],
       services: data?.services ?? [],
       emissions: data?.emissions ?? [],
       serviceEmissions: data?.serviceEmissions ?? [],
-      latestCollections,
+      latestCollections: latestCollections ?? [],
       lastCollectionAt: lastCollectionMs > 0 ? new Date(lastCollectionMs) : null,
       summary: data?.summary ?? null,
       loading,
@@ -92,11 +107,12 @@ export function GreenDataProvider({ children }: { children: ReactNode }) {
       failedSources: data?.failedSources ?? [],
       refetch,
       lastSync: updatedAt,
+      refreshIntervalSeconds: refreshIntervalMs / 1_000,
       periodId,
       setPeriodId,
       period: data?.period ?? getPeriodRange(periodId),
     }
-  }, [data, loading, error, refetch, updatedAt, periodId, setPeriodId])
+  }, [data, latestCollections, lastCollectionMs, loading, error, refetch, updatedAt, refreshIntervalMs, periodId, setPeriodId])
 
   return <GreenDataContext.Provider value={value}>{children}</GreenDataContext.Provider>
 }

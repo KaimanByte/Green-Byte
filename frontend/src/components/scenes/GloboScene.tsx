@@ -5,6 +5,7 @@ import type {Region} from '../../data/regions'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { latLngToVector3 } from '../../lib/geo'
 import { RegionMarker } from './RegionMarker'
+import { MarkerLabelLayout } from './MarkerLabelLayout'
 import { DeepSky, EarthIntroLayers, IntroCamera, SolarSystem, SunLight, WarpStars } from './SpaceIntro'
 import { BlurredBackground } from './SpaceFocus'
 import { LiquidLens } from './LiquidLens'
@@ -160,6 +161,7 @@ function Earth({ regions, selectedCode, onSelectRegion, focusRequest, introPhase
             onSelect={onSelectRegion}
           />
         ))}
+        {isIntroDone && <MarkerLabelLayout />}
       </mesh>
       <mesh ref={cloudsRef}>
         <sphereGeometry args={[1.362, 72, 72]} />

@@ -2,8 +2,17 @@ import { useMemo, useState, type CSSProperties, type KeyboardEvent } from 'react
 import { useGreenData } from '../../hooks/useGreenData'
 import { MAX_COMPARE_SERIES, useCompareTimeSeries } from '../../hooks/useTimeSeries'
 import { compareSeriesCsv, csvFileName } from '../../lib/csv'
+import { niceScale } from '../../lib/chartScale'
 import { formatBucketLabel } from '../../lib/format'
-import { METRIC_OPTIONS, buildSeries, getMetricOption, type MetricId, type SeriesPoint } from '../../lib/metrics'
+import { ChartYAxis } from './ChartYAxis'
+import {
+  METRIC_OPTIONS,
+  buildSeries,
+  getMetricOption,
+  periodEdges,
+  type MetricId,
+  type SeriesPoint,
+} from '../../lib/metrics'
 import { ExportCsvButton } from './ExportCsvButton'
 import base from './RegionPanel.module.css'
 import dash from './DashboardPanel.module.css'
@@ -92,15 +101,16 @@ export function CompareChart({ ids }: Props) {
   if (!sameSlots(nextSlots, colorSlots)) setColorSlots(nextSlots)
   const lines = useMemo<Line[] | null>(() => {
     if (!compare.data) return null
-    const { period, bucketSeconds, series } = compare.data
+    const { period, bucketSeconds, bucketOrigin, series } = compare.data
     const from = new Date(period.from)
     const to = new Date(period.to)
+    const origin = bucketOrigin ? new Date(bucketOrigin) : from
     return series.map((s) => ({
       serviceId: s.serviceId,
       name: s.name,
       color: PALETTE[(colorSlots[s.serviceId] ?? 0) % PALETTE.length],
       total: s.total,
-      points: buildSeries(s.points, metricId, from, to, bucketSeconds),
+      points: buildSeries(s.points, metricId, from, to, bucketSeconds, origin),
     }))
   }, [compare.data, metricId, colorSlots])
 
@@ -150,6 +160,12 @@ export function CompareChart({ ids }: Props) {
             activeIndex={activeIndex}
             onActiveIndexChange={setActiveIndex}
             format={metric.format}
+            unit={metric.unit}
+            periodMs={
+              compare.data
+                ? new Date(compare.data.period.to).getTime() - new Date(compare.data.period.from).getTime()
+                : 0
+            }
             label={`${metric.title} por serviço, a cada ${bucketText}`}
           />
           <ul className={styles.legend} aria-label="Serviços no gráfico">
@@ -219,10 +235,24 @@ type LinesProps = {
   activeIndex: number | null
   onActiveIndexChange: (index: number | null) => void
   format: (value: number) => string
+  /** unidade mostrada no topo do eixo vertical */
+  unit: string
+  /** duração do período pedido: a ponta esquerda é a última amostra menos ele */
+  periodMs: number
   label: string
 }
 
-function CompareLines({ lines, hiddenIds, highlightId, activeIndex, onActiveIndexChange, format, label }: LinesProps) {
+function CompareLines({
+  lines,
+  hiddenIds,
+  highlightId,
+  activeIndex,
+  onActiveIndexChange,
+  format,
+  unit,
+  periodMs,
+  label,
+}: LinesProps) {
   const withData = lines.filter((line) => line.total > 0)
   const visible = withData.filter((line) => !hiddenIds.includes(line.serviceId))
   const grid = lines[0]?.points ?? []
@@ -243,12 +273,13 @@ function CompareLines({ lines, hiddenIds, highlightId, activeIndex, onActiveInde
   }
 
   const span = grid[grid.length - 1].timestamp.getTime() - grid[0].timestamp.getTime()
+  // pontas do eixo do tempo: a amostra mais recente das linhas visíveis e ela menos o período pedido
+  const lastSampleIndex = grid.findLastIndex((_, i) => visible.some((line) => line.points[i].value !== null))
+  const edges = periodEdges(grid[lastSampleIndex].timestamp, periodMs)
   const values = visible.flatMap((line) => line.points.flatMap((p) => (p.value === null ? [] : [p.value])))
-  const rawMin = Math.min(...values)
-  const rawMax = Math.max(...values)
-  const pad = (rawMax - rawMin) * 0.1 || Math.abs(rawMax) * 0.1 || 1
-  const min = Math.max(0, rawMin - pad)
-  const max = rawMax + pad
+  // valores redondos no eixo, cobrindo só as linhas visíveis (ocultar uma linha reajusta a escala)
+  const scale = niceScale(Math.min(...values), Math.max(...values), 5)
+  const { min, max } = scale
   const step = WIDTH / (grid.length - 1)
 
   const xOf = (i: number) => i * step
@@ -313,115 +344,115 @@ function CompareLines({ lines, hiddenIds, highlightId, activeIndex, onActiveInde
       tabIndex={0}
       onKeyDown={handleKeyDown}
       onBlur={() => onActiveIndexChange(null)}
-      aria-label={`${label}. ${summary}. Use as setas para ver cada intervalo.`}
+      aria-label={`${label}, de ${formatBucketLabel(edges.start, span)} a ${formatBucketLabel(edges.end, span)}. ${summary}. Use as setas para ver cada intervalo.`}
     >
-      <div className={dash.chartPlot} onPointerLeave={() => onActiveIndexChange(null)}>
-        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none" aria-hidden="true">
-          {[0.25, 0.5, 0.75].map((f) => (
-            <line key={f} className={styles.gridLine} x1={0} x2={WIDTH} y1={HEIGHT * f} y2={HEIGHT * f} />
-          ))}
-          {visible.map((line) => {
-            const dimmed = highlightId !== null && highlightId !== line.serviceId
-            const strong = highlightId === line.serviceId
-            return (
-              <g
-                key={line.serviceId}
-                className={`${styles.series} ${dimmed ? styles.seriesDimmed : ''} ${strong ? styles.seriesStrong : ''}`}
-                style={{ '--line-color': line.color } as CSSProperties}
-              >
-                {segmentsOf(line.points).map((segment, k) =>
-                  segment.length > 1 ? (
-                    <path key={k} d={toPath(segment)} className={styles.line} />
-                  ) : (
-                    // ponto isolado entre lacunas: marca curta em vez de sumir
-                    <line
-                      key={k}
-                      className={styles.line}
-                      x1={segment[0].x}
-                      x2={segment[0].x}
-                      y1={segment[0].y - 1.5}
-                      y2={segment[0].y + 1.5}
-                      strokeWidth={4}
-                      strokeLinecap="round"
-                    />
-                  ),
-                )}
-              </g>
-            )
-          })}
-          {index !== null && <line className={dash.chartCursor} x1={xOf(index)} x2={xOf(index)} y1={0} y2={HEIGHT} />}
-          {grid.map((_, i) => (
-            <rect
-              key={i}
-              x={Math.max(0, xOf(i) - step / 2)}
-              y={0}
-              width={step}
-              height={HEIGHT}
-              fill="transparent"
-              onPointerEnter={() => onActiveIndexChange(i)}
-            />
-          ))}
-        </svg>
-
-        {/* marcadores em HTML: no SVG esticado (preserveAspectRatio=none) um círculo viraria elipse */}
-        {index !== null &&
-          activeRows.map(({ line, point }) =>
-            point.value === null ? null : (
-              <span
-                key={line.serviceId}
-                className={styles.dot}
-                style={
-                  {
-                    '--line-color': line.color,
-                    left: `${activeLeft}%`,
-                    top: `${(yOf(point.value) / HEIGHT) * 100}%`,
-                  } as CSSProperties
-                }
-              />
-            ),
-          )}
-
-        {index !== null && (
-          <div
-            className={`${dash.chartTooltip} ${styles.tooltip}`}
-            // desloca o tooltip na proporção do cursor: à esquerda ele abre para a direita e
-            // vice-versa, então nunca sai do gráfico, qualquer que seja a largura
-            style={{ left: `${activeLeft}%`, transform: `translateX(-${activeLeft}%)` }}
-            role="status"
-          >
-            <span className={dash.chartTooltipTime}>{formatBucketLabel(grid[index].timestamp, span)}</span>
-            {activeRows.map(({ line, point }) => (
-              <span
-                key={line.serviceId}
-                className={styles.tooltipRow}
-                style={{ '--line-color': line.color } as CSSProperties}
-              >
-                <span className={styles.swatch} aria-hidden="true" />
-                <span className={styles.tooltipName}>{line.name}</span>
-                {point.value !== null ? (
-                  <strong>
-                    {format(point.value)}
-                    <small>
-                      {' '}
-                      · {point.collectionsCount} coleta{point.collectionsCount === 1 ? '' : 's'}
-                    </small>
-                  </strong>
-                ) : (
-                  <em>sem coleta</em>
-                )}
-              </span>
+      <div className={dash.chartBody}>
+        <ChartYAxis scale={scale} unit={unit} yPercent={(value) => (yOf(value) / HEIGHT) * 100} />
+        <div className={dash.chartPlot} onPointerLeave={() => onActiveIndexChange(null)}>
+          <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none" aria-hidden="true">
+            {scale.ticks.map((tick) => (
+              <line key={tick} className={dash.chartGrid} x1={0} x2={WIDTH} y1={yOf(tick)} y2={yOf(tick)} />
             ))}
-          </div>
-        )}
+            {visible.map((line) => {
+              const dimmed = highlightId !== null && highlightId !== line.serviceId
+              const strong = highlightId === line.serviceId
+              return (
+                <g
+                  key={line.serviceId}
+                  className={`${styles.series} ${dimmed ? styles.seriesDimmed : ''} ${strong ? styles.seriesStrong : ''}`}
+                  style={{ '--line-color': line.color } as CSSProperties}
+                >
+                  {segmentsOf(line.points).map((segment, k) =>
+                    segment.length > 1 ? (
+                      <path key={k} d={toPath(segment)} className={styles.line} />
+                    ) : (
+                      // ponto isolado entre lacunas: marca curta em vez de sumir
+                      <line
+                        key={k}
+                        className={styles.line}
+                        x1={segment[0].x}
+                        x2={segment[0].x}
+                        y1={segment[0].y - 1.5}
+                        y2={segment[0].y + 1.5}
+                        strokeWidth={4}
+                        strokeLinecap="round"
+                      />
+                    ),
+                  )}
+                </g>
+              )
+            })}
+            {index !== null && <line className={dash.chartCursor} x1={xOf(index)} x2={xOf(index)} y1={0} y2={HEIGHT} />}
+            {grid.map((_, i) => (
+              <rect
+                key={i}
+                x={Math.max(0, xOf(i) - step / 2)}
+                y={0}
+                width={step}
+                height={HEIGHT}
+                fill="transparent"
+                onPointerEnter={() => onActiveIndexChange(i)}
+              />
+            ))}
+          </svg>
+  
+          {/* marcadores em HTML: no SVG esticado (preserveAspectRatio=none) um círculo viraria elipse */}
+          {index !== null &&
+            activeRows.map(({ line, point }) =>
+              point.value === null ? null : (
+                <span
+                  key={line.serviceId}
+                  className={styles.dot}
+                  style={
+                    {
+                      '--line-color': line.color,
+                      left: `${activeLeft}%`,
+                      top: `${(yOf(point.value) / HEIGHT) * 100}%`,
+                    } as CSSProperties
+                  }
+                />
+              ),
+            )}
+  
+          {index !== null && (
+            <div
+              className={`${dash.chartTooltip} ${styles.tooltip}`}
+              // desloca o tooltip na proporção do cursor: à esquerda ele abre para a direita e
+              // vice-versa, então nunca sai do gráfico, qualquer que seja a largura
+              style={{ left: `${activeLeft}%`, transform: `translateX(-${activeLeft}%)` }}
+              role="status"
+            >
+              <span className={dash.chartTooltipTime}>{formatBucketLabel(grid[index].timestamp, span)}</span>
+              {activeRows.map(({ line, point }) => (
+                <span
+                  key={line.serviceId}
+                  className={styles.tooltipRow}
+                  style={{ '--line-color': line.color } as CSSProperties}
+                >
+                  <span className={styles.swatch} aria-hidden="true" />
+                  <span className={styles.tooltipName}>{line.name}</span>
+                  {point.value !== null ? (
+                    <strong>
+                      {format(point.value)}
+                      <small>
+                        {' '}
+                        · {point.collectionsCount} coleta{point.collectionsCount === 1 ? '' : 's'}
+                      </small>
+                    </strong>
+                  ) : (
+                    <em>sem coleta</em>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* pontas do eixo do tempo: primeira e última amostra, alinhadas à área das linhas */}
+        <div className={`${dash.chartAxis} ${dash.chartTimeAxis}`} aria-hidden="true">
+          <span title="Última amostra menos o período">{formatBucketLabel(edges.start, span)}</span>
+          <span title="Última amostra">{formatBucketLabel(edges.end, span)}</span>
+        </div>
       </div>
-
-      <figcaption className={dash.chartAxis}>
-        <span>{formatBucketLabel(grid[0].timestamp, span)}</span>
-        <span>
-          eixo {format(min)} – {format(max)}
-        </span>
-        <span>{formatBucketLabel(grid[grid.length - 1].timestamp, span)}</span>
-      </figcaption>
     </figure>
   )
 }

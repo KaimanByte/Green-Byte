@@ -11,7 +11,7 @@ const ISO_8601 =
  * Formatos malformados ou datas inexistentes (ex.: 2026-02-30) → 400.
  * Data sem fuso é interpretada como UTC.
  */
-export function parseDateParam(name: 'from' | 'to', value?: string): Date | undefined {
+export function parseDateParam(name: 'from' | 'to' | 'origin', value?: string): Date | undefined {
   if (value === undefined || value === '') {
     return undefined;
   }

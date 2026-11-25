@@ -56,16 +56,17 @@ export function RegionMarker({ region, radius, isSelected, onSelect }: Props) {
           className={`liquid liquid--clear ${isSelected ? 'liquid--tint' : ''} ${styles.marker} ${isSelected ? styles.selected : ''}`}
           data-region={region.code}
           data-visible="true" // <- Importante: já inicia como true para o GloboScene detectar
+          // lado preferido do nome; o MarkerLabelLayout decide o lado real a cada quadro
+          data-preferred-side={region.labelSide ?? 'left'}
+          data-label-side={region.labelSide ?? 'left'}
+          data-label-retracting="false"
           aria-label={`Ver detalhes de ${region.city}`}
           aria-pressed={isSelected}
           onClick={() => onSelect(region.code)}
         >
           <span className="liquid__ring" aria-hidden="true" />
           <DataCenterIcon />
-                    <span
-            className={`${styles.label} ${region.labelSide === 'right' ? styles.labelRight : ''}`}
-            aria-hidden="true"
-          >
+          <span className={styles.label} data-marker-label aria-hidden="true">
             {region.city}
           </span>
         </button>

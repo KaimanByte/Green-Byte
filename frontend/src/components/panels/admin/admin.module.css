@@ -52,16 +52,105 @@ aside.panel.panel {
   color: var(--text-muted);
 }
 
+/* faixa das abas: as setas ficam por cima das pontas quando há abas escondidas */
+.tabsBar {
+  position: relative;
+  flex: none;
+  margin: 20px 0 0;
+}
+
 .tabs {
   display: flex;
   gap: 4px;
-  margin: 20px 0 0;
   padding: 4px;
   border-radius: 999px;
   background: var(--surface-1);
   overflow-x: auto;
   scrollbar-width: none;
-  flex: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* esmaece as abas que passam por baixo das setas. A máscara é sempre a mesma e só o tamanho
+   do degradê muda: trocar ou remover o mask-image recria a camada e a faixa pisca. */
+@property --tabs-fade-before {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --tabs-fade-after {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.tabs {
+  --tabs-fade-before: 0px;
+  --tabs-fade-after: 0px;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--tabs-fade-before),
+    #000 calc(100% - var(--tabs-fade-after)),
+    transparent 100%
+  );
+  transition: --tabs-fade-before 0.2s var(--ease-out-soft), --tabs-fade-after 0.2s var(--ease-out-soft);
+}
+
+.tabsBar[data-before='true'] .tabs {
+  --tabs-fade-before: 56px;
+}
+
+.tabsBar[data-after='true'] .tabs {
+  --tabs-fade-after: 56px;
+}
+
+.tabArrow {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  background: rgba(20, 26, 28, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--surface-highlight), 0 4px 14px rgba(0, 0, 0, 0.35);
+  color: var(--text-primary);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition:
+    opacity 0.2s var(--ease-out-soft),
+    background 0.2s,
+    transform 0.2s var(--ease-spring);
+}
+
+.tabArrow[data-visible='false'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tabArrow[data-side='before'] {
+  left: 4px;
+}
+
+.tabArrow[data-side='after'] {
+  right: 4px;
+}
+
+.tabArrow:hover {
+  background: rgba(40, 48, 50, 0.92);
+}
+
+.tabArrow:active {
+  transform: translateY(-50%) scale(0.92);
 }
 
 .tab {
@@ -1316,6 +1405,11 @@ summary.cardTitle:focus-visible,
   .modal[open],
   .toast {
     animation: none;
+  }
+
+  .tabs,
+  .tabArrow {
+    transition: none;
   }
 
   .stackedBar span,

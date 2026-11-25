@@ -42,6 +42,12 @@ export class TimeSeriesResponseDto {
   @ApiProperty({ example: 900, description: 'Tamanho de cada intervalo, em segundos' })
   bucketSeconds: number;
 
+  @ApiProperty({
+    example: '2026-10-01T03:00:00.000Z',
+    description: 'Origem dos intervalos: cada intervalo começa em bucketOrigin + n × bucketSeconds',
+  })
+  bucketOrigin: string;
+
   @ApiProperty({ example: 'avg', description: 'Agregação aplicada às coletas de cada intervalo' })
   aggregation: 'avg';
 
@@ -78,7 +84,7 @@ export class TimeSeriesCompareSeriesDto {
 
 /**
  * Comparação histórica: uma série por serviço, todas com o mesmo período e o mesmo
- * `bucketSeconds` (intervalos alinhados no mesmo `from`), para comparação justa.
+ * `bucketSeconds` (intervalos alinhados na mesma origem), para comparação justa.
  */
 export class TimeSeriesCompareResponseDto {
   @ApiProperty({ type: PeriodDto })
@@ -86,6 +92,12 @@ export class TimeSeriesCompareResponseDto {
 
   @ApiProperty({ example: 900, description: 'Tamanho de cada intervalo, em segundos (igual para todas as séries)' })
   bucketSeconds: number;
+
+  @ApiProperty({
+    example: '2026-10-01T03:00:00.000Z',
+    description: 'Origem dos intervalos: cada intervalo começa em bucketOrigin + n × bucketSeconds',
+  })
+  bucketOrigin: string;
 
   @ApiProperty({ example: 'avg', description: 'Agregação aplicada às coletas de cada intervalo, por serviço' })
   aggregation: 'avg';

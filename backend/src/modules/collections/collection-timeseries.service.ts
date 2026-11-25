@@ -78,9 +78,11 @@ export class CollectionTimeSeriesService {
     to?: Date,
     serviceId?: string,
     bucketSecondsParam?: number,
+    origin?: Date,
   ): Promise<TimeSeriesResponseDto> {
     const period = resolvePeriod(from, to);
     const bucketSeconds = resolveBucketSeconds(period.from, period.to, bucketSecondsParam);
+    const bucketOrigin = origin ?? period.from;
 
     if (serviceId) {
       const service = await this.servicesRepository.findById(serviceId);
@@ -94,12 +96,14 @@ export class CollectionTimeSeriesService {
       period.to,
       bucketSeconds,
       serviceId,
+      bucketOrigin,
     );
 
     return {
       serviceId: serviceId ?? null,
       period: { from: period.from.toISOString(), to: period.to.toISOString() },
       bucketSeconds,
+      bucketOrigin: bucketOrigin.toISOString(),
       aggregation: 'avg',
       units: HISTORY_UNITS,
       total: rows.length,
@@ -118,6 +122,7 @@ export class CollectionTimeSeriesService {
     from?: Date,
     to?: Date,
     bucketSecondsParam?: number,
+    origin?: Date,
   ): Promise<TimeSeriesCompareResponseDto> {
     if (ids.length > MAX_COMPARE_SERIES) {
       throw new BadRequestException(
@@ -127,6 +132,7 @@ export class CollectionTimeSeriesService {
 
     const period = resolvePeriod(from, to);
     const bucketSeconds = resolveBucketSeconds(period.from, period.to, bucketSecondsParam);
+    const bucketOrigin = origin ?? period.from;
 
     const services = await this.servicesRepository.findAll();
     const serviceById = new Map(services.map((service) => [service.id, service]));
@@ -142,6 +148,7 @@ export class CollectionTimeSeriesService {
       period.to,
       bucketSeconds,
       ids,
+      bucketOrigin,
     );
 
     const rowsByService = new Map<string, TimeSeriesRow[]>(ids.map((id) => [id, []]));
@@ -167,6 +174,7 @@ export class CollectionTimeSeriesService {
     return {
       period: { from: period.from.toISOString(), to: period.to.toISOString() },
       bucketSeconds,
+      bucketOrigin: bucketOrigin.toISOString(),
       aggregation: 'avg',
       units: HISTORY_UNITS,
       total: series.length,

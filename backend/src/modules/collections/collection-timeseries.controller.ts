@@ -33,6 +33,12 @@ export class CollectionTimeSeriesController {
   @ApiQuery({ name: 'to', required: false, example: '2026-10-02T00:00:00Z' })
   @ApiQuery({ name: 'serviceId', required: false, example: 'billing-api' })
   @ApiQuery({ name: 'bucketSeconds', required: false, type: Number, example: 900 })
+  @ApiQuery({
+    name: 'origin',
+    required: false,
+    example: '2026-10-01T03:00:00Z',
+    description: 'Origem dos intervalos (ex.: meia-noite local) para caírem em horários redondos; padrão: from',
+  })
   @ApiOkResponse({ type: TimeSeriesResponseDto })
   @ApiBadRequestResponse({ description: 'from/to/bucketSeconds inválidos ou intervalos demais.' })
   @ApiNotFoundResponse({ description: 'Serviço inexistente.' })
@@ -41,12 +47,14 @@ export class CollectionTimeSeriesController {
     @Query('to') to?: string,
     @Query('serviceId') serviceId?: string,
     @Query('bucketSeconds') bucketSeconds?: string,
+    @Query('origin') origin?: string,
   ): Promise<TimeSeriesResponseDto> {
     return this.timeSeriesService.getTimeSeries(
       parseDateParam('from', from),
       parseDateParam('to', to),
       serviceId?.trim() || undefined,
       parseBucketSecondsParam(bucketSeconds),
+      parseDateParam('origin', origin),
     );
   }
 
@@ -63,6 +71,12 @@ export class CollectionTimeSeriesController {
   @ApiQuery({ name: 'from', required: false, example: '2026-10-01T00:00:00Z' })
   @ApiQuery({ name: 'to', required: false, example: '2026-10-02T00:00:00Z' })
   @ApiQuery({ name: 'bucketSeconds', required: false, type: Number, example: 900 })
+  @ApiQuery({
+    name: 'origin',
+    required: false,
+    example: '2026-10-01T03:00:00Z',
+    description: 'Origem dos intervalos (ex.: meia-noite local) para caírem em horários redondos; padrão: from',
+  })
   @ApiOkResponse({ type: TimeSeriesCompareResponseDto })
   @ApiBadRequestResponse({
     description: 'Menos de 2 ou mais de 10 ids distintos, datas/bucketSeconds inválidos ou intervalos demais.',
@@ -73,12 +87,14 @@ export class CollectionTimeSeriesController {
     @Query('from') from?: string,
     @Query('to') to?: string,
     @Query('bucketSeconds') bucketSeconds?: string,
+    @Query('origin') origin?: string,
   ): Promise<TimeSeriesCompareResponseDto> {
     return this.timeSeriesService.compareTimeSeries(
       parseCompareIds(ids),
       parseDateParam('from', from),
       parseDateParam('to', to),
       parseBucketSecondsParam(bucketSeconds),
+      parseDateParam('origin', origin),
     );
   }
 }

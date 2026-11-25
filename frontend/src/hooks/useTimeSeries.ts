@@ -20,7 +20,10 @@ function useSeriesWindow() {
   const { bucketSeconds } =
     PERIOD_OPTIONS.find((option) => Math.abs(option.durationMs - (endMs - startMs)) < 60_000) ??
     getPeriodOption(periodId)
-  return { startMs, endMs, bucketSeconds }
+  // intervalos contados a partir da meia-noite local: caem em horários redondos (00:15, 02:00,
+  // 06:00…) no fuso de quem está vendo, em vez de começar no minuto em que a página abriu
+  const originMs = new Date(startMs).setHours(0, 0, 0, 0)
+  return { startMs, endMs, bucketSeconds, originMs }
 }
 
 /**
@@ -29,16 +32,16 @@ function useSeriesWindow() {
  * então acompanha a atualização automática e a troca de período.
  */
 export function useTimeSeries(serviceId?: string): UseFetchResult<TimeSeriesDto> {
-  const { startMs, endMs, bucketSeconds } = useSeriesWindow()
+  const { startMs, endMs, bucketSeconds, originMs } = useSeriesWindow()
 
   const fetcher = useCallback(
     (signal: AbortSignal) =>
       getTimeSeries(
         { start: new Date(startMs), end: new Date(endMs) },
-        { serviceId, bucketSeconds },
+        { serviceId, bucketSeconds, origin: new Date(originMs) },
         { signal },
       ),
-    [startMs, endMs, serviceId, bucketSeconds],
+    [startMs, endMs, serviceId, bucketSeconds, originMs],
   )
 
   return useFetch(fetcher)
@@ -50,16 +53,21 @@ export function useTimeSeries(serviceId?: string): UseFetchResult<TimeSeriesDto>
  * MAX_COMPARE_SERIES serviços não chama a API (o backend responderia 400) e devolve `null`.
  */
 export function useCompareTimeSeries(ids: string[]): UseFetchResult<TimeSeriesCompareDto | null> {
-  const { startMs, endMs, bucketSeconds } = useSeriesWindow()
+  const { startMs, endMs, bucketSeconds, originMs } = useSeriesWindow()
   const key = ids.join(',')
 
   const fetcher = useCallback(
     async (signal: AbortSignal) => {
       const list = key ? key.split(',') : []
       if (list.length < 2 || list.length > MAX_COMPARE_SERIES) return null
-      return compareTimeSeries(list, { start: new Date(startMs), end: new Date(endMs) }, { bucketSeconds }, { signal })
+      return compareTimeSeries(
+        list,
+        { start: new Date(startMs), end: new Date(endMs) },
+        { bucketSeconds, origin: new Date(originMs) },
+        { signal },
+      )
     },
-    [key, startMs, endMs, bucketSeconds],
+    [key, startMs, endMs, bucketSeconds, originMs],
   )
 
   return useFetch(fetcher)

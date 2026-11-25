@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CompareDto, TimeSeriesCompareDto, TimeSeriesPointDto } from '../types/api'
-import { compareSeriesCsv, compareTotalsCsv, csvFileName, formatCsvDate, serviceSeriesCsv, slugify, toCsv } from './csv'
+import { compareSeriesCsv, compareTotalsCsv, csvFileName, formatCsvDate, serviceSeriesCsv, slugify, toCsv, utcOffsetLabel } from './csv'
 
 const point = (timestamp: string, overrides: Partial<TimeSeriesPointDto> = {}): TimeSeriesPointDto => ({
   timestamp,
@@ -53,6 +53,12 @@ describe('formatCsvDate / slugify / csvFileName', () => {
     expect(slugify('***')).toBe('dados')
   })
 
+  it('descreve o fuso das datas como deslocamento em relação ao UTC', () => {
+    expect(utcOffsetLabel({ getTimezoneOffset: () => 180 })).toBe('UTC-03:00')
+    expect(utcOffsetLabel({ getTimezoneOffset: () => 0 })).toBe('UTC+00:00')
+    expect(utcOffsetLabel({ getTimezoneOffset: () => -330 })).toBe('UTC+05:30')
+  })
+
   it('monta o nome do arquivo com data e hora', () => {
     expect(csvFileName(['comparacao', '24h'], new Date(2026, 10, 21, 19, 5))).toBe('greenbyte-comparacao-24h-20261121-1905.csv')
   })
@@ -69,7 +75,7 @@ describe('serviceSeriesCsv', () => {
     expect(header.split(';')).toEqual([
       'Serviço',
       'Região',
-      'Início do intervalo',
+      `Início do intervalo (${utcOffsetLabel(new Date(2026, 10, 21, 10, 0))})`,
       'Coletas',
       'CO₂e médio por coleta (gCO₂e)',
       'Energia média por coleta (kWh)',
@@ -122,8 +128,9 @@ describe('compareTotalsCsv', () => {
     }
     const [header, active, inactive] = lines(compareTotalsCsv(data))
 
+    const offset = utcOffsetLabel(new Date(2026, 10, 20, 19))
     expect(header).toBe(
-      'Serviço;ID;Região;Estado no período;Coletas;CO₂e no período (gCO₂e);Energia no período (kWh);Início do período;Fim do período',
+      `Serviço;ID;Região;Estado no período;Coletas;CO₂e no período (gCO₂e);Energia no período (kWh);Início do período (${offset});Fim do período (${offset})`,
     )
     expect(active).toBe('Fraud Detector;svc-1;us-east;ativo;133;36,3;0,0961;2026-11-20 19:00;2026-11-21 19:00')
     expect(inactive).toBe('Legacy;svc-2;eu-west;indisponível;0;;;2026-11-20 19:00;2026-11-21 19:00')

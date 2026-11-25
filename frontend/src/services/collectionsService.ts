@@ -45,7 +45,7 @@ export function getEmissionsByService(
  */
 export function getTimeSeries(
   period: EmissionsPeriod,
-  params: { serviceId?: string; bucketSeconds?: number } = {},
+  params: { serviceId?: string; bucketSeconds?: number; origin?: Date } = {},
   options?: RequestOptions,
 ): Promise<TimeSeriesDto> {
   return request<TimeSeriesDto>('/collections/timeseries', {
@@ -55,6 +55,7 @@ export function getTimeSeries(
       to: period.end,
       serviceId: params.serviceId,
       bucketSeconds: params.bucketSeconds,
+      origin: params.origin,
     },
   })
 }
@@ -66,7 +67,7 @@ export function getTimeSeries(
 export function compareTimeSeries(
   ids: string[],
   period: EmissionsPeriod,
-  params: { bucketSeconds?: number } = {},
+  params: { bucketSeconds?: number; origin?: Date } = {},
   options?: RequestOptions,
 ): Promise<TimeSeriesCompareDto> {
   return request<TimeSeriesCompareDto>('/collections/timeseries/compare', {
@@ -76,6 +77,7 @@ export function compareTimeSeries(
       from: period.start,
       to: period.end,
       bucketSeconds: params.bucketSeconds,
+      origin: params.origin,
     },
   })
 }
