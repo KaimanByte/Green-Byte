@@ -60,7 +60,7 @@ describe('CollectionTimeSeriesService', () => {
   let findById: jest.Mock<(id: string) => Promise<Service | null>>;
   let getTimeSeries: jest.Mock<CollectionsRepository['getTimeSeries']>;
   let service: CollectionTimeSeriesService;
-  const existing: Service = { id: 'svc-1', name: 'S', regionCode: 'r', status: 'registered' };
+  const existing: Service = { id: 'svc-1', name: 'S', regionCode: 'r', status: 'registered', lastCollectionState: null, lastCollectionAttemptAt: null, lastCollectionError: null };
 
   beforeEach(() => {
     findById = jest.fn<(id: string) => Promise<Service | null>>().mockResolvedValue(existing);
@@ -160,10 +160,10 @@ describe('CollectionTimeSeriesController', () => {
 
 describe('CollectionTimeSeriesService.compareTimeSeries', () => {
   const catalog: Service[] = [
-    { id: 'billing-api', name: 'Billing', regionCode: 'BR', status: 'active' },
-    { id: 'auth-api', name: 'Auth', regionCode: 'US', status: 'active' },
-    { id: 'payment-api', name: 'Payment', regionCode: 'EU', status: 'active' },
-    { id: 'old-api', name: 'Old', regionCode: 'EU', status: 'removed' },
+    { id: 'billing-api', name: 'Billing', regionCode: 'BR', status: 'active', lastCollectionState: null, lastCollectionAttemptAt: null, lastCollectionError: null },
+    { id: 'auth-api', name: 'Auth', regionCode: 'US', status: 'active', lastCollectionState: null, lastCollectionAttemptAt: null, lastCollectionError: null },
+    { id: 'payment-api', name: 'Payment', regionCode: 'EU', status: 'active', lastCollectionState: null, lastCollectionAttemptAt: null, lastCollectionError: null },
+    { id: 'old-api', name: 'Old', regionCode: 'EU', status: 'removed', lastCollectionState: null, lastCollectionAttemptAt: null, lastCollectionError: null },
   ];
   const svcRow = (serviceId: string, iso: string, co2: number): ServiceTimeSeriesRow => ({
     ...row(iso, co2),

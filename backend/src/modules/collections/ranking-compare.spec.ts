@@ -65,18 +65,18 @@ describe('RankingCompareCalculator', () => {
     totals('svc-b', 4, 10, 500),
     totals('svc-a', 4, 10, 800), // empate em energia com svc-b, maior CO2e
     totals('svc-c', 2, 25, 300), // maior energia, menor CO2e
-    totals('svc-unavail', 5, 99, 9999), // indisponível: zerado e no fim
+    totals('svc-unavail', 5, 99, 9999), // indisponível agora, mas mantém o que mediu no período
   ];
 
-  it('ordena decrescentemente por energia, desempata por serviceId e posiciona no_metrics/unavailable ao final', () => {
+  it('ordena decrescentemente por energia e desempata por estado e serviceId', () => {
     const ranked = calculator.rank('energia', services, periodTotals);
 
     expect(ranked.map((r) => ({ id: r.serviceId, rank: r.rank, state: r.state, energy: r.energyKwh }))).toEqual([
-      { id: 'svc-c', rank: 1, state: 'active', energy: 25 },
-      { id: 'svc-a', rank: 2, state: 'active', energy: 10 },
-      { id: 'svc-b', rank: 3, state: 'active', energy: 10 },
-      { id: 'svc-empty', rank: 4, state: 'no_metrics', energy: 0 },
-      { id: 'svc-unavail', rank: 5, state: 'unavailable', energy: 0 },
+      { id: 'svc-unavail', rank: 1, state: 'unavailable', energy: 99 },
+      { id: 'svc-c', rank: 2, state: 'active', energy: 25 },
+      { id: 'svc-a', rank: 3, state: 'active', energy: 10 },
+      { id: 'svc-b', rank: 4, state: 'active', energy: 10 },
+      { id: 'svc-empty', rank: 5, state: 'no_metrics', energy: 0 },
     ]);
   });
 
@@ -84,15 +84,16 @@ describe('RankingCompareCalculator', () => {
     const ranked = calculator.rank('co2e', services, periodTotals);
 
     expect(ranked.map((r) => r.serviceId)).toEqual([
+      'svc-unavail',
       'svc-a',
       'svc-b',
       'svc-c',
       'svc-empty',
-      'svc-unavail',
     ]);
     expect(ranked.find((r) => r.serviceId === 'svc-removed')).toBeUndefined();
+    // sem coletas no período: zerado, nunca inventado
     expect(ranked[4]).toMatchObject({
-      serviceId: 'svc-unavail',
+      serviceId: 'svc-empty',
       collectionsCount: 0,
       energyKwh: 0,
       co2Emissions: 0,
@@ -130,10 +131,10 @@ describe('RankingCompareCalculator', () => {
 
 describe('RankingCompareService', () => {
   const catalog: Service[] = [
-    { id: 'svc-1', name: 'API 1', regionCode: 'br-sudeste', status: 'active' },
-    { id: 'svc-2', name: 'API 2', regionCode: 'br-sul', status: 'registered' },
-    { id: 'svc-3', name: 'API 3', regionCode: 'us-east', status: 'unavailable' },
-    { id: 'svc-gone', name: 'Gone', regionCode: 'br-sul', status: 'removed' },
+    { id: 'svc-1', name: 'API 1', regionCode: 'br-sudeste', status: 'active', lastCollectionState: null, lastCollectionAttemptAt: null, lastCollectionError: null },
+    { id: 'svc-2', name: 'API 2', regionCode: 'br-sul', status: 'registered', lastCollectionState: null, lastCollectionAttemptAt: null, lastCollectionError: null },
+    { id: 'svc-3', name: 'API 3', regionCode: 'us-east', status: 'unavailable', lastCollectionState: null, lastCollectionAttemptAt: null, lastCollectionError: null },
+    { id: 'svc-gone', name: 'Gone', regionCode: 'br-sul', status: 'removed', lastCollectionState: null, lastCollectionAttemptAt: null, lastCollectionError: null },
   ];
 
   let findAll: jest.Mock<() => Promise<Service[]>>;

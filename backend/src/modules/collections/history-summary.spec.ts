@@ -60,7 +60,7 @@ describe('ServiceHistoryService', () => {
   let findById: jest.Mock<(id: string) => Promise<Service | null>>;
   let findHistory: jest.Mock<CollectionsService['findHistory']>;
   let service: ServiceHistoryService;
-  const existing: Service = { id: 'svc-1', name: 'S', regionCode: 'r', status: 'active' };
+  const existing: Service = { id: 'svc-1', name: 'S', regionCode: 'r', status: 'active', lastCollectionState: null, lastCollectionAttemptAt: null, lastCollectionError: null };
 
   beforeEach(() => {
     findById = jest.fn<(id: string) => Promise<Service | null>>().mockResolvedValue(existing);

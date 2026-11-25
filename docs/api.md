@@ -117,7 +117,7 @@ Erros: `400` (e-mail inválido ou campos ausentes) e `401` (credenciais incorret
 
 ### `GET /services`
 
-Lista os serviços descobertos no Greener Metrics Aggregator e persistidos no banco, incluindo a região de cada um.
+Lista os serviços monitorados a partir do **banco**, com a localização da região de cada um. O Greener Metrics Aggregator apenas alimenta o banco no ciclo de sincronização, então a lista continua disponível mesmo com a API externa fora do ar. Só com o banco vazio (primeira execução) a rota busca na API. Serviços que saíram da API ficam com `status: "removed"` no banco, para preservar o histórico de coletas, e não aparecem nesta lista. `metricsPath` vem sempre `null`, porque não é armazenado.
 
 ### `GET /services/:id`
 
@@ -137,7 +137,7 @@ Erros: `400` (datas ou `limit` inválidos) e `404` (serviço inexistente).
 
 ### `POST /services/sync`
 
-Consulta `GET /services` na API externa e insere ou atualiza cada serviço no banco. Requer `admin` ou `operator`.
+Consulta `GET /services` na API externa, insere ou atualiza cada serviço no banco e marca como `removed` os que não vieram mais na lista. Uma lista vazia não remove ninguém. Requer `admin` ou `operator`.
 
 ## Regiões
 

@@ -43,6 +43,13 @@
       "when": 1795294548971,
       "tag": "0005_collections_timestamp_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795619591286,
+      "tag": "0006_services_last_collection_state",
+      "breakpoints": true
     }
   ]
 }

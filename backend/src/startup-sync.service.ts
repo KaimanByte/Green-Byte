@@ -140,35 +140,49 @@ export class StartupSyncService implements OnApplicationBootstrap {
     this.isSyncRunning = true;
     const startedAt = Date.now();
     const startedAtIso = new Date(startedAt).toISOString();
-    let currentStep = 'regiões';
+    let failedStep: string | null = null;
     let succeeded = false;
     let errorMessage: string | null = null;
     let collectionsSaved = 0;
 
     this.logger.log(`[${trigger}] Ciclo de sincronização iniciado em ${startedAtIso}.`);
 
+    // Cada etapa roda mesmo que a anterior falhe: as APIs externas só alimentam o banco, então
+    // a coleta usa as regiões e os serviços já gravados. Assim, com uma API fora do ar, cada
+    // serviço ainda tem a tentativa de coleta registrada (e o painel mostra o estado real dele).
+    // O ciclo só conta como sucesso se todas as etapas derem certo; vale a primeira falha.
+    const runStep = async (step: string, action: () => Promise<void>) => {
+      try {
+        await action();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const stack = error instanceof Error ? error.stack : undefined;
+        this.logger.error(`[${trigger}] Falha durante a etapa de ${step}: ${message}`, stack);
+        if (errorMessage === null) {
+          errorMessage = message;
+          failedStep = step;
+        }
+      }
+    };
+
     try {
-      // 1. Regiões: garante que os dados de referência estejam disponíveis.
-      await this.regionsService.syncRegions();
+      // 1. Regiões: atualiza a intensidade de carbono de referência.
+      await runStep('regiões', async () => {
+        await this.regionsService.syncRegions();
+      });
 
       // 2. Descoberta e atualização dos serviços disponíveis.
-      currentStep = 'descoberta de serviços';
-      await this.servicesService.syncServices();
+      await runStep('descoberta de serviços', async () => {
+        await this.servicesService.syncServices();
+      });
 
       // 3. Coleta e persistência das métricas dos serviços.
-      currentStep = 'coleta de métricas';
-      const result = await this.collectionsService.syncCollections();
-      collectionsSaved = result?.total ?? 0;
+      await runStep('coleta de métricas', async () => {
+        const result = await this.collectionsService.syncCollections();
+        collectionsSaved = result?.total ?? 0;
+      });
 
-      succeeded = true;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      errorMessage = message;
-      const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(
-        `[${trigger}] Falha durante a etapa de ${currentStep}: ${message}`,
-        stack,
-      );
+      succeeded = errorMessage === null;
     } finally {
       const finishedAt = Date.now();
       const finishedAtIso = new Date(finishedAt).toISOString();
@@ -184,7 +198,7 @@ export class StartupSyncService implements OnApplicationBootstrap {
         finishedAt: new Date(finishedAt),
         durationMs,
         succeeded,
-        failedStep: succeeded ? null : currentStep,
+        failedStep: succeeded ? null : failedStep,
         errorMessage,
         collectionsSaved,
       };

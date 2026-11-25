@@ -11,6 +11,12 @@ export interface ExternalServiceLocation {
   longitude?: number | null;
 }
 
+/**
+ * A API respondeu, mas as métricas do serviço vieram ausentes ou inválidas. Diferente de uma
+ * falha de conexão/HTTP: o serviço está no ar, só não há número utilizável ("sem métricas").
+ */
+export class InvalidMetricsException extends BadGatewayException {}
+
 /** Serviço monitorado, como a API GreenER de métricas devolve em GET /services. */
 export interface ExternalService {
   id: string;
@@ -84,7 +90,7 @@ export class MetricsApiClient {
 
     const problem = this.findMetricsProblem(payload);
     if (problem) {
-      throw new BadGatewayException(`Métricas de ${serviceId} em formato inválido: ${problem}.`);
+      throw new InvalidMetricsException(`Métricas de ${serviceId} em formato inválido: ${problem}.`);
     }
 
     return payload as ExternalServiceMetrics;

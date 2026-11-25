@@ -138,7 +138,7 @@ export function compareSeriesCsv(data: TimeSeriesCompareDto): string {
 
 /**
  * Totais da comparação no período (GET /compare). Energia e CO₂e ficam vazios para quem
- * não estava ativo: o backend manda 0 nesses casos, mas 0 seria um consumo medido.
+ * não teve nenhuma coleta no período: o backend manda 0 nesses casos, mas 0 seria um consumo medido.
  */
 export function compareTotalsCsv(data: CompareDto): string {
   const from = formatCsvDate(data.period.from)
@@ -148,7 +148,7 @@ export function compareTotalsCsv(data: CompareDto): string {
       'Serviço',
       'ID',
       'Região',
-      'Estado no período',
+      'Estado atual (última coleta)',
       'Coletas',
       'CO₂e no período (gCO₂e)',
       'Energia no período (kWh)',
@@ -156,15 +156,16 @@ export function compareTotalsCsv(data: CompareDto): string {
       withOffset('Fim do período', data.period.to),
     ],
     data.items.map((item) => {
-      const isActive = item.state === 'active'
+      // o estado é o atual (última coleta); os totais são o que foi medido no período
+      const hasData = item.collectionsCount > 0
       return [
         item.name,
         item.serviceId,
         item.regionCode,
         SERVICE_STATE_LABELS[item.state],
         item.collectionsCount,
-        isActive ? Number(item.co2Emissions) : null,
-        isActive ? Number(item.energyKwh) : null,
+        hasData ? Number(item.co2Emissions) : null,
+        hasData ? Number(item.energyKwh) : null,
         from,
         to,
       ]

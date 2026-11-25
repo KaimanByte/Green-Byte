@@ -18,6 +18,8 @@ describe('ServicesService', () => {
   let repository: {
     findById: jest.Mock<AsyncFn>;
     upsertMany: jest.Mock<AsyncFn>;
+    findActiveWithLocation: jest.Mock<AsyncFn>;
+    markRemovedExcept: jest.Mock<AsyncFn>;
   };
   let fetchMock: jest.Mock<AsyncFn>;
   const originalFetch = global.fetch;
@@ -31,6 +33,9 @@ describe('ServicesService', () => {
     repository = {
       findById: jest.fn<AsyncFn>(),
       upsertMany: jest.fn<AsyncFn>(),
+      // banco vazio por padrão: findAllServices cai na sincronização com a API
+      findActiveWithLocation: jest.fn<AsyncFn>().mockResolvedValue([]),
+      markRemovedExcept: jest.fn<AsyncFn>().mockResolvedValue([]),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -60,7 +65,53 @@ describe('ServicesService', () => {
   });
 
   describe('findAllServices', () => {
-    it('deve buscar na API, retornar os DTOs e aguardar o upsert no banco', async () => {
+    const dbRow = {
+      id: 'billing-api',
+      name: 'Billing API',
+      regionCode: 'br-sudeste',
+      status: 'registered',
+      country: 'Brazil',
+      regionName: 'Sudeste',
+      city: 'Sao Paulo',
+      latitude: -23.55,
+      longitude: -46.63,
+    };
+
+    it('lê do banco, com a localização da região, sem chamar a API externa', async () => {
+      repository.findActiveWithLocation.mockResolvedValue([dbRow]);
+
+      await expect(service.findAllServices()).resolves.toEqual([
+        {
+          id: 'billing-api',
+          name: 'Billing API',
+          status: 'registered',
+          regionCode: 'br-sudeste',
+          location: { country: 'Brazil', region: 'Sudeste', city: 'Sao Paulo', latitude: -23.55, longitude: -46.63 },
+          metricsPath: null,
+        },
+      ]);
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(repository.upsertMany).not.toHaveBeenCalled();
+    });
+
+    it('continua respondendo com a API externa fora do ar (ela só alimenta o banco)', async () => {
+      repository.findActiveWithLocation.mockResolvedValue([dbRow]);
+      fetchMock.mockResolvedValue({ ok: false, status: 530 });
+
+      await expect(service.findAllServices()).resolves.toHaveLength(1);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('serviço sem região conhecida no banco vem com localização vazia, sem quebrar', async () => {
+      repository.findActiveWithLocation.mockResolvedValue([
+        { ...dbRow, country: null, regionName: null, city: null, latitude: null, longitude: null },
+      ]);
+
+      const [result] = await service.findAllServices();
+      expect(result.location).toEqual({ country: '', region: '', city: null, latitude: null, longitude: null });
+    });
+
+    it('com o banco vazio (primeira execução), busca na API, retorna os DTOs e aguarda o upsert', async () => {
       const externalPayload = [
         {
           id: 'srv-1',
@@ -211,11 +262,30 @@ describe('ServicesService', () => {
       ]);
     });
 
-    it('aceita lista vazia sem chamar o repositório', async () => {
+    it('aceita lista vazia sem chamar o repositório (e sem remover ninguém)', async () => {
       fetchMock.mockResolvedValue({ ok: true, json: async () => [] });
 
       await expect(service.syncServices()).resolves.toEqual({ total: 0, services: [] });
       expect(repository.upsertMany).not.toHaveBeenCalled();
+      expect(repository.markRemovedExcept).not.toHaveBeenCalled();
+    });
+
+    it('marca como removidos os serviços que não vieram mais na lista da API', async () => {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => [
+          { id: 'srv-1', name: 'Alpha', location: { region_code: 'BR-SP', country: 'Brasil', region: 'SP' } },
+          { id: 'srv-2', name: 'Beta', location: { region_code: 'BR-SP', country: 'Brasil', region: 'SP' } },
+        ],
+      });
+      repository.upsertMany.mockResolvedValue([]);
+      repository.markRemovedExcept.mockResolvedValue([
+        { id: 'srv-antigo', name: 'Antigo', regionCode: 'BR-SP', status: 'removed' },
+      ]);
+
+      await service.syncServices();
+
+      expect(repository.markRemovedExcept).toHaveBeenCalledWith(['srv-1', 'srv-2']);
     });
 
     it('não grava nenhum serviço quando um item da resposta é inválido', async () => {

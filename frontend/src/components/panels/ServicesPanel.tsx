@@ -225,7 +225,9 @@ export function ServicesPanel({ onClose, panelRef, initialExpandedId = null }: P
         <ul className={styles.list}>
           {rows.map(({ item, service, region, latest }) => {
             const isExpanded = expandedId === item.serviceId
+            // estado = última coleta; valores = o que foi medido no período, mesmo de quem caiu agora
             const isActive = item.state === 'active'
+            const hasData = item.collectionsCount > 0
             const isSelected = selectedIds.includes(item.serviceId)
             const level = region ? getCarbonLevel(region.carbonIntensity) : null
             const co2Text = formatCo2(Number(item.co2Emissions) || 0)
@@ -261,11 +263,16 @@ export function ServicesPanel({ onClose, panelRef, initialExpandedId = null }: P
                           {level && <CarbonLevelIcon icon={level.icon} />}{' '}
                           {place ? `${place} · ` : ''}{item.regionCode}
                         </span>
+                        {hasData && !isActive && (
+                          <span className={dash.stateTag} data-state={item.state}>
+                            {SERVICE_STATE_LABELS[item.state]}
+                          </span>
+                        )}
                       </span>
                     </span>
 
                     <span className={styles.rowValues}>
-                      {isActive ? (
+                      {hasData ? (
                         <span className={dash.rankValue}>
                           {co2Text.value} <small>{co2Text.unit}</small>
                         </span>
@@ -275,7 +282,7 @@ export function ServicesPanel({ onClose, panelRef, initialExpandedId = null }: P
                         </span>
                       )}
                       <span className={styles.meta}>
-                        {isActive ? `${precise.format(Number(item.energyKwh) || 0)} kWh` : '—'}
+                        {hasData ? `${precise.format(Number(item.energyKwh) || 0)} kWh` : '—'}
                       </span>
                     </span>
 
@@ -287,7 +294,7 @@ export function ServicesPanel({ onClose, panelRef, initialExpandedId = null }: P
                   <div id={detailId} className={styles.detail}>
                     <dl className={styles.detailGrid}>
                       <div>
-                        <dt className={base.label}>Estado no período</dt>
+                        <dt className={base.label}>Estado atual</dt>
                         <dd>
                           <span className={dash.stateTag} data-state={item.state}>
                             {SERVICE_STATE_LABELS[item.state]}

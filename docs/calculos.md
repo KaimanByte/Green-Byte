@@ -64,18 +64,21 @@ Energia total = Σ energia dos serviços monitorados
 CO₂e total    = Σ CO₂e dos serviços monitorados
 ```
 
-Serviços indisponíveis ou sem métricas não entram na soma (não há dado); apenas são contados nos indicadores de estado.
+As somas usam as coletas válidas gravadas no período, de todos os serviços não removidos. Uma falha **agora** não apaga o que já foi medido: um serviço que ficou indisponível neste ciclo continua com o consumo e a emissão das coletas anteriores do período.
 
-**Regra para serviços sem cálculo (CA-04)** — implementada em `EnvironmentIndicatorsCalculator`:
+**Estado de cada serviço (CA-04)**, implementado em `EnvironmentIndicatorsCalculator`, é o **estado atual**, isto é, o resultado da **última tentativa de coleta**. Ele é gravado a cada ciclo em `services.last_collection_state`.
 
-| Situação no período consolidado | Classificação | Entra nas somas? |
-|---|---|---|
-| Status `removed` | ignorado | não (não é contado) |
-| Status `unavailable` | indisponível | não |
-| Sem coletas, recém-registrado, ou totais inválidos (NaN, Infinity, negativos) | sem métricas | não |
-| Ao menos uma coleta com totais válidos (inclusive zerados) | ativo | sim |
+| Última tentativa de coleta | Classificação |
+|---|---|
+| Métricas recebidas e cálculo válido | ativo |
+| A API respondeu, mas sem números utilizáveis (métricas ausentes ou inválidas, cálculo inválido, região não cadastrada) | sem métricas |
+| Não foi possível obter as métricas (API fora do ar, erro HTTP, tempo esgotado) | indisponível |
+| Nenhuma tentativa ainda (serviço recém-cadastrado) | ativo se já tiver coleta válida no período, senão sem métricas |
+| Status `removed` (saiu da API de métricas) | ignorado (não é contado) |
 
-Sem nenhum serviço ativo, energia e CO₂e totais valem `0` (nunca `NaN` ou `null`). A resposta informa o período considerado (`from`/`to`); o padrão são as últimas 24 h até o instante da chamada.
+O ciclo de coleta roda mesmo quando a sincronização de regiões ou de serviços falha, usando o que já está no banco. Assim cada serviço tem a tentativa registrada a cada ciclo, inclusive quando a API externa está fora (nesse caso, todos ficam indisponíveis). Com a API de carbono fora, mas a de métricas no ar, a coleta usa a última intensidade de carbono gravada da região.
+
+Totais inválidos (NaN, Infinity, negativos) nunca entram nas somas; sem coletas válidas, energia e CO₂e totais valem `0` (nunca `NaN` ou `null`). A resposta informa o período considerado (`from`/`to`); o padrão são as últimas 24 h até o instante da chamada.
 
 ## 3. Constantes do exemplo
 

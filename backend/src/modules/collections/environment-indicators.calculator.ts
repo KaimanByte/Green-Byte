@@ -14,16 +14,19 @@ const UNAVAILABLE_STATUS = 'unavailable';
  * Agregação matemática e classificação dos indicadores do ambiente (RF08 / CA-04).
  * Função pura: não acessa banco nem relógio.
  *
- * REGRA PARA SERVIÇOS SEM CÁLCULO (determinística):
+ * ESTADO DE CADA SERVIÇO (determinístico) — é o estado ATUAL, da última tentativa de coleta:
  * 1. Serviços com status `removed` são ignorados (não entram em nenhuma contagem).
- * 2. Status `unavailable` → "indisponível"; seus dados NÃO entram nas somas
- *    (alinhado a docs/calculos.md §2.5).
- * 3. Demais serviços são "ativos" somente se tiverem ao menos uma coleta no
- *    período E totais válidos (finitos e >= 0). Caso contrário (sem coletas,
- *    recém-registrado, NaN/Infinity/negativo) → "sem métricas".
- * 4. Somente serviços "ativos" contribuem para consumo e emissão total, portanto
- *    as somas nunca produzem NaN/null; sem nenhum ativo os totais valem 0.
- *    Serviço ativo com valores zerados é válido e conta como ativo.
+ * 2. Se a última coleta falhou porque a fonte não respondeu → "indisponível"
+ *    (também vale para o status legado `unavailable`).
+ * 3. Se a última coleta veio sem números utilizáveis → "sem métricas".
+ * 4. Se a última coleta deu certo → "ativo".
+ * 5. Serviço que ainda não teve nenhuma tentativa de coleta (recém-cadastrado): "ativo" se já
+ *    tiver coleta válida no período, senão "sem métricas".
+ *
+ * TOTAIS DO PERÍODO: somam todo serviço (não removido) com coletas válidas no período, qualquer
+ * que seja o estado atual. Um serviço que ficou indisponível agora continua com o consumo e a
+ * emissão que já tinha sido medido; a falha de um ciclo não apaga o histórico.
+ * Totais inválidos (NaN/Infinity/negativo) nunca entram, então as somas nunca viram NaN.
  */
 @Injectable()
 export class EnvironmentIndicatorsCalculator {
@@ -31,10 +34,21 @@ export class EnvironmentIndicatorsCalculator {
     if (service.status === REMOVED_STATUS) {
       return 'removed';
     }
-    if (service.status === UNAVAILABLE_STATUS) {
+    if (service.lastCollectionState === 'unavailable' || service.status === UNAVAILABLE_STATUS) {
       return 'unavailable';
     }
+    if (service.lastCollectionState === 'no_metrics') {
+      return 'no_metrics';
+    }
+    if (service.lastCollectionState === 'active') {
+      return 'active';
+    }
     return this.hasValidTotals(totals) ? 'active' : 'no_metrics';
+  }
+
+  /** Totais que entram nas somas e no ranking: válidos e de serviço não removido. */
+  usableTotals(service: ServiceSnapshot, totals?: ServicePeriodTotals): ServicePeriodTotals | null {
+    return service.status !== REMOVED_STATUS && this.hasValidTotals(totals) ? totals : null;
   }
 
   calculate(
@@ -57,10 +71,14 @@ export class EnvironmentIndicatorsCalculator {
       const serviceTotals = totalsByService.get(service.id);
       const state = this.classify(service, serviceTotals);
 
-      if (state === 'active' && serviceTotals) {
+      const usable = this.usableTotals(service, serviceTotals);
+      if (usable) {
+        result.totalEnergyKwh += usable.totalEnergyKwh;
+        result.totalCo2Emissions += usable.totalCo2Emissions;
+      }
+
+      if (state === 'active') {
         result.activeServices += 1;
-        result.totalEnergyKwh += serviceTotals.totalEnergyKwh;
-        result.totalCo2Emissions += serviceTotals.totalCo2Emissions;
       } else if (state === 'unavailable') {
         result.unavailableServices += 1;
       } else if (state === 'no_metrics') {
